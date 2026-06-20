@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acceso — Playbook MDA Capstone</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#0057a8 0%,#003d7a 50%,#1a1a2e 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:20px;padding:44px 38px;max-width:400px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35);text-align:center}
+.logo{font-size:46px;margin-bottom:14px}
+.badges{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px}
+.badge{font-weight:800;font-size:11px;padding:5px 12px;border-radius:6px;letter-spacing:.5px}
+.badge-cap{background:#0057a8;color:#fff}
+.badge-tres{background:#f0f3f8;color:#555}
+h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+.sub{font-size:13px;color:#888;margin-bottom:30px;line-height:1.5}
+
+/* Alerta de estado */
+.alert{border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.5;display:none;text-align:left}
+.alert.show{display:block}
+.alert-error{background:#fde8e8;border:1px solid #fca5a5;color:#991b1b}
+.alert-loading{background:#e8f0fb;border:1px solid #bfdbfe;color:#1e40af}
+.alert-title{font-weight:700;margin-bottom:3px}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid #1e40af;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Botón Google */
+.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1a1a2e;border:2px solid #e0e4ea;border-radius:12px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none;margin-bottom:14px}
+.google-btn:hover{border-color:#0057a8;background:#f0f6ff;box-shadow:0 4px 16px rgba(0,87,168,.15)}
+.google-btn img{width:22px;height:22px}
+
+.divider{border:none;border-top:1px solid #f0f3f8;margin:18px 0}
+.security{font-size:11px;color:#bbb;line-height:1.7}
+.security strong{color:#999}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🔑</div>
+  <div class="badges">
+    <span class="badge badge-cap">CAPSTONE COPPER</span>
+    <span class="badge badge-tres">TRES60 IT</span>
+  </div>
+  <h1>Playbook Mesa de Ayuda</h1>
+  <p class="sub">Acceso restringido. Solo usuarios autorizados por el administrador pueden ingresar.</p>
+
+  <!-- Mensajes de estado -->
+  <div class="alert alert-error" id="alert-error">
+    <div class="alert-title" id="error-title">Acceso denegado</div>
+    <div id="error-body"></div>
+  </div>
+  <div class="alert alert-loading" id="alert-loading">
+    <span class="spinner"></span> <span id="loading-text">Verificando tu cuenta...</span>
+  </div>
+
+  <!-- Botón de login -->
+  <button class="google-btn" id="login-btn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+    Continuar con Google
+  </button>
+
+  <hr class="divider">
+  <p class="security">
+    <strong>🔒 Acceso seguro con Google OAuth</strong><br>
+    Te autentificas con tu propia cuenta Google.<br>
+    El administrador nunca ve tu contraseña.<br>
+    Si no tienes acceso, contacta a tu supervisor TI.
+  </p>
+</div>
+
+<script>
+// ── Configura aquí la URL de tu Cloudflare Worker ──────────────────────────
+// Cambia esta línea después del despliegue:
+var WORKER_URL = '';
+// Ejemplo: var WORKER_URL = 'https://mda-playbook.tuusuario.workers.dev';
+
+// ── Mensajes de error claros ───────────────────────────────────────────────
+var ERROR_MSGS = {
+  not_authorized: {
+    title: '⛔ Tu correo no está autorizado',
+    body : 'Tu cuenta de Google (<strong id="err-email"></strong>) no tiene acceso a este sistema. Contacta al administrador para solicitar que te agregue.'
+  },
+  domain_not_allowed: {
+    title: '⛔ Dominio no permitido',
+    body : 'Solo se aceptan correos del dominio autorizado. Contacta al administrador.'
+  },
+  token_failed: {
+    title: '❌ Error de autenticación con Google',
+    body : 'No se pudo completar el inicio de sesión. Intenta nuevamente.'
+  },
+  no_code: {
+    title: '❌ Error en el proceso de login',
+    body : 'No se recibió respuesta de Google. Intenta nuevamente.'
+  },
+  config: {
+    title: '⚙️ Sistema no configurado',
+    body : 'La URL del Worker no está configurada. Sigue las instrucciones de despliegue.'
+  }
+};
+
+// ── Al cargar la página ────────────────────────────────────────────────────
+(function init() {
+  var params  = new URLSearchParams(window.location.search);
+  var session = params.get('session') || localStorage.getItem('mda_session');
+  var error   = params.get('error');
+  var email   = params.get('email');
+
+  // Guardar nueva sesión si viene en la URL
+  if (params.get('session')) {
+    localStorage.setItem('mda_session', params.get('session'));
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  // Mostrar error si viene en la URL
+  if (error && ERROR_MSGS[error]) {
+    showError(error, email);
+    return;
+  }
+
+  // Verificar sesión existente
+  if (session && WORKER_URL) {
+    showLoading('Verificando tu sesión...');
+    fetch(WORKER_URL + '/auth/me', {
+      headers: { 'Authorization': 'Bearer ' + session }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.authenticated) {
+        showLoading('Sesión válida. Entrando...');
+        window.location.href = 'Catalogo_Servicios_MDA_Capstone.html';
+      } else {
+        localStorage.removeItem('mda_session');
+        hideAlerts();
+      }
+    })
+    .catch(hideAlerts);
+  }
+})();
+
+// ── Botón de login ─────────────────────────────────────────────────────────
+document.getElementById('login-btn').addEventListener('click', function() {
+  if (!WORKER_URL) { showError('config'); return; }
+  showLoading('Conectando con Google...');
+  window.location.href = WORKER_URL + '/auth/login';
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showError(type, email) {
+  var msg = ERROR_MSGS[type] || { title: '❌ Error', body: 'Intenta nuevamente.' };
+  document.getElementById('error-title').textContent = msg.title;
+  document.getElementById('error-body').innerHTML   = msg.body;
+  if (email) {
+    var el = document.getElementById('err-email');
+    if (el) el.textContent = email;
+  }
+  document.getElementById('alert-error').classList.add('show');
+  document.getElementById('alert-loading').classList.remove('show');
+}
+
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg;
+  document.getElementById('alert-loading').classList.add('show');
+  document.getElementById('alert-error').classList.remove('show');
+}
+
+function hideAlerts() {
+  document.getElementById('alert-error').classList.remove('show');
+  document.getElementById('alert-loading').classList.remove('show');
+}
+</script>
+</body>
+</html>

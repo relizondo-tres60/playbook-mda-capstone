@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOP-GIA-007 — Configuración de MFA (Autenticación Multifactor)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px;line-height:1.6}
+.header{background:linear-gradient(135deg,#1a6b3a 0%,#1a1a2e 100%);color:#fff;padding:28px 36px}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.sop-id{font-size:13px;font-weight:700;background:rgba(255,255,255,.18);padding:4px 12px;border-radius:20px;letter-spacing:.5px}
+.sop-titulo{font-size:22px;font-weight:700;margin:6px 0 4px}
+.sop-dominio{font-size:13px;opacity:.85}
+.meta-strip{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+.meta-chip{background:rgba(255,255,255,.15);border-radius:12px;padding:5px 14px;font-size:12px}
+.meta-chip strong{display:block;font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.4px}
+.breadcrumb{background:#fff;border-bottom:1px solid #e0e4ea;padding:10px 36px;font-size:12px}
+.breadcrumb a{color:#1a6b3a;text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.container{max-width:1100px;margin:24px auto;padding:0 20px;display:grid;grid-template-columns:1fr 320px;gap:20px}
+@media(max-width:860px){.container{grid-template-columns:1fr}}
+.main-col{display:flex;flex-direction:column;gap:16px}
+.side-col{display:flex;flex-direction:column;gap:16px}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden}
+.card-header{background:#1a6b3a;color:#fff;padding:10px 18px;font-size:13px;font-weight:700;letter-spacing:.3px}
+.card-body{padding:16px 18px}
+.card-body ul{padding-left:18px}
+.card-body li{margin-bottom:6px;font-size:13px}
+.paso{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid #f0f2f5}
+.paso:last-child{border-bottom:none}
+.paso-num{background:#1a6b3a;color:#fff;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;text-align:center;line-height:1.2}
+.paso-body{flex:1}
+.paso-titulo{font-weight:700;color:#1a6b3a;font-size:14px;margin-bottom:4px}
+.paso-body p{font-size:13px;color:#333}
+.nota{background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;margin-top:8px;border-radius:0 6px 6px 0;font-size:12px;color:#555}
+.escalamiento li{color:#c0392b;font-size:13px;margin-bottom:5px}
+.cierre li{color:#1a6b3a;font-size:13px;margin-bottom:5px;list-style:none;padding-left:0}
+.notas-box{background:#e8f4fd;border-left:4px solid #1a6b3a;padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;margin-top:8px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#fff}
+.info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:#666;font-size:12px}
+.icon-big{font-size:28px;text-align:center;padding:10px 0;display:block}
+.footer{text-align:center;padding:20px;font-size:11px;color:#999;margin-top:10px}
+
+.fb-section{max-width:1100px;margin:0 auto 20px;padding:0 20px}
+.fb-section>div{background:#fff;border-radius:10px;padding:18px 24px;box-shadow:0 1px 5px rgba(0,0,0,.07);
+  border-top:3px solid #ff6b00;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.fb-invite{color:#555;font-size:13px;margin:0}
+.fb-open-btn{background:#ff6b00;color:#fff;border:none;cursor:pointer;border-radius:8px;
+  padding:9px 22px;font-size:13px;font-weight:700;letter-spacing:.2px;transition:background .15s}
+.fb-open-btn:hover{background:#cc5500}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,30,.55);z-index:999;
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.fb-box{background:#fff;border-radius:14px;max-width:480px;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.fb-box-header{background:#0057a8;color:#fff;padding:15px 20px;
+  display:flex;justify-content:space-between;align-items:center}
+.fb-box-header strong{font-size:15px}
+.fb-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
+.fb-close:hover{opacity:.75}
+.fb-box-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.fb-proc-ref{background:#f7f9fc;border-radius:8px;padding:8px 12px;
+  font-size:12px;font-weight:700;color:#0057a8;font-family:monospace}
+.fb-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:4px}
+.fb-input,.fb-textarea{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;
+  padding:9px 12px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;transition:border-color .15s}
+.fb-input:focus,.fb-textarea:focus{border-color:#0057a8;box-shadow:0 0 0 3px rgba(0,87,168,.1)}
+.fb-textarea{resize:vertical;min-height:90px}
+.fb-error{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;
+  font-size:12px;font-weight:600}
+.fb-box-footer{padding:14px 20px;border-top:1px solid #eef1f7;
+  display:flex;gap:10px;justify-content:flex-end}
+.fb-btn-cancel{background:#f0f3f8;color:#555;border:1.5px solid #d0d8e8;cursor:pointer;
+  border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;transition:all .15s}
+.fb-btn-cancel:hover{background:#e8ecf3}
+.fb-btn-send{background:#0057a8;color:#fff;border:none;cursor:pointer;
+  border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700;transition:background .15s}
+.fb-btn-send:hover{background:#003d7a}
+.fb-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;
+  font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="sop-id">🔑 SOP-GIA-007 </div>
+      <div class="sop-titulo">Configuración de MFA (Autenticación Multifactor)</div>
+      <div class="sop-dominio">Gestión de Identidad y Accesos</div>
+    </div>
+    <div style="text-align:right;font-size:12px;opacity:.8">
+      <strong>Capstone Copper Chile</strong><br>
+      Tres60 IT Services — MDA<br>
+      v1.0
+    </div>
+  </div>
+  <div class="meta-strip">
+    <div class="meta-chip"><strong>Nivel</strong>N1</div>
+    <div class="meta-chip"><strong>Grupo</strong>Help_Desk_Support_Chile_Tech</div>
+    <div class="meta-chip"><strong>Prioridad</strong><span style="color:#ffd700">Normal</span></div>
+  </div>
+</div>
+
+<div class="breadcrumb">
+  <a href="../Catalogo_Servicios_MDA_Capstone.html">&#8592; Cat&aacute;logo de Servicios MDA</a>
+  &nbsp;/&nbsp; Gestión de Identidad y Accesos &nbsp;/&nbsp; <strong>SOP-GIA-007</strong>
+</div>
+
+<div class="container">
+  <div class="main-col">
+
+    <!-- PROPÓSITO -->
+    <div class="card">
+      <div class="card-header">&#127919; Prop&oacute;sito del Procedimiento</div>
+      <div class="card-body"><p style="font-size:14px">Gestionar la autenticación multifactor (MFA) en Microsoft Entra ID para los tres flujos operacionales: configuración inicial, cambio de dispositivo de autenticación y bloqueo por incumplimiento de política.</p></div>
+    </div>
+
+    <!-- ALCANCE -->
+    <div class="card">
+      <div class="card-header">&#128203; Alcance</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <p style="font-weight:700;color:#1a6b3a;margin-bottom:8px;font-size:12px;text-transform:uppercase">&#10003; Incluye</p>
+            <ul><li>Configuración inicial de MFA para nuevos usuarios</li><li>Reconfiguraci de MFA por cambio de dispositivo móvil</li><li>Bloqueo condicional por incumplimiento de registro MFA en plazo definido</li><li>Verificación de estado MFA ante problemas de acceso</li></ul>
+          </div>
+          <div>
+            <p style="font-weight:700;color:#c0392b;margin-bottom:8px;font-size:12px;text-transform:uppercase">&#10007; No incluye</p>
+            <ul><li>Problemas de MFA para cuentas SAP (ver SOP-SAP-002)</li><li>Configuración de MFA para cuentas administrativas especiales (N3)</li></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUISITOS -->
+    <div class="card">
+      <div class="card-header">&#9989; Requisitos Previos</div>
+      <div class="card-body"><ul><li>Acceso al portal Entra ID (portal.azure.com) o Microsoft Entra admin center</li><li>Teléfono móvil del usuario con Microsoft Authenticator disponible</li></ul></div>
+    </div>
+
+    <!-- PASOS -->
+    <div class="card">
+      <div class="card-header">&#128196; Procedimiento Paso a Paso</div>
+      <div class="card-body">
+        <div class="paso">
+          <div class="paso-num">Paso 01</div>
+          <div class="paso-body">
+            <div class="paso-titulo">Identificar el flujo MFA aplicable</div>
+            <p>Determinar cuál de los tres flujos aplica: (A) Configuración inicial: usuario nuevo o que nunca configuró MFA. (B) Cambio de dispositivo: usuario con MFA previo pero cambió o perdió el teléfono. (C) Bloqueo por incumplimiento: usuario que no configuró MFA en el plazo y fue bloqueado condicionalmente. Seleccionar el flujo correspondiente y seguir los pasos de ese flujo.</p>
+            <div class="nota"><strong>&#9888; Nota:</strong> El flujo correcto determina si se debe revocar el MFA anterior antes de configurar uno nuevo.</div>
+          </div>
+        </div>
+        <div class="paso">
+          <div class="paso-num">Paso 02A</div>
+          <div class="paso-body">
+            <div class="paso-titulo">[Flujo A] Configuración inicial — Guiar al usuario</div>
+            <p>Enviar al usuario el enlace de registro MFA: https://aka.ms/mfasetup. Guiar paso a paso: (1) Descargar Microsoft Authenticator en el móvil. (2) En el portal web, hacer clic en 'Add sign-in method' > Authenticator app. (3) Escanear el código QR con la app. (4) Verificar con un código de prueba. Confirmar que el usuario puede autenticarse exitosamente.</p>
+            <div class="nota"><strong>&#9888; Nota:</strong> Método preferido: Microsoft Authenticator. Método alternativo aceptado: SMS al número personal registrado. No configurar correo alternativo como único método MFA.</div>
+          </div>
+        </div>
+        <div class="paso">
+          <div class="paso-num">Paso 02B</div>
+          <div class="paso-body">
+            <div class="paso-titulo">[Flujo B] Cambio de dispositivo — Revocar y re-registrar</div>
+            <p>Acceder a Entra ID > Users > buscar usuario > Authentication Methods. Eliminar el método MFA anterior (el dispositivo perdido o cambiado). Una vez removido, guiar al usuario con el mismo flujo A para registrar el nuevo dispositivo.</p>
+            <div class="nota"><strong>&#9888; Nota:</strong> No re-registrar sin revocar el método anterior. El dispositivo antiguo podría ser usado por un tercero.</div>
+          </div>
+        </div>
+        <div class="paso">
+          <div class="paso-num">Paso 02C</div>
+          <div class="paso-body">
+            <div class="paso-titulo">[Flujo C] Bloqueo por incumplimiento — Aplicar o levantar bloqueo condicional</div>
+            <p>Si el usuario NO ha configurado MFA en el plazo definido: agregar la cuenta al grupo de seguridad de bloqueo condicional (GRP-MFA-Enforcement o equivalente). Notificar al usuario por correo personal o teléfono que su cuenta tiene acceso restringido hasta configurar MFA. Si el usuario ya configuró MFA: remover del grupo de bloqueo condicional y verificar que el acceso se restaura.</p>
+            <div class="nota"><strong>&#9888; Nota:</strong> El grupo de bloqueo condicional debe estar pre-configurado en Entra ID Conditional Access. Si no existe, coordinar con N3 para su creación.</div>
+          </div>
+        </div>
+        <div class="paso">
+          <div class="paso-num">Paso 03</div>
+          <div class="paso-body">
+            <div class="paso-titulo">Verificar acceso post-configuración</div>
+            <p>Solicitar al usuario que cierre sesión y vuelva a iniciar. Verificar que el proceso de MFA aparece correctamente al iniciar sesión y que el usuario puede completarlo exitosamente. Si el acceso sigue fallando, verificar que no hay otras políticas condicionales activas.</p>
+            
+          </div>
+        </div>
+        <div class="paso">
+          <div class="paso-num">Paso 04</div>
+          <div class="paso-body">
+            <div class="paso-titulo">Documentar y cerrar</div>
+            <p>Registrar en el ticket el flujo ejecutado y el resultado. Para flujo C, indicar si se aplicó o se levantó el bloqueo. Adjuntar captura del estado MFA del usuario en Entra ID. Cerrar con 'Resolved'.</p>
+            
+          </div>
+        </div></div>
+    </div>
+
+    <!-- ESCALAMIENTO -->
+    <div class="card">
+      <div class="card-header">&#128225; Criterios de Escalamiento</div>
+      <div class="card-body"><ul class="escalamiento"><li>Si el portal de Entra ID no permite revocar MFA del usuario → N3 Server_Support</li><li>Si la política condicional no responde al agregar/remover del grupo → N3 (problema de Conditional Access)</li><li>Si el usuario no tiene dispositivo móvil disponible en zona sin señal (mina) → Coordinar con supervisor para acceso temporal</li></ul></div>
+    </div>
+
+  </div>
+
+  <div class="side-col">
+
+    <!-- INFO -->
+    <div class="card">
+      <div class="card-header">&#128196; Informaci&oacute;n del Servicio</div>
+      <div class="card-body">
+        <span class="icon-big">🔑</span>
+        <div class="info-row"><span class="info-label">Dominio</span><span>Gestión de Identidad y Accesos</span></div>
+        <div class="info-row"><span class="info-label">Nivel</span><span>N1</span></div>
+        <div class="info-row"><span class="info-label">Grupo Responsable</span><span style="font-size:11px">Help_Desk_Support_Chile_Tech</span></div>
+        <div class="info-row"><span class="info-label">Prioridad</span>
+          <span class="badge" style="background:#0057a8">Normal</span></div>
+      </div>
+    </div>
+
+    <!-- CHECKLIST CIERRE -->
+    <div class="card">
+      <div class="card-header">&#9989; Checklist de Cierre</div>
+      <div class="card-body"><ul class="cierre"><li>&#10003; Flujo MFA ejecutado correctamente (A, B o C según caso)</li><li>&#10003; Usuario puede iniciar sesión con MFA exitosamente</li><li>&#10003; Estado MFA en Entra ID capturado y adjunto al ticket</li></ul></div>
+    </div>
+
+    <!-- NOTAS -->
+    <div class="notas-box"><strong>&#128221; Notas operacionales:</strong><br>Los tres flujos son distintos. El error más común es no revocar el método anterior en el flujo B. Siempre verificar el estado actual del MFA del usuario en Entra ID antes de proceder.</div>
+
+    <!-- VOLVER -->
+    <div style="text-align:center;margin-top:4px">
+      <a href="../Catalogo_Servicios_MDA_Capstone.html" style="display:inline-block;background:#1a6b3a;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700">
+        &#8592; Volver al Cat&aacute;logo
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<div id="sop-ctx"></div>
+<div class="fb-section"><div>
+  <p class="fb-invite">&#191;Encontraste algo que mejorar en este procedimiento?</p>
+  <button class="fb-open-btn" onclick="document.getElementById('fb-overlay').style.display='flex'">
+    &#128172; Enviar Feedback de Mejora
+  </button>
+</div></div>
+
+<div id="fb-overlay" class="fb-overlay">
+  <div class="fb-box">
+    <div class="fb-box-header">
+      <strong>&#128172; Feedback de Mejora</strong>
+      <button onclick="closeFB()" class="fb-close">&#215;</button>
+    </div>
+    <div class="fb-box-body">
+      <div class="fb-proc-ref" id="fb-ref-label"></div>
+      <div>
+        <div class="fb-label">Tu nombre (opcional)</div>
+        <input id="fb-agent" type="text" class="fb-input" placeholder="Agente MDA">
+      </div>
+      <div>
+        <div class="fb-label">Comentario o mejora sugerida</div>
+        <textarea id="fb-text" class="fb-textarea" rows="4"
+          placeholder="Describe qu&#233; mejorar&#237;as, qu&#233; falta o qu&#233; est&#225; incorrecto en este procedimiento..."></textarea>
+      </div>
+      <div id="fb-error" class="fb-error" style="display:none">
+        Por favor escribe un comentario antes de enviar.
+      </div>
+    </div>
+    <div class="fb-box-footer">
+      <button onclick="closeFB()" class="fb-btn-cancel">Cancelar</button>
+      <button onclick="submitFB()" class="fb-btn-send">Enviar</button>
+    </div>
+  </div>
+</div>
+<div id="fb-toast" class="fb-toast">&#10003; Comentario guardado. &#161;Gracias!</div>
+<script>
+(function(){
+  var el = document.querySelector('.sop-id');
+  var sopId = el ? el.textContent.trim().replace(/[^\w\-]/g,'').replace(/^[^S]*/,'') : document.title.split('\u2014')[0].trim();
+  document.getElementById('fb-ref-label').textContent = sopId;
+
+  window.closeFB = function(){
+    document.getElementById('fb-overlay').style.display='none';
+    document.getElementById('fb-error').style.display='none';
+  };
+
+  window.submitFB = function(){
+    var comment = document.getElementById('fb-text').value.trim();
+    if(!comment){ document.getElementById('fb-error').style.display='block'; return; }
+    document.getElementById('fb-error').style.display='none';
+    var agent = document.getElementById('fb-agent').value.trim();
+    var titulo = document.title.indexOf('\u2014') > -1
+      ? document.title.split('\u2014').slice(1).join('\u2014').trim()
+      : document.title;
+    var feedback = JSON.parse(localStorage.getItem('mda_capstone_feedback')||'[]');
+    feedback.push({
+      sop_id: sopId,
+      titulo: titulo,
+      agent: agent || 'Agente an\u00f3nimo',
+      comment: comment,
+      date: new Date().toISOString()
+    });
+    localStorage.setItem('mda_capstone_feedback', JSON.stringify(feedback));
+    closeFB();
+    document.getElementById('fb-agent').value='';
+    document.getElementById('fb-text').value='';
+    var t = document.getElementById('fb-toast');
+    t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+    setTimeout(function(){
+      t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)';
+    }, 3000);
+  };
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape') closeFB();
+  });
+})();
+</script>
+
+
+<div class="footer">
+  MDA Capstone Copper Chile &mdash; Tres60 IT Services &mdash; SOP-GIA-007 v1.0
+</div>
+<script src="../js/auth-roles.js"></script>
+<script src="../js/playbook-core.js"></script>
+</body>
+</html>

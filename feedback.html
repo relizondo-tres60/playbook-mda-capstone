@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feedback Interno — MDA Capstone</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;min-height:100vh;display:flex;flex-direction:column}
+/* Login */
+#screen-login{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{background:#fff;border-radius:16px;padding:40px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.12);text-align:center}
+.login-logo{font-size:48px;margin-bottom:16px}
+.login-title{font-size:22px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+.login-subtitle{font-size:13px;color:#888;margin-bottom:28px}
+.login-input{width:100%;border:2px solid #d0d8e8;border-radius:10px;padding:12px 16px;font-size:15px;color:#1a1a2e;outline:none;text-align:center;letter-spacing:4px;transition:border-color .15s;margin-bottom:12px}
+.login-input:focus{border-color:#0057a8;box-shadow:0 0 0 3px rgba(0,87,168,.1)}
+.login-btn{width:100%;background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:10px;padding:12px;font-size:15px;font-weight:700;transition:background .15s;margin-bottom:10px}
+.login-btn:hover{background:#003d7a}
+.login-error{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;display:none;margin-top:4px}
+.login-back{color:#0057a8;font-size:12px;text-decoration:none;display:block;margin-top:16px}
+.login-back:hover{text-decoration:underline}
+/* Dashboard */
+#screen-dashboard{display:none;flex:1;flex-direction:column}
+.dash-header{background:linear-gradient(135deg,#0057a8,#003d7a);padding:20px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.dash-title{color:#fff;font-size:20px;font-weight:800}
+.dash-subtitle{color:rgba(255,255,255,.75);font-size:13px;margin-top:2px}
+.dash-actions{display:flex;gap:10px}
+.btn-export{background:#ff6b00;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;transition:background .15s}
+.btn-export:hover{background:#cc5500}
+.btn-clear{background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);cursor:pointer;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;transition:background .15s}
+.btn-clear:hover{background:rgba(255,255,255,.3)}
+.btn-back-cat{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);cursor:pointer;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;transition:background .15s}
+.btn-back-cat:hover{background:rgba(255,255,255,.25)}
+.dash-body{padding:24px 28px;flex:1;max-width:1000px;margin:0 auto;width:100%}
+.stats-row{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.stat-card{background:#fff;border-radius:10px;padding:14px 18px;flex:1;min-width:140px;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.stat-num{font-size:30px;font-weight:800;color:#0057a8}
+.stat-label{font-size:12px;color:#888;margin-top:2px}
+.empty-state{text-align:center;padding:60px 20px;background:#fff;border-radius:12px;color:#aaa}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:15px}
+.feedback-group{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.feedback-group-header{background:#f7f9fc;border-bottom:1px solid #eef1f7;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}
+.feedback-proc-id{font-family:monospace;font-size:11px;font-weight:700;background:#1a1a2e;color:#fff;padding:2px 8px;border-radius:5px}
+.feedback-proc-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-top:3px}
+.feedback-item{padding:14px 18px;border-bottom:1px solid #f3f5fa}
+.feedback-item:last-child{border-bottom:none}
+.feedback-meta{font-size:11px;color:#888;margin-bottom:6px;display:flex;gap:12px}
+.feedback-agent{font-weight:700;color:#0057a8}
+.feedback-comment{font-size:13px;color:#333;line-height:1.5;background:#f9fafb;border-left:3px solid #ff6b00;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:8px}
+.feedback-link{font-size:11px;color:#0057a8;text-decoration:none}
+.feedback-link:hover{text-decoration:underline}
+.btn-del-item{background:none;border:1px solid #ddd;cursor:pointer;border-radius:5px;padding:3px 8px;font-size:10px;color:#c0392b;float:right;margin-left:8px}
+.btn-del-item:hover{background:#fde8e8;border-color:#c0392b}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-logo">🔒</div>
+    <div class="login-title">Panel de Feedback Interno</div>
+    <div class="login-subtitle">Acceso restringido — Solo personal autorizado Tres60 IT Services</div>
+    <input class="login-input" type="password" id="login-pwd" placeholder="••••••••••"
+      onkeydown="if(event.key==='Enter')checkLogin()">
+    <button class="login-btn" onclick="checkLogin()">Ingresar</button>
+    <div class="login-error" id="login-error">Clave incorrecta. Intenta nuevamente.</div>
+    <a href="Catalogo_Servicios_MDA_Capstone.html" class="login-back">← Volver al Catálogo</a>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard">
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">📋 Feedback Interno — MDA Capstone</div>
+      <div class="dash-subtitle">Comentarios de mejora de procedimientos enviados por los agentes</div>
+    </div>
+    <div class="dash-actions">
+      <a href="Catalogo_Servicios_MDA_Capstone.html" class="btn-back-cat">← Volver al Catálogo</a>
+      <button class="btn-export" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <button class="btn-clear" onclick="clearAll()">🗑 Borrar todo</button>
+    </div>
+  </div>
+
+  <div class="dash-body">
+    <div class="stats-row" id="stats-row"></div>
+    <div id="feedback-list"></div>
+  </div>
+</div>
+
+<script>
+const FEEDBACK_KEY = 'mda_capstone_feedback';
+const FEEDBACK_PWD = 'Tres60admin';
+
+function checkLogin(){
+  const pwd = document.getElementById('login-pwd').value;
+  if(pwd === FEEDBACK_PWD){
+    document.getElementById('screen-login').style.display = 'none';
+    document.getElementById('screen-dashboard').style.display = 'flex';
+    renderDashboard();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-pwd').value = '';
+    document.getElementById('login-pwd').focus();
+  }
+}
+
+function renderDashboard(){
+  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
+  
+  // Stats
+  const procs = new Set(feedback.map(f => f.cs_id)).size;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${feedback.length}</div><div class="stat-label">Comentarios totales</div></div>
+    <div class="stat-card"><div class="stat-num">${procs}</div><div class="stat-label">Procedimientos con feedback</div></div>
+    <div class="stat-card"><div class="stat-num">${new Set(feedback.map(f=>f.agent)).size}</div><div class="stat-label">Agentes que comentaron</div></div>
+  `;
+  
+  const container = document.getElementById('feedback-list');
+  if(feedback.length === 0){
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><p>No hay comentarios de feedback registrados aún.<br>Los agentes pueden enviar feedback desde el catálogo principal.</p></div>`;
+    return;
+  }
+  
+  // Group by cs_id
+  const grouped = {};
+  feedback.forEach((f,i) => {
+    if(!grouped[f.cs_id]) grouped[f.cs_id] = [];
+    grouped[f.cs_id].push({...f, _idx: i});
+  });
+  
+  let html = '';
+  Object.entries(grouped).sort().forEach(([cs_id, items]) => {
+    html += `<div class="feedback-group">
+      <div class="feedback-group-header">
+        <div>
+          <span class="feedback-proc-id">${cs_id}</span>
+          <div class="feedback-proc-title">${items[0].titulo}</div>
+        </div>
+        <span style="color:#888;font-size:12px">${items.length} comentario${items.length>1?'s':''}</span>
+      </div>
+      ${items.map(f => `
+        <div class="feedback-item">
+          <button class="btn-del-item" onclick="deleteItem(${f._idx})" title="Eliminar este comentario">✕</button>
+          <div class="feedback-meta">
+            <span class="feedback-agent">👤 ${f.agent}</span>
+            <span>🕐 ${new Date(f.date).toLocaleString('es-CL')}</span>
+          </div>
+          <div class="feedback-comment">${f.comment}</div>
+          <a class="feedback-link" href="procedimientos/${f.sop}.html" target="_blank">📄 Ver procedimiento ${f.sop} →</a>
+        </div>`).join('')}
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function deleteItem(idx){
+  if(!confirm('¿Eliminar este comentario?')) return;
+  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
+  feedback.splice(idx, 1);
+  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedback));
+  renderDashboard();
+}
+
+function exportCSV(){
+  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
+  if(feedback.length === 0){ alert('No hay comentarios para exportar.'); return; }
+  const headers = ['SOP','Procedimiento','Agente','Fecha','Comentario'];
+  const rows = feedback.map(f => [
+    f.sop_id || f.cs_id,
+    `"${f.titulo.replace(/"/g,'""')}"`,
+    `"${f.agent.replace(/"/g,'""')}"`,
+    new Date(f.date).toLocaleString('es-CL'),
+    `"${f.comment.replace(/"/g,'""')}"`
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv, {type:'text/csv;charset=utf-8;'}]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'feedback_mda_capstone.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearAll(){
+  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
+  if(feedback.length === 0){ alert('No hay comentarios para borrar.'); return; }
+  if(!confirm(`¿Eliminar TODOS los ${feedback.length} comentarios? Esta acción no se puede deshacer.`)) return;
+  localStorage.removeItem(FEEDBACK_KEY);
+  renderDashboard();
+}
+
+document.getElementById('login-pwd').focus();
+document.getElementById('login-pwd').addEventListener('keydown', e => {
+  if(e.key === 'Enter') checkLogin();
+});
+</script>
+</body>
+</html>
