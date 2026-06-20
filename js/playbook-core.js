@@ -19,7 +19,7 @@ var CFG = {
   // ▼ PEGA AQUÍ LA URL DE TU CLOUDFLARE WORKER después del despliegue
   // Ejemplo: 'https://mda-playbook.tuusuario.workers.dev'
   // Déjalo vacío ('') para usar solo localStorage (sin sincronización)
-  workerUrl   : '',
+  workerUrl   : 'https://playbook-mda-capstone.relizondo-0d3.workers.dev',
   primary     : '#0057a8',
   accent      : '#ff6b00',
   dark        : '#1a1a2e',
