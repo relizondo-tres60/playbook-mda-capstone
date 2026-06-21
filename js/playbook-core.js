@@ -987,7 +987,7 @@ function sendAIMessage() {
   // Mostrar "escribiendo..."
   var thinking = document.getElementById('ai-thinking');
   thinking.style.display = 'block';
-  scrollAI(
+  scrollAI();
 
   // Contexto del SOP para el sistema prompt
   var sopContext = document.querySelector('.paso-body, .step-body')
