@@ -1002,7 +1002,7 @@ function sendAIMessage() {
   var aiUrl = CFG.workerUrl ? CFG.workerUrl + '/chat' : 'http://localhost:5001/chat';
   fetch(aiUrl, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('mda_session') || '')}
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('mda_session') || '')},
     body: JSON.stringify({
       system  : systemPrompt,
       messages: aiHistory,
