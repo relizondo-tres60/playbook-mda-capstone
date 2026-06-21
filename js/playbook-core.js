@@ -979,7 +979,7 @@ function sendAIMessage() {
   addAIMessage('user', msg);
   aiHistory.push({role:'user', content:msg});
 
-  if (!proxyConnected) {
+  if (!proxyConnected && !CFG.workerUrl) {
     addAIMessage('bot', '⚠️ El proxy de IA no está conectado. Ejecuta <code>python proxy.py</code> en la carpeta del playbook y recarga la página.');
     return;
   }
@@ -987,7 +987,7 @@ function sendAIMessage() {
   // Mostrar "escribiendo..."
   var thinking = document.getElementById('ai-thinking');
   thinking.style.display = 'block';
-  scrollAI();
+  scrollAI(
 
   // Contexto del SOP para el sistema prompt
   var sopContext = document.querySelector('.paso-body, .step-body')
@@ -1002,7 +1002,7 @@ function sendAIMessage() {
   var aiUrl = CFG.workerUrl ? CFG.workerUrl + '/chat' : 'http://localhost:5001/chat';
   fetch(aiUrl, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('mda_session') || '')}
     body: JSON.stringify({
       system  : systemPrompt,
       messages: aiHistory,
