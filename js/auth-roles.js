@@ -8,7 +8,7 @@
  */
 (function () {
 'use strict';
-
+ 
 // ── Estado global ────────────────────────────────────────────────────────────
 window.PlaybookAuth = {
   user       : null,    // { email, name, picture, role }
@@ -18,9 +18,9 @@ window.PlaybookAuth = {
   ready      : false,
   onReady    : null,    // callback cuando auth está lista
 };
-
+ 
 var A = window.PlaybookAuth;
-
+ 
 // ── CSS ─────────────────────────────────────────────────────────────────────
 function injectCSS() {
   var css = [
@@ -40,13 +40,13 @@ function injectCSS() {
     '#auth-bar .ab-btn.admin-btn{background:#ff6b00;border-color:#ff6b00;color:#fff}',
     '#auth-bar .ab-btn.admin-btn:hover{background:#cc5500}',
     'body{padding-top:40px}',  /* espacio para el auth-bar */
-
+ 
     /* Badges de procedimiento oculto */
     '.proc-hidden-badge{display:inline-block;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}',
     '.btn-toggle-vis{background:none;border:1.5px solid #d0d8e8;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:12px;color:#888;transition:all .12s;white-space:nowrap}',
     '.btn-toggle-vis.is-hidden{background:#fff8e1;border-color:#f59e0b;color:#b45309}',
     '.btn-toggle-vis:hover{border-color:#0057a8;color:#0057a8}',
-
+ 
     /* Modal admin — base */
     '#admin-panel-overlay{position:fixed;inset:0;background:rgba(10,10,30,.6);z-index:1200;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;backdrop-filter:blur(4px)}',
     '#admin-panel-overlay.open{display:flex}',
@@ -56,14 +56,14 @@ function injectCSS() {
     '#admin-panel-hdr .user-tag{font-size:12px;opacity:.75;margin-top:2px}',
     '.admin-x{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:.8;line-height:1}',
     '.admin-x:hover{opacity:1}',
-
+ 
     /* Tabs */
     '.admin-tabs{display:flex;border-bottom:2px solid #f0f3f8;background:#fafbfc}',
     '.admin-tab{padding:12px 20px;cursor:pointer;font-size:13px;font-weight:600;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .12s}',
     '.admin-tab.active{color:#0057a8;border-bottom-color:#0057a8}',
     '.admin-tab-body{display:none;padding:20px}',
     '.admin-tab-body.active{display:block}',
-
+ 
     /* Tabla de usuarios */
     '.roles-table{width:100%;border-collapse:collapse;font-size:13px}',
     '.roles-table th{background:#f7f9fc;color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:9px 12px;text-align:left;border-bottom:1px solid #eef1f7}',
@@ -74,7 +74,7 @@ function injectCSS() {
     '.role-select:focus{border-color:#0057a8}',
     '.btn-del-user{background:none;border:1px solid #fca5a5;color:#c0392b;cursor:pointer;border-radius:6px;padding:3px 9px;font-size:11px}',
     '.btn-del-user:hover{background:#fde8e8}',
-
+ 
     /* Procedimientos visibilidad */
     '.vis-list{display:flex;flex-direction:column;gap:8px}',
     '.vis-item{display:flex;align-items:center;justify-content:space-between;background:#f7f9fc;border-radius:8px;padding:10px 14px}',
@@ -83,24 +83,24 @@ function injectCSS() {
     '.vis-item-title{font-size:12px;color:#555;margin-top:2px}',
     '.vis-toggle{cursor:pointer;background:none;border:none;font-size:18px;transition:transform .15s}',
     '.vis-toggle:hover{transform:scale(1.2)}',
-
+ 
     /* Botones panel */
     '.ap-btn-primary{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;transition:background .12s}',
     '.ap-btn-primary:hover{background:#003d7a}',
     '.ap-note{background:#e8f0fb;border-radius:8px;padding:10px 12px;font-size:12px;color:#0057a8;margin-bottom:14px}',
   ].join('');
-
+ 
   var st = document.createElement('style');
   st.textContent = css;
   document.head.appendChild(st);
 }
-
+ 
 // ── Inicialización ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
   // Leer workerUrl del playbook-core (si existe) o del localStorage
   A.workerUrl = (window.CFG && CFG.workerUrl) || localStorage.getItem('mda_worker_url') || '';
   A.session   = localStorage.getItem('mda_session') || '';
-
+ 
   // Capturar session de la URL (viene del OAuth callback)
   var urlParams = new URLSearchParams(window.location.search);
   var sessionFromUrl = urlParams.get('session');
@@ -109,17 +109,17 @@ document.addEventListener('DOMContentLoaded', function () {
     localStorage.setItem('mda_session', sessionFromUrl);
     window.history.replaceState({}, document.title, window.location.pathname);
   }
-
+ 
   injectCSS();
   buildAuthBar();
-
+ 
   if (!A.session) {
     redirectToLogin(); return;
   }
-
+ 
   verifySession();
 });
-
+ 
 // ── Verificar sesión ─────────────────────────────────────────────────────────
 function verifySession() {
   if (!A.workerUrl) {
@@ -131,7 +131,7 @@ function verifySession() {
     if (A.onReady) A.onReady(A.user);
     return;
   }
-
+ 
   fetch(A.workerUrl + '/auth/me', authHeaders())
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -150,17 +150,17 @@ function verifySession() {
       if (A.onReady) A.onReady(A.user);
     });
 }
-
+ 
 function authHeaders() {
   return { headers: { 'Authorization': 'Bearer ' + A.session, 'Content-Type': 'application/json' } };
 }
-
+ 
 function redirectToLogin() {
   if (!window.location.pathname.includes('login.html')) {
     window.location.href = 'login.html';
   }
 }
-
+ 
 // ── Cargar visibilidad ───────────────────────────────────────────────────────
 function loadVisibility() {
   if (!A.workerUrl) return;
@@ -172,7 +172,7 @@ function loadVisibility() {
     })
     .catch(function() {});
 }
-
+ 
 function applyVisibility() {
   // En el catálogo: ocultar/mostrar filas según rol
   var isAdmin = A.user && A.user.role === 'admin';
@@ -187,7 +187,7 @@ function applyVisibility() {
     }
   });
 }
-
+ 
 // ── Auth Bar ─────────────────────────────────────────────────────────────────
 function buildAuthBar() {
   var bar = document.createElement('div');
@@ -199,16 +199,16 @@ function buildAuthBar() {
   ].join('');
   document.body.insertBefore(bar, document.body.firstChild);
 }
-
+ 
 function renderAuthBar() {
   var area = document.getElementById('ab-user-area');
   if (!area || !A.user) return;
-
+ 
   var isAdmin = A.user.role === 'admin';
   var avatar  = A.user.picture
     ? '<img class="ab-avatar" src="' + A.user.picture + '" alt="">'
     : '<div class="ab-avatar-fallback">' + (A.user.name || 'U')[0].toUpperCase() + '</div>';
-
+ 
   area.innerHTML = [
     isAdmin ? '<button class="ab-btn admin-btn" onclick="window.PlaybookAuth.openAdminPanel()">⚙ Admin</button>' : '',
     '<div class="ab-user">',
@@ -219,12 +219,12 @@ function renderAuthBar() {
     '<button class="ab-btn" onclick="window.PlaybookAuth.logout()">Salir</button>',
   ].join('');
 }
-
+ 
 // ── Panel de administración ──────────────────────────────────────────────────
 function openAdminPanel() {
   var existing = document.getElementById('admin-panel-overlay');
   if (existing) { existing.classList.add('open'); loadAdminData(); return; }
-
+ 
   var overlay = document.createElement('div');
   overlay.id = 'admin-panel-overlay';
   overlay.innerHTML = [
@@ -259,7 +259,7 @@ function openAdminPanel() {
     '  </div>',
     '</div>',
   ].join('');
-
+ 
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) closeAdminPanel();
   });
@@ -267,12 +267,12 @@ function openAdminPanel() {
   overlay.classList.add('open');
   loadAdminData();
 }
-
+ 
 function closeAdminPanel() {
   var o = document.getElementById('admin-panel-overlay');
   if (o) o.classList.remove('open');
 }
-
+ 
 function switchTab(el) {
   document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.admin-tab-body').forEach(function(b) { b.classList.remove('active'); });
@@ -280,15 +280,15 @@ function switchTab(el) {
   var body = document.getElementById('tab-' + el.dataset.tab);
   if (body) body.classList.add('active');
 }
-
+ 
 window.switchTab = switchTab; // Acceso desde onclick inline
-
+ 
 function loadAdminData() {
   loadAccess();
   loadRoles();
   loadVisibilityAdmin();
 }
-
+ 
 // ── Tab Lista de Acceso ───────────────────────────────────────────────────────
 function loadAccess() {
   var container = document.getElementById('access-container');
@@ -297,7 +297,7 @@ function loadAccess() {
     container.innerHTML = '<p style="color:#aaa;font-size:13px">Configura workerUrl para gestionar el acceso.</p>';
     return;
   }
-
+ 
   fetch(A.workerUrl + '/admin/access', A.authHeaders())
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -312,7 +312,7 @@ function loadAccess() {
                 : '<span style="font-size:11px;color:#aaa">(tú)</span>') +
               '</div>';
           }).join('');
-
+ 
       container.innerHTML = [
         '<div class="access-list">' + itemsHtml + '</div>',
         '<div class="access-add-row">',
@@ -324,14 +324,14 @@ function loadAccess() {
         '  No necesitas saber su contraseña.',
         '</p>',
       ].join('');
-
+ 
       // Enter key en el input
       var inp = document.getElementById('new-access-email');
       if (inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') addAccess(); });
     })
     .catch(function() { container.innerHTML = '<p style="color:#c0392b">Error al cargar la lista.</p>'; });
 }
-
+ 
 function addAccess() {
   var inp   = document.getElementById('new-access-email');
   var email = (inp ? inp.value : '').trim();
@@ -348,7 +348,7 @@ function addAccess() {
   })
   .catch(function() { A.showToast('❌ Error de conexión', true); });
 }
-
+ 
 function removeAccess(email) {
   if (!confirm('¿Quitar el acceso a ' + email + '? No podrá iniciar sesión hasta que lo vuelvas a agregar.')) return;
   fetch(A.workerUrl + '/admin/access/' + encodeURIComponent(email), {
@@ -358,10 +358,10 @@ function removeAccess(email) {
   .then(function() { loadAccess(); A.showToast('✅ Acceso revocado para ' + email); })
   .catch(function() { A.showToast('❌ Error', true); });
 }
-
+ 
 window.addAccess    = addAccess;
 window.removeAccess = removeAccess;
-
+ 
 // ── Tab Acceso (Whitelist) ────────────────────────────────────────────────────
 function loadWhitelist() {
   var container = document.getElementById('access-container');
@@ -406,7 +406,7 @@ function loadWhitelist() {
     })
     .catch(function() { container.innerHTML = '<p style="color:#c0392b">Error al cargar la lista de acceso.</p>'; });
 }
-
+ 
 function addToWhitelist() {
   var input = document.getElementById('access-new-email');
   if (!input) return;
@@ -415,7 +415,7 @@ function addToWhitelist() {
     A.showToast('⚠️ Escribe un correo válido', true); return;
   }
   if (!A.workerUrl) { A.showToast('Worker no configurado', true); return; }
-
+ 
   fetch(A.workerUrl + '/admin/whitelist', {
     method : 'POST',
     headers: Object.assign({'Content-Type':'application/json'}, A.authHeaders().headers),
@@ -433,7 +433,7 @@ function addToWhitelist() {
   })
   .catch(function() { A.showToast('❌ Error de conexión', true); });
 }
-
+ 
 function revokeAccess(email) {
   if (!confirm('¿Revocar acceso a ' + email + '? La próxima vez que intente entrar verá "Acceso denegado".')) return;
   fetch(A.workerUrl + '/admin/whitelist/' + encodeURIComponent(email), {
@@ -443,7 +443,7 @@ function revokeAccess(email) {
   .then(function() { loadWhitelist(); A.showToast('✅ Acceso revocado para ' + email); })
   .catch(function() { A.showToast('❌ Error', true); });
 }
-
+ 
 // ── Tab Roles ─────────────────────────────────────────────────────────────────
 function loadRoles() {
   var container = document.getElementById('roles-container');
@@ -452,23 +452,23 @@ function loadRoles() {
     container.innerHTML = '<p style="color:#aaa;font-size:13px">Worker no configurado.</p>';
     return;
   }
-
+ 
   fetch(A.workerUrl + '/admin/users', authHeaders())
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var users = data.users || {};
       var emails = Object.keys(users);
-
+ 
       var addBtn = '<div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">' +
         '<button class="ap-btn-primary" style="font-size:12px;padding:7px 16px" onclick="window.PlaybookAuth.openInviteModal()">+ Agregar usuario</button>' +
         '<span style="font-size:11px;color:#888">Agrega el correo ANTES de que el usuario intente ingresar.</span>' +
         '</div>';
-
+ 
       if (emails.length === 0) {
         container.innerHTML = addBtn + '<p style="color:#aaa;font-size:13px">Sin usuarios aún. Usa el botón para agregar el primero.</p>';
         return;
       }
-
+ 
       var rows = emails.map(function(email) {
         var u = users[email];
         var isPending = u.status === 'invited';
@@ -478,7 +478,7 @@ function loadRoles() {
         var badge = isPending
           ? '<span style="background:#fff8e1;color:#b45309;border:1px solid #fde68a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px">PENDIENTE</span>'
           : '<span style="background:#e8f5ee;color:#1a6b3a;border:1px solid #a7d7b9;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px">ACTIVO</span>';
-
+ 
         return '<tr>' +
           '<td>' + avatar + '</td>' +
           '<td><strong>' + escH(u.name||email) + '</strong>' + badge +
@@ -493,14 +493,14 @@ function loadRoles() {
             : '<td><small style="color:#aaa">(tu)</small></td>') +
           '</tr>';
       }).join('');
-
+ 
       container.innerHTML = addBtn +
         '<table class="roles-table"><thead><tr><th></th><th>Usuario</th><th>Rol</th><th>Ultimo acceso</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table>';
     })
     .catch(function() { container.innerHTML = '<p style="color:#c0392b">Error al cargar usuarios.</p>'; });
 }
-
+ 
 function changeRole(select) {
   var email = select.dataset.email;
   var role  = select.value;
@@ -511,7 +511,7 @@ function changeRole(select) {
   }).then(function() { showToast('✅ Rol actualizado para ' + email); })
     .catch(function() { showToast('❌ Error al actualizar el rol', true); });
 }
-
+ 
 function deleteUser(email) {
   if (!confirm('¿Quitar el acceso a ' + email + '? Deberá volver a iniciar sesión para registrarse.')) return;
   fetch(A.workerUrl + '/admin/users/' + encodeURIComponent(email), {
@@ -520,13 +520,13 @@ function deleteUser(email) {
   }).then(function() { loadRoles(); showToast('✅ Usuario eliminado'); })
     .catch(function() { showToast('❌ Error', true); });
 }
-
-
+ 
+ 
 // ── Modal invitar usuario ─────────────────────────────────────────────────────
 function openInviteModal() {
   var existing = document.getElementById('invite-modal-overlay');
   if (existing) { existing.remove(); }
-
+ 
   var overlay = document.createElement('div');
   overlay.id = 'invite-modal-overlay';
   overlay.className = 'pc-modal-overlay open';
@@ -567,25 +567,25 @@ function openInviteModal() {
   document.body.appendChild(overlay);
   setTimeout(function(){ document.getElementById('invite-email').focus(); }, 100);
 }
-
+ 
 function confirmInvite() {
   var email = (document.getElementById('invite-email').value || '').trim().toLowerCase();
   var name  = (document.getElementById('invite-name').value  || '').trim();
   var role  =  document.getElementById('invite-role').value;
   var errEl = document.getElementById('invite-error');
-
+ 
   if (!email || !email.includes('@')) {
     errEl.textContent = 'Ingresa un correo válido.';
     errEl.style.display = 'block';
     return;
   }
-
+ 
   if (!A.workerUrl) {
     errEl.textContent = 'Worker no configurado.';
     errEl.style.display = 'block';
     return;
   }
-
+ 
   fetch(A.workerUrl + '/admin/users/' + encodeURIComponent(email), {
     method : 'PATCH',
     headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
@@ -607,8 +607,8 @@ function confirmInvite() {
     errEl.style.display = 'block';
   });
 }
-
-
+ 
+ 
 // ── Modal: Invitar usuario ────────────────────────────────────────────────────
 function openInviteModal() {
   var ex = document.getElementById('invite-overlay');
@@ -641,20 +641,20 @@ function openInviteModal() {
   document.body.appendChild(ov);
   setTimeout(function(){ var el=document.getElementById('inv-email'); if(el) el.focus(); }, 80);
 }
-
+ 
 function confirmInvite() {
   var email = (document.getElementById('inv-email').value||'').trim().toLowerCase();
   var name  = (document.getElementById('inv-name').value ||'').trim();
   var role  =  document.getElementById('inv-role').value;
   var err   =  document.getElementById('inv-err');
-
+ 
   if (!email || !email.includes('@')) {
     err.textContent='Ingresa un correo valido.'; err.style.display='block'; return;
   }
   if (!A.workerUrl) {
     err.textContent='Worker no configurado.'; err.style.display='block'; return;
   }
-
+ 
   fetch(A.workerUrl + '/admin/users', {
     method : 'POST',
     headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
@@ -669,14 +669,14 @@ function confirmInvite() {
   })
   .catch(function(){ err.textContent='Error al guardar. Intenta de nuevo.'; err.style.display='block'; });
 }
-
+ 
 // ── Tab Visibilidad ───────────────────────────────────────────────────────────
 var _allProcs = []; // se llena desde el catálogo o los datos del playbook-core
-
+ 
 function loadVisibilityAdmin() {
   var container = document.getElementById('vis-container');
   if (!container) return;
-
+ 
   // Obtener lista de procedimientos del DOM o de window.PROCS (catálogo)
   var procs = (window.PROCS || []).map(function(p) { return { sop: p.sop, titulo: p.titulo }; });
   if (procs.length === 0) {
@@ -684,9 +684,9 @@ function loadVisibilityAdmin() {
     container.innerHTML = '<p style="color:#aaa;font-size:13px">Este panel de visibilidad está disponible en el Catálogo principal.</p>';
     return;
   }
-
+ 
   _allProcs = procs;
-
+ 
   var items = procs.map(function(p) {
     var hidden = A.hiddenProcs.includes(p.sop);
     return '<div class="vis-item' + (hidden ? ' is-hidden' : '') + '" id="vis-' + p.sop + '">' +
@@ -699,10 +699,10 @@ function loadVisibilityAdmin() {
       '</button>' +
     '</div>';
   }).join('');
-
+ 
   container.innerHTML = '<div class="vis-list">' + items + '</div>';
 }
-
+ 
 function toggleVisibility(sopId) {
   var idx = A.hiddenProcs.indexOf(sopId);
   if (idx >= 0) {
@@ -710,7 +710,7 @@ function toggleVisibility(sopId) {
   } else {
     A.hiddenProcs.push(sopId);
   }
-
+ 
   // Guardar en Worker
   if (A.workerUrl) {
     fetch(A.workerUrl + '/admin/visibility', {
@@ -719,13 +719,13 @@ function toggleVisibility(sopId) {
       body   : JSON.stringify({ hidden: A.hiddenProcs }),
     }).catch(function() {});
   }
-
+ 
   // Re-renderizar la lista y aplicar en el DOM
   loadVisibilityAdmin();
   applyVisibility();
   showToast(A.hiddenProcs.includes(sopId) ? '🙈 Procedimiento oculto' : '👁 Procedimiento visible');
 }
-
+ 
 // ── Logout ───────────────────────────────────────────────────────────────────
 function logout() {
   if (!confirm('¿Cerrar sesión?')) return;
@@ -737,7 +737,7 @@ function logout() {
     window.location.href = 'login.html';
   }
 }
-
+ 
 // ── Toast ────────────────────────────────────────────────────────────────────
 function showToast(msg, isError) {
   var t = document.getElementById('ar-toast');
@@ -758,11 +758,11 @@ function showToast(msg, isError) {
     t.style.transform = 'translateX(-50%) translateY(20px)';
   }, 3000);
 }
-
+ 
 function escH(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
+ 
 // ── API pública ───────────────────────────────────────────────────────────────
 A.openAdminPanel   = openAdminPanel;
   A.openInviteModal  = openInviteModal;
@@ -778,5 +778,5 @@ A.addToWhitelist   = addToWhitelist;
 A.revokeAccess     = revokeAccess;
 A.authHeaders      = authHeaders;
 A.showToast        = showToast;
-
+ 
 })();
