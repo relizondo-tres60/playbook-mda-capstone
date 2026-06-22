@@ -19,7 +19,7 @@ var CFG = {
   // ▼ PEGA AQUÍ LA URL DE TU CLOUDFLARE WORKER después del despliegue
   // Ejemplo: 'https://mda-playbook.tuusuario.workers.dev'
   // Déjalo vacío ('') para usar solo localStorage (sin sincronización)
-  workerUrl   : 'https://playbook-mda-capstone.relizondo-0d3.workers.dev',
+  workerUrl   : '',
   primary     : '#0057a8',
   accent      : '#ff6b00',
   dark        : '#1a1a2e',
@@ -125,7 +125,7 @@ function injectCSS() {
     /* ── Modo edición: ribete naranja ── */
     'body.edit-mode .paso-body p,body.edit-mode .paso-body{cursor:text;border-radius:4px}',
     'body.edit-mode .paso-body p::selection{background:rgba(255,107,0,.25)}',
-    '.edit-mode-banner{background:'+CFG.accent+';color:#fff;text-align:center;padding:7px;font-size:12px;font-weight:700;letter-spacing:.3px;display:none;position:sticky;top:0;z-index:600}',
+    '.edit-mode-banner{background:'+CFG.accent+';color:#fff;text-align:center;padding:7px;font-size:12px;font-weight:700;letter-spacing:.3px;display:none;position:sticky;top:40px;z-index:600}',
     'body.edit-mode .edit-mode-banner{display:block}',
 
     /* ── Modales compartidos ── */
@@ -609,6 +609,8 @@ function closePwdModal() {
 // BOTÓN ADMINISTRADOR
 // ═══════════════════════════════════════════════════════════════════════
 function buildAdminButton() {
+  // El botón de modo edición solo en SOPs individuales
+  if (!document.querySelector('.sop-id')) return;
   var btn = el('button', {id:'admin-fab'});
   btn.textContent = '⚙ Modo Edición';
   btn.addEventListener('click', function() {
@@ -623,8 +625,14 @@ function buildAdminButton() {
 
   // Banner de aviso en modo edición
   var banner = el('div', {className:'edit-mode-banner'});
-  banner.textContent = '✏️ MODO EDICIÓN ACTIVO — Selecciona cualquier texto del procedimiento para añadirlo al glosario';
-  document.body.insertBefore(banner, document.body.firstChild);
+  banner.textContent = '✏️ MODO EDICIÓN ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
+  // Insertar después del auth-bar (si existe) para no solapar el header de auth
+  var authBar = document.getElementById('auth-bar');
+  if (authBar && authBar.nextSibling) {
+    document.body.insertBefore(banner, authBar.nextSibling);
+  } else {
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
 
   // Burbuja de selección
   buildSelectionBubble();
@@ -638,7 +646,7 @@ function activateEditMode() {
   document.getElementById('admin-fab').textContent = '✔ Salir de Edición';
   document.getElementById('admin-fab').classList.add('active');
   renderContextSections(); // re-render con botones de edición
-  showToast('✏️ Modo Edición activado. Selecciona texto para crear términos de glosario.');
+  // Mensaje mostrado por el banner sticky — toast eliminado para evitar duplicado
 }
 
 function deactivateEditMode() {
@@ -654,7 +662,10 @@ function deactivateEditMode() {
 // SECCIONES DE CONTEXTO
 // ═══════════════════════════════════════════════════════════════════════
 function buildContextSections() {
-  // El div #sop-context-sections debe existir en el SOP HTML
+  // Solo mostrar en páginas SOP individuales (tienen elemento .sop-id)
+  // NO mostrar en el catálogo principal
+  if (!document.querySelector('.sop-id')) return;
+
   var container = document.getElementById('sop-ctx');
   if (!container) {
     container = el('div', {id:'sop-ctx'});
@@ -667,6 +678,8 @@ function buildContextSections() {
 }
 
 function renderContextSections() {
+  // Solo en páginas SOP individuales
+  if (!document.querySelector('.sop-id')) return;
   var container = document.getElementById('sop-ctx');
   if (!container) return;
 
@@ -979,7 +992,7 @@ function sendAIMessage() {
   addAIMessage('user', msg);
   aiHistory.push({role:'user', content:msg});
 
-  if (!proxyConnected && !CFG.workerUrl) {
+  if (!proxyConnected) {
     addAIMessage('bot', '⚠️ El proxy de IA no está conectado. Ejecuta <code>python proxy.py</code> en la carpeta del playbook y recarga la página.');
     return;
   }
@@ -1002,7 +1015,7 @@ function sendAIMessage() {
   var aiUrl = CFG.workerUrl ? CFG.workerUrl + '/chat' : 'http://localhost:5001/chat';
   fetch(aiUrl, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('mda_session') || '')},
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       system  : systemPrompt,
       messages: aiHistory,
