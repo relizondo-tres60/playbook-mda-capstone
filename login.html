@@ -15,8 +15,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#
 .badge-tres{background:#f0f3f8;color:#555}
 h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
 .sub{font-size:13px;color:#888;margin-bottom:30px;line-height:1.5}
-
-/* Alerta de estado */
 .alert{border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.5;display:none;text-align:left}
 .alert.show{display:block}
 .alert-error{background:#fde8e8;border:1px solid #fca5a5;color:#991b1b}
@@ -24,12 +22,9 @@ h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
 .alert-title{font-weight:700;margin-bottom:3px}
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid #1e40af;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* Botón Google */
-.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1a1a2e;border:2px solid #e0e4ea;border-radius:12px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none;margin-bottom:14px}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1a1a2e;border:2px solid #e0e4ea;border-radius:12px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;margin-bottom:14px}
 .google-btn:hover{border-color:#0057a8;background:#f0f6ff;box-shadow:0 4px 16px rgba(0,87,168,.15)}
 .google-btn img{width:22px;height:22px}
-
 .divider{border:none;border-top:1px solid #f0f3f8;margin:18px 0}
 .security{font-size:11px;color:#bbb;line-height:1.7}
 .security strong{color:#999}
@@ -37,7 +32,7 @@ h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
 </head>
 <body>
 <div class="card">
-  <div class="logo">🔑</div>
+  <div class="logo">&#128273;</div>
   <div class="badges">
     <span class="badge badge-cap">CAPSTONE COPPER</span>
     <span class="badge badge-tres">TRES60 IT</span>
@@ -45,16 +40,14 @@ h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
   <h1>Playbook Mesa de Ayuda</h1>
   <p class="sub">Acceso restringido. Solo usuarios autorizados por el administrador pueden ingresar.</p>
 
-  <!-- Mensajes de estado -->
   <div class="alert alert-error" id="alert-error">
-    <div class="alert-title" id="error-title">Acceso denegado</div>
-    <div id="error-body"></div>
+    <div class="alert-title" id="err-title">Acceso denegado</div>
+    <div id="err-body"></div>
   </div>
   <div class="alert alert-loading" id="alert-loading">
-    <span class="spinner"></span> <span id="loading-text">Verificando tu cuenta...</span>
+    <span class="spinner"></span><span id="loading-text">Verificando...</span>
   </div>
 
-  <!-- Botón de login -->
   <button class="google-btn" id="login-btn">
     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
     Continuar con Google
@@ -62,72 +55,59 @@ h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
 
   <hr class="divider">
   <p class="security">
-    <strong>🔒 Acceso seguro con Google OAuth</strong><br>
+    <strong>&#128274; Acceso seguro con Google OAuth</strong><br>
     Te autentificas con tu propia cuenta Google.<br>
-    El administrador nunca ve tu contraseña.<br>
-    Si no tienes acceso, contacta a tu supervisor TI.
+    El administrador nunca ve tu contrase&ntilde;a.
   </p>
 </div>
 
 <script>
 // ── Configura aquí la URL de tu Cloudflare Worker ──────────────────────────
-// Cambia esta línea después del despliegue:
 var WORKER_URL = 'https://playbook-mda-capstone.relizondo-0d3.workers.dev';
-// Ejemplo: var WORKER_URL = 'https://mda-playbook.tuusuario.workers.dev';
 
-// ── Mensajes de error claros ───────────────────────────────────────────────
-var ERROR_MSGS = {
-  not_authorized: {
-    title: '⛔ Tu correo no está autorizado',
-    body : 'Tu cuenta de Google (<strong id="err-email"></strong>) no tiene acceso a este sistema. Contacta al administrador para solicitar que te agregue.'
-  },
-  domain_not_allowed: {
-    title: '⛔ Dominio no permitido',
-    body : 'Solo se aceptan correos del dominio autorizado. Contacta al administrador.'
-  },
-  token_failed: {
-    title: '❌ Error de autenticación con Google',
-    body : 'No se pudo completar el inicio de sesión. Intenta nuevamente.'
-  },
-  no_code: {
-    title: '❌ Error en el proceso de login',
-    body : 'No se recibió respuesta de Google. Intenta nuevamente.'
-  },
-  config: {
-    title: '⚙️ Sistema no configurado',
-    body : 'La URL del Worker no está configurada. Sigue las instrucciones de despliegue.'
-  }
+var ERRORS = {
+  not_authorized : { title: '&#9940; Tu correo no est&aacute; autorizado', body: 'Tu cuenta Google (<strong id="err-email"></strong>) no tiene acceso. Contacta al administrador para solicitar acceso.' },
+  token_failed   : { title: '&#10060; Error de autenticaci&oacute;n', body: 'No se pudo completar el inicio de sesi&oacute;n con Google. Intenta nuevamente.' },
+  no_code        : { title: '&#10060; Error en el proceso', body: 'No se recibi&oacute; respuesta de Google. Intenta nuevamente.' },
+  config         : { title: '&#9881;&#65039; Sistema no configurado', body: 'La URL del Worker no est&aacute; configurada.' },
 };
 
-// ── Al cargar la página ────────────────────────────────────────────────────
 (function init() {
   var params  = new URLSearchParams(window.location.search);
-  var session = params.get('session') || localStorage.getItem('mda_session');
+  var session = params.get('session');
   var error   = params.get('error');
   var email   = params.get('email');
 
-  // Guardar nueva sesión si viene en la URL
-  if (params.get('session')) {
-    localStorage.setItem('mda_session', params.get('session'));
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-
-  // Mostrar error si viene en la URL
-  if (error && ERROR_MSGS[error]) {
-    showError(error, email);
+  // ── Caso 1: Viene session del OAuth callback ──
+  if (session) {
+    localStorage.setItem('mda_session', session);
+    // Limpiar URL y redirigir al catálogo
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showLoading('Acceso confirmado. Entrando al playbook...');
+    setTimeout(function () {
+      window.location.href = 'Catalogo_Servicios_MDA_Capstone.html';
+    }, 500);
     return;
   }
 
-  // Verificar sesión existente
-  if (session && WORKER_URL) {
-    showLoading('Verificando tu sesión...');
+  // ── Caso 2: Error del OAuth callback ──
+  if (error) {
+    var msg = ERRORS[error] || { title: '&#10060; Error', body: 'Intenta nuevamente.' };
+    showError(msg.title, msg.body, email);
+    return;
+  }
+
+  // ── Caso 3: Ya hay sesión guardada → verificar con Worker ──
+  var saved = localStorage.getItem('mda_session');
+  if (saved && WORKER_URL) {
+    showLoading('Verificando tu sesi&oacute;n...');
     fetch(WORKER_URL + '/auth/me', {
-      headers: { 'Authorization': 'Bearer ' + session }
+      headers: { 'Authorization': 'Bearer ' + saved }
     })
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.authenticated) {
-        showLoading('Sesión válida. Entrando...');
+        showLoading('Sesi&oacute;n v&aacute;lida. Entrando...');
         window.location.href = 'Catalogo_Servicios_MDA_Capstone.html';
       } else {
         localStorage.removeItem('mda_session');
@@ -138,18 +118,15 @@ var ERROR_MSGS = {
   }
 })();
 
-// ── Botón de login ─────────────────────────────────────────────────────────
-document.getElementById('login-btn').addEventListener('click', function() {
-  if (!WORKER_URL) { showError('config'); return; }
+document.getElementById('login-btn').addEventListener('click', function () {
+  if (!WORKER_URL) { showError(ERRORS.config.title, ERRORS.config.body); return; }
   showLoading('Conectando con Google...');
   window.location.href = WORKER_URL + '/auth/login';
 });
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function showError(type, email) {
-  var msg = ERROR_MSGS[type] || { title: '❌ Error', body: 'Intenta nuevamente.' };
-  document.getElementById('error-title').textContent = msg.title;
-  document.getElementById('error-body').innerHTML   = msg.body;
+function showError(title, body, email) {
+  document.getElementById('err-title').innerHTML = title;
+  document.getElementById('err-body').innerHTML  = body;
   if (email) {
     var el = document.getElementById('err-email');
     if (el) el.textContent = email;
@@ -159,7 +136,7 @@ function showError(type, email) {
 }
 
 function showLoading(msg) {
-  document.getElementById('loading-text').textContent = msg;
+  document.getElementById('loading-text').innerHTML = msg;
   document.getElementById('alert-loading').classList.add('show');
   document.getElementById('alert-error').classList.remove('show');
 }
