@@ -1,1079 +1,857 @@
 /*!
- * Playbook Core — MDA Capstone Copper  v1.0
- * ──────────────────────────────────────────
- * Incluye: glosario emergente editable · secciones de contexto · asistente IA
- * Requiere: localStorage · Para IA: proxy.py corriendo en localhost:5001
+ * auth-roles.js — MDA Playbook  v2.0
+ * ────────────────────────────────────
+ * Maneja: autenticación con Google OAuth · gestión de roles · panel de admin
+ *         · visibilidad de procedimientos · logout
  *
- * Para activar Modo Edición: clic en el botón ⚙ → clave Tres60admin
+ * Requiere: workerUrl configurado en playbook-core.js (o window.WORKER_URL)
  */
 (function () {
 'use strict';
- 
-// ═══════════════════════════════════════════════════════════════════════
-// CONFIGURACIÓN
-// ═══════════════════════════════════════════════════════════════════════
-var CFG = {
-  adminPwd    : 'Tres60admin',
-  glossaryKey : 'mda_glossary',
-  ctxPfx      : 'mda_ctx_',
-  // ▼ PEGA AQUÍ LA URL DE TU CLOUDFLARE WORKER después del despliegue
-  // Ejemplo: 'https://mda-playbook.tuusuario.workers.dev'
-  // Déjalo vacío ('') para usar solo localStorage (sin sincronización)
-  workerUrl   : '',
-  primary     : '#0057a8',
-  accent      : '#ff6b00',
-  dark        : '#1a1a2e',
+
+// ── Estado global ────────────────────────────────────────────────────────────
+window.PlaybookAuth = {
+  user       : null,    // { email, name, picture, role }
+  hiddenProcs: [],      // SOP IDs ocultos para agentes
+  workerUrl  : '',
+  session    : '',
+  ready      : false,
+  onReady    : null,    // callback cuando auth está lista
 };
- 
-// ═══════════════════════════════════════════════════════════════════════
-// ESTADO
-// ═══════════════════════════════════════════════════════════════════════
-var editMode   = false;
-var sopId      = '';
-var sopTitle   = '';
-var selText    = '';
- 
-// ═══════════════════════════════════════════════════════════════════════
-// ARRANQUE
-// ═══════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function () {
-  sopId    = extractSopId();
-  sopTitle = (document.title || '').split('—').slice(1).join('—').trim();
- 
-  injectCSS();
-  buildGlossaryPanel();
-  buildPasswordModal();
-  buildTermEditorModal();
-  buildAIPanel();
-  buildAdminButton();
-  buildContextSections();
- 
-  applyGlossaryTerms();
-  renderContextSections();
-  listenTermClicks();
-  initFromWorker();   // carga datos desde Cloudflare KV si workerUrl está configurada
-});
- 
-// ──────────────────────────────────────────
-// HELPERS
-// ──────────────────────────────────────────
-function extractSopId() {
-  var el = document.querySelector('.sop-id');
-  if (!el) return 'SOP-DESCONOCIDO';
-  var m = el.textContent.match(/SOP-[A-Z]+-\d+/);
-  return m ? m[0] : 'SOP-DESCONOCIDO';
-}
- 
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
- 
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
- 
-function lsGet(key) {
-  try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
-}
- 
-function lsSet(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
-}
- 
-// ═══════════════════════════════════════════════════════════════════════
-// CSS INYECTADO
-// ═══════════════════════════════════════════════════════════════════════
+
+var A = window.PlaybookAuth;
+
+// ── CSS ─────────────────────────────────────────────────────────────────────
 function injectCSS() {
   var css = [
-    /* ── Término del glosario ── */
-    '.gl-term{color:'+CFG.primary+';border-bottom:2px dotted '+CFG.accent+';cursor:pointer;padding:1px 3px;border-radius:3px;font-weight:600;transition:background .12s}',
-    '.gl-term:hover{background:#fff0e0;color:'+CFG.accent+'}',
- 
-    /* ── Panel glosario ── */
-    '#gl-overlay{position:fixed;inset:0;background:rgba(10,10,30,.45);z-index:800;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px)}',
-    '#gl-overlay.open{opacity:1;pointer-events:all}',
-    '#gl-panel{position:fixed;right:-440px;top:0;width:420px;height:100vh;background:#fff;box-shadow:-6px 0 40px rgba(0,0,0,.18);z-index:801;transition:right .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}',
-    '#gl-panel.open{right:0}',
-    '#gl-panel-hdr{background:linear-gradient(135deg,'+CFG.primary+',#003d7a);color:#fff;padding:18px 20px;flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start}',
-    '#gl-panel-cat{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.75;margin-bottom:4px}',
-    '#gl-panel-title{font-size:18px;font-weight:800}',
-    '#gl-close-btn{background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:16px;line-height:1;margin-top:2px}',
-    '#gl-close-btn:hover{background:rgba(255,255,255,.35)}',
-    '#gl-panel-body{padding:20px;overflow-y:auto;flex:1;font-size:13px;color:#444;line-height:1.6}',
-    '#gl-panel-body h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+CFG.primary+';margin:14px 0 6px;padding-bottom:5px;border-bottom:1px solid #eef1f7}',
-    '#gl-panel-body h4:first-child{margin-top:0}',
-    '#gl-panel-body p{margin-bottom:8px}',
-    '#gl-panel-body ul{padding-left:0;list-style:none}',
-    '#gl-panel-body li{padding:3px 0 3px 14px;position:relative}',
-    '#gl-panel-body li::before{content:"›";position:absolute;left:0;color:'+CFG.primary+';font-weight:700}',
-    '#gl-panel-actions{padding:12px 20px;border-top:1px solid #eef1f7;flex-shrink:0;display:flex;gap:8px}',
-    '.gl-action-btn{flex:1;border:none;cursor:pointer;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;transition:background .12s}',
-    '.gl-edit-btn{background:'+CFG.primary+';color:#fff}',
-    '.gl-edit-btn:hover{background:#003d7a}',
-    '.gl-del-btn{background:#fde8e8;color:#c0392b}',
-    '.gl-del-btn:hover{background:#f5c6c6}',
- 
-    /* ── Burbuja selección ── */
-    '#gl-sel-bubble{position:fixed;background:'+CFG.accent+';color:#fff;border:none;cursor:pointer;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;z-index:900;box-shadow:0 4px 16px rgba(0,0,0,.25);display:none;white-space:nowrap;pointer-events:all}',
-    '#gl-sel-bubble:hover{background:#cc5500}',
- 
-    /* ── Botón admin (fijo bottom-left) ── */
-    '#admin-fab{position:fixed;bottom:28px;left:28px;background:'+CFG.dark+';color:#fff;border:none;cursor:pointer;border-radius:30px;padding:9px 16px;font-size:12px;font-weight:700;letter-spacing:.3px;z-index:700;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background .15s}',
-    '#admin-fab.active{background:'+CFG.accent+'}',
-    '#admin-fab:hover{background:'+CFG.primary+'}',
- 
-    /* ── Modo edición: ribete naranja ── */
-    'body.edit-mode .paso-body p,body.edit-mode .paso-body{cursor:text;border-radius:4px}',
-    'body.edit-mode .paso-body p::selection{background:rgba(255,107,0,.25)}',
-    '.edit-mode-banner{background:'+CFG.accent+';color:#fff;text-align:center;padding:7px;font-size:12px;font-weight:700;letter-spacing:.3px;display:none;position:sticky;top:0;z-index:600}',
-    'body.edit-mode .edit-mode-banner{display:block}',
- 
-    /* ── Modales compartidos ── */
-    '.pc-modal-overlay{position:fixed;inset:0;background:rgba(10,10,30,.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}',
-    '.pc-modal-overlay.open{display:flex}',
-    '.pc-modal{background:#fff;border-radius:14px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}',
-    '.pc-modal-hdr{background:linear-gradient(135deg,'+CFG.primary+',#003d7a);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}',
-    '.pc-modal-hdr strong{font-size:15px}',
-    '.pc-modal-x{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.8;line-height:1}',
-    '.pc-modal-x:hover{opacity:1}',
-    '.pc-modal-body{padding:20px;display:flex;flex-direction:column;gap:12px}',
-    '.pc-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}',
-    '.pc-input,.pc-select,.pc-textarea{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;transition:border-color .15s}',
-    '.pc-input:focus,.pc-select:focus,.pc-textarea:focus{border-color:'+CFG.primary+';box-shadow:0 0 0 3px rgba(0,87,168,.1)}',
-    '.pc-textarea{resize:vertical;min-height:80px}',
-    '.pc-modal-ftr{padding:14px 20px;border-top:1px solid #eef1f7;display:flex;gap:10px;justify-content:flex-end}',
-    '.pc-btn-primary{background:'+CFG.primary+';color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700;transition:background .15s}',
-    '.pc-btn-primary:hover{background:#003d7a}',
-    '.pc-btn-secondary{background:#f0f3f8;color:#555;border:1.5px solid #d0d8e8;cursor:pointer;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600}',
-    '.pc-btn-secondary:hover{background:#e8ecf3}',
-    '.pc-error-msg{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;display:none}',
-    '.pc-ref-label{background:#f7f9fc;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;color:'+CFG.primary+';font-family:monospace}',
- 
-    /* ── Secciones de contexto ── */
-    '#sop-ctx{max-width:1100px;margin:0 auto 20px;padding:0 20px}',
-    '.ctx-block{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-bottom:8px}',
-    '.ctx-trigger{width:100%;background:none;border:none;text-align:left;padding:14px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background .12s}',
-    '.ctx-trigger:hover{background:#f7f9fc}',
-    '.ctx-trigger-left{display:flex;align-items:center;gap:10px}',
-    '.ctx-ico{font-size:18px;width:26px;text-align:center}',
-    '.ctx-lbl{font-size:14px;font-weight:700;color:#1a1a2e}',
-    '.ctx-count{background:#eef1f7;color:#555;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}',
-    '.ctx-arrow{color:#aaa;font-size:12px;transition:transform .2s}',
-    '.ctx-trigger.open .ctx-arrow{transform:rotate(90deg)}',
-    '.ctx-body{display:none;padding:4px 18px 16px}',
-    '.ctx-trigger.open + .ctx-body{display:block}',
- 
-    /* Contactos */
-    '.ctx-contacts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px}',
-    '.ctx-contact-card{background:#f7f9fc;border-radius:8px;padding:12px 14px;border-left:3px solid '+CFG.primary+'}',
-    '.ctx-contact-name{font-weight:700;font-size:13px}',
-    '.ctx-contact-role{font-size:11px;color:#888;margin-top:1px}',
-    '.ctx-contact-site{font-size:11px;color:'+CFG.primary+';margin-top:4px;font-weight:600}',
-    '.ctx-contact-info{font-size:11px;color:#555;margin-top:5px;line-height:1.5}',
- 
-    /* Sistemas */
-    '.ctx-sys-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}',
-    '.ctx-sys-table th{background:'+CFG.primary+';color:#fff;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px}',
-    '.ctx-sys-table td{padding:9px 12px;border-bottom:1px solid #f0f3f8;vertical-align:top}',
-    '.ctx-sys-table tr:last-child td{border-bottom:none}',
-    '.ctx-sys-table tr:hover td{background:#f7f9fc}',
-    '.sys-type-it{display:inline-block;background:#e8f0fb;color:'+CFG.primary+';font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}',
-    '.sys-type-ot{display:inline-block;background:#fde8e8;color:#c0392b;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}',
- 
-    /* Errores */
-    '.ctx-error-list{list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:8px}',
-    '.ctx-error-item{background:#fdf4f4;border-radius:8px;padding:12px 14px;border-left:3px solid #c0392b}',
-    '.ctx-error-title{font-weight:700;color:#c0392b;font-size:13px}',
-    '.ctx-error-desc{font-size:12px;color:#555;margin-top:3px}',
-    '.ctx-error-fix{font-size:12px;color:#1a6b3a;margin-top:5px;font-weight:600}',
- 
-    /* Botón add en modo edición */
-    '.ctx-add-btn{background:'+CFG.accent+';color:#fff;border:none;cursor:pointer;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;margin-top:10px;display:none;transition:background .12s}',
-    '.ctx-add-btn:hover{background:#cc5500}',
-    'body.edit-mode .ctx-add-btn{display:inline-block}',
-    '.ctx-del-item{background:none;border:1px solid #ddd;cursor:pointer;border-radius:5px;padding:2px 7px;font-size:10px;color:#c0392b;float:right;margin-left:8px;display:none}',
-    'body.edit-mode .ctx-del-item{display:inline-block}',
-    '.ctx-empty{font-size:12px;color:#aaa;font-style:italic;padding:8px 0}',
- 
-    /* ── AI Chat ── */
-    '#ai-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;background:linear-gradient(135deg,'+CFG.primary+',#7b2d8b);border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 20px rgba(0,87,168,.4);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:700;transition:transform .15s}',
-    '#ai-fab:hover{transform:scale(1.08)}',
-    '#ai-panel{position:fixed;bottom:90px;right:28px;width:360px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:700;display:none;flex-direction:column;overflow:hidden;max-height:520px}',
-    '#ai-panel.open{display:flex}',
-    '#ai-panel-hdr{background:linear-gradient(135deg,'+CFG.primary+',#7b2d8b);padding:13px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}',
-    '#ai-panel-hdr-left{display:flex;align-items:center;gap:10px}',
-    '.ai-avatar{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}',
-    '.ai-name{color:#fff;font-weight:700;font-size:13px}',
-    '.ai-status{color:rgba(255,255,255,.7);font-size:10px;margin-top:1px}',
-    '.ai-x{background:none;border:none;color:#fff;cursor:pointer;font-size:18px;opacity:.8}',
-    '.ai-x:hover{opacity:1}',
-    '#ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;background:#f7f9fc}',
-    '.ai-msg{max-width:85%;font-size:13px;line-height:1.5}',
-    '.ai-msg-bot{align-self:flex-start}',
-    '.ai-msg-user{align-self:flex-end}',
-    '.ai-bubble{padding:9px 13px;border-radius:14px}',
-    '.ai-msg-bot .ai-bubble{background:#fff;border-radius:4px 14px 14px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);color:#1a1a2e}',
-    '.ai-msg-user .ai-bubble{background:linear-gradient(135deg,'+CFG.primary+',#003d7a);color:#fff;border-radius:14px 14px 4px 14px}',
-    '.ai-time{font-size:10px;color:#aaa;margin-top:2px;padding:0 3px}',
-    '.ai-msg-bot .ai-time{text-align:left}',
-    '.ai-msg-user .ai-time{text-align:right}',
-    '.ai-cost-bar{background:#e8f0fb;border-top:1px solid #d0ddef;padding:6px 14px;font-size:11px;color:'+CFG.primary+';flex-shrink:0;display:flex;justify-content:space-between}',
-    '#ai-input-row{padding:9px 12px;border-top:1px solid #eef1f7;background:#fff;display:flex;gap:7px;flex-shrink:0}',
-    '#ai-input{flex:1;border:1.5px solid #d0d8e8;border-radius:8px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;color:#1a1a2e}',
-    '#ai-input:focus{border-color:'+CFG.primary+'}',
-    '#ai-send{background:'+CFG.primary+';color:#fff;border:none;cursor:pointer;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:700}',
-    '#ai-send:hover{background:#003d7a}',
-    '#ai-thinking{display:none;padding:8px 12px;background:#fff;margin:4px;border-radius:14px;font-size:12px;color:#aaa;font-style:italic;border-radius:4px 14px 14px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);align-self:flex-start;width:fit-content}',
-  ].join('\n');
- 
+    /* User bar */
+    '#auth-bar{position:fixed;top:0;left:0;right:0;height:40px;background:#1a1a2e;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.3)}',
+    '#auth-bar .ab-brand{color:rgba(255,255,255,.5);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}',
+    '#auth-bar .ab-spacer{flex:1}',
+    '#auth-bar .ab-user{display:flex;align-items:center;gap:8px;color:#fff}',
+    '#auth-bar .ab-avatar{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.3);object-fit:cover}',
+    '#auth-bar .ab-avatar-fallback{width:26px;height:26px;border-radius:50%;background:#0057a8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}',
+    '#auth-bar .ab-name{font-size:12px;font-weight:600}',
+    '#auth-bar .ab-role{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}',
+    '#auth-bar .role-admin{background:#ff6b00;color:#fff}',
+    '#auth-bar .role-agent{background:rgba(255,255,255,.15);color:rgba(255,255,255,.8)}',
+    '#auth-bar .ab-btn{background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);cursor:pointer;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;transition:all .12s}',
+    '#auth-bar .ab-btn:hover{background:rgba(255,255,255,.1);color:#fff}',
+    '#auth-bar .ab-btn.admin-btn{background:#ff6b00;border-color:#ff6b00;color:#fff}',
+    '#auth-bar .ab-btn.admin-btn:hover{background:#cc5500}',
+    'body{padding-top:40px}',  /* espacio para el auth-bar */
+
+    /* Badges de procedimiento oculto */
+    '.proc-hidden-badge{display:inline-block;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}',
+    '.btn-toggle-vis{background:none;border:1.5px solid #d0d8e8;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:12px;color:#888;transition:all .12s;white-space:nowrap}',
+    '.btn-toggle-vis.is-hidden{background:#fff8e1;border-color:#f59e0b;color:#b45309}',
+    '.btn-toggle-vis:hover{border-color:#0057a8;color:#0057a8}',
+
+    /* Modal admin — base */
+    '#admin-panel-overlay{position:fixed;inset:0;background:rgba(10,10,30,.6);z-index:1200;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;backdrop-filter:blur(4px)}',
+    '#admin-panel-overlay.open{display:flex}',
+    '#admin-panel{background:#fff;border-radius:16px;width:100%;max-width:800px;margin:auto;box-shadow:0 24px 80px rgba(0,0,0,.35);overflow:hidden}',
+    '#admin-panel-hdr{background:linear-gradient(135deg,#1a1a2e,#0057a8);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}',
+    '#admin-panel-hdr h2{font-size:18px;font-weight:800}',
+    '#admin-panel-hdr .user-tag{font-size:12px;opacity:.75;margin-top:2px}',
+    '.admin-x{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:.8;line-height:1}',
+    '.admin-x:hover{opacity:1}',
+
+    /* Tabs */
+    '.admin-tabs{display:flex;border-bottom:2px solid #f0f3f8;background:#fafbfc}',
+    '.admin-tab{padding:12px 20px;cursor:pointer;font-size:13px;font-weight:600;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .12s}',
+    '.admin-tab.active{color:#0057a8;border-bottom-color:#0057a8}',
+    '.admin-tab-body{display:none;padding:20px}',
+    '.admin-tab-body.active{display:block}',
+
+    /* Tabla de usuarios */
+    '.roles-table{width:100%;border-collapse:collapse;font-size:13px}',
+    '.roles-table th{background:#f7f9fc;color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:9px 12px;text-align:left;border-bottom:1px solid #eef1f7}',
+    '.roles-table td{padding:10px 12px;border-bottom:1px solid #f5f7fa;vertical-align:middle}',
+    '.roles-table tr:last-child td{border-bottom:none}',
+    '.user-avatar-sm{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #eef1f7}',
+    '.role-select{border:1.5px solid #d0d8e8;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;outline:none}',
+    '.role-select:focus{border-color:#0057a8}',
+    '.btn-del-user{background:none;border:1px solid #fca5a5;color:#c0392b;cursor:pointer;border-radius:6px;padding:3px 9px;font-size:11px}',
+    '.btn-del-user:hover{background:#fde8e8}',
+
+    /* Procedimientos visibilidad */
+    '.vis-list{display:flex;flex-direction:column;gap:8px}',
+    '.vis-item{display:flex;align-items:center;justify-content:space-between;background:#f7f9fc;border-radius:8px;padding:10px 14px}',
+    '.vis-item.is-hidden{background:#fff8e1;border:1px solid #fde68a}',
+    '.vis-item-id{font-family:monospace;font-size:12px;font-weight:700;color:#0057a8}',
+    '.vis-item-title{font-size:12px;color:#555;margin-top:2px}',
+    '.vis-toggle{cursor:pointer;background:none;border:none;font-size:18px;transition:transform .15s}',
+    '.vis-toggle:hover{transform:scale(1.2)}',
+
+    /* Botones panel */
+    '.ap-btn-primary{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;transition:background .12s}',
+    '.ap-btn-primary:hover{background:#003d7a}',
+    '.ap-note{background:#e8f0fb;border-radius:8px;padding:10px 12px;font-size:12px;color:#0057a8;margin-bottom:14px}',
+  ].join('');
+
   var st = document.createElement('style');
-  st.id = 'playbook-core-css';
   st.textContent = css;
   document.head.appendChild(st);
 }
- 
-// ═══════════════════════════════════════════════════════════════════════
-// PANEL DE GLOSARIO (solo lectura)
-// ═══════════════════════════════════════════════════════════════════════
-function buildGlossaryPanel() {
-  var overlay = el('div', {id:'gl-overlay'});
-  overlay.addEventListener('click', closeGlossaryPanel);
- 
-  var panel = el('div', {id:'gl-panel'});
-  panel.innerHTML = [
-    '<div id="gl-panel-hdr">',
-    '  <div><div id="gl-panel-cat"></div><div id="gl-panel-title"></div></div>',
-    '  <button id="gl-close-btn" onclick="void(0)">✕</button>',
-    '</div>',
-    '<div id="gl-panel-body"></div>',
-    '<div id="gl-panel-actions">',
-    '  <button class="gl-action-btn gl-edit-btn" id="gl-edit-btn" style="display:none">✏️ Editar definición</button>',
-    '  <button class="gl-action-btn gl-del-btn" id="gl-del-btn" style="display:none">🗑 Eliminar término</button>',
-    '</div>',
-  ].join('');
- 
-  document.body.appendChild(overlay);
-  document.body.appendChild(panel);
- 
-  document.getElementById('gl-close-btn').addEventListener('click', closeGlossaryPanel);
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeGlossaryPanel(); });
-}
- 
-function openGlossaryPanel(key) {
-  var g = getGlossary();
-  var def = g[key];
-  if (!def) return;
- 
-  document.getElementById('gl-panel-cat').textContent   = def.category || 'Término';
-  document.getElementById('gl-panel-title').textContent = def.title || key;
-  document.getElementById('gl-panel-body').innerHTML    = def.content || '<p>Sin definición.</p>';
- 
-  var editBtn = document.getElementById('gl-edit-btn');
-  var delBtn  = document.getElementById('gl-del-btn');
-  editBtn.style.display = editMode ? '' : 'none';
-  delBtn.style.display  = editMode ? '' : 'none';
-  editBtn.onclick = function(){ openTermEditor(key, def); };
-  delBtn.onclick  = function(){ deleteTerm(key); };
- 
-  document.getElementById('gl-overlay').classList.add('open');
-  document.getElementById('gl-panel').classList.add('open');
-}
- 
-function closeGlossaryPanel() {
-  document.getElementById('gl-overlay').classList.remove('open');
-  document.getElementById('gl-panel').classList.remove('open');
-}
- 
-// ═══════════════════════════════════════════════════════════════════════
-// GLOSARIO — STORAGE (localStorage + Cloudflare KV)
-// ═══════════════════════════════════════════════════════════════════════
-function getGlossary() {
-  return lsGet(CFG.glossaryKey) || {};
-}
- 
-function saveGlossaryTerm(key, data) {
-  // 1. Actualizar cache local inmediatamente (sin esperar red)
-  var g = getGlossary();
-  g[key] = data;
-  lsSet(CFG.glossaryKey, g);
-  applyGlossaryTerms();
- 
-  // 2. Sincronizar con KV en segundo plano
-  if (CFG.workerUrl) {
-    fetch(CFG.workerUrl + '/glossary', {
-      method  : 'POST',
-      headers : { 'Content-Type': 'application/json', 'X-Admin-Key': CFG.adminPwd },
-      body    : JSON.stringify({ key: key, data: data }),
-    }).catch(function(e) { console.warn('[Playbook] KV sync error:', e.message); });
+
+// ── Inicialización ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  // Leer workerUrl del playbook-core (si existe) o del localStorage
+  A.workerUrl = (window.CFG && CFG.workerUrl) || localStorage.getItem('mda_worker_url') || '';
+  A.session   = localStorage.getItem('mda_session') || '';
+
+  // Capturar session de la URL (viene del OAuth callback)
+  var urlParams = new URLSearchParams(window.location.search);
+  var sessionFromUrl = urlParams.get('session');
+  if (sessionFromUrl) {
+    A.session = sessionFromUrl;
+    localStorage.setItem('mda_session', sessionFromUrl);
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
-}
- 
-function deleteTerm(key) {
-  if (!confirm('¿Eliminar el término "' + key + '"? Se quitará el resaltado de todos los procedimientos.')) return;
-  var g = getGlossary();
-  delete g[key];
-  lsSet(CFG.glossaryKey, g);
-  closeGlossaryPanel();
-  applyGlossaryTerms();
- 
-  if (CFG.workerUrl) {
-    fetch(CFG.workerUrl + '/glossary/' + encodeURIComponent(key), {
-      method  : 'DELETE',
-      headers : { 'X-Admin-Key': CFG.adminPwd },
-    }).catch(function(e) { console.warn('[Playbook] KV delete error:', e.message); });
+
+  injectCSS();
+  buildAuthBar();
+
+  if (!A.session) {
+    redirectToLogin(); return;
   }
-}
- 
-// ── Carga inicial desde KV (si workerUrl está configurado) ──────────────────
-function initFromWorker() {
-  if (!CFG.workerUrl) return;
- 
-  // Glosario compartido
-  fetch(CFG.workerUrl + '/glossary')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.glossary && Object.keys(d.glossary).length > 0) {
-        lsSet(CFG.glossaryKey, d.glossary);  // actualizar cache local
-        applyGlossaryTerms();
-      }
-    })
-    .catch(function(e) { console.warn('[Playbook] No se pudo cargar el glosario del Worker:', e.message); });
- 
-  // Contexto del SOP actual
-  ['contacts','systems','errors'].forEach(function(type) {
-    fetch(CFG.workerUrl + '/context/' + sopId + '/' + type)
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d.data && d.data.length > 0) {
-          lsSet(CFG.ctxPfx + sopId + '_' + type, d.data);
-          renderContextSections();
-        }
-      })
-      .catch(function() {});  // silencioso: usa localStorage como fallback
-  });
-}
- 
-// ═══════════════════════════════════════════════════════════════════════
-// APLICAR TÉRMINOS DEL GLOSARIO AL TEXTO
-// ═══════════════════════════════════════════════════════════════════════
-function applyGlossaryTerms() {
-  var targets = document.querySelectorAll(
-    '.paso-body p, .paso-body div, .escalamiento li, .cierre li, .nota, .notas-box, .esc-text, .proc-desc, .proc-titulo'
-  );
- 
-  targets.forEach(function(el) {
-    // Guardar HTML original la primera vez
-    if (!el.dataset.origHtml) el.dataset.origHtml = el.innerHTML;
-    el.innerHTML = el.dataset.origHtml;
-  });
- 
-  var g = getGlossary();
-  var keys = Object.keys(g);
-  if (keys.length === 0) { listenTermClicks(); return; }
- 
-  targets.forEach(function(container) {
-    keys.forEach(function(key) {
-      var def = g[key];
-      var display = def.displayText || key;
-      try {
-        var re = new RegExp('(?<![\\w\\-])' + escapeRe(display) + '(?![\\w\\-])', 'gi');
-        container.innerHTML = container.innerHTML.replace(re, function(m) {
-          return '<span class="gl-term" data-key="' + key + '">' + m + '</span>';
-        });
-      } catch(e) {}
-    });
-  });
- 
-  listenTermClicks();
-}
- 
-function listenTermClicks() {
-  document.querySelectorAll('.gl-term').forEach(function(span) {
-    span.onclick = function(e) {
-      e.stopPropagation();
-      openGlossaryPanel(this.dataset.key);
-    };
-  });
-}
- 
-// ═══════════════════════════════════════════════════════════════════════
-// BURBUJA DE SELECCIÓN (modo edición)
-// ═══════════════════════════════════════════════════════════════════════
-function buildSelectionBubble() {
-  var bubble = el('button', {id:'gl-sel-bubble'});
-  bubble.textContent = '＋ Agregar al glosario';
-  bubble.addEventListener('click', function() {
-    bubble.style.display = 'none';
-    openTermEditor(null, {displayText: selText});
-  });
-  document.body.appendChild(bubble);
-}
- 
-function handleSelection() {
-  if (!editMode) return;
-  var sel = window.getSelection();
-  if (!sel || sel.isCollapsed) { hideSelBubble(); return; }
-  var txt = sel.toString().trim();
-  if (txt.length < 2 || txt.length > 60) { hideSelBubble(); return; }
- 
-  // Verificar que la selección está dentro del contenido del paso
-  var range = sel.getRangeAt(0);
-  var ancestor = range.commonAncestorContainer;
-  var inStep = false;
-  var node = ancestor.nodeType === 3 ? ancestor.parentNode : ancestor;
-  while (node && node !== document.body) {
-    if (node.classList && (node.classList.contains('paso-body') || node.classList.contains('card-body') || node.classList.contains('step-body'))) {
-      inStep = true; break;
-    }
-    node = node.parentNode;
-  }
-  if (!inStep) { hideSelBubble(); return; }
- 
-  selText = txt;
-  var rect = range.getBoundingClientRect();
-  var bubble = document.getElementById('gl-sel-bubble');
-  bubble.style.display = 'block';
-  bubble.style.top  = (window.scrollY + rect.top - 44) + 'px';
-  bubble.style.left = (window.scrollX + rect.left + rect.width/2 - bubble.offsetWidth/2) + 'px';
-}
- 
-function hideSelBubble() {
-  var b = document.getElementById('gl-sel-bubble');
-  if (b) b.style.display = 'none';
-  selText = '';
-}
- 
-// ═══════════════════════════════════════════════════════════════════════
-// EDITOR DE TÉRMINOS (modal)
-// ═══════════════════════════════════════════════════════════════════════
-function buildTermEditorModal() {
-  var modal = el('div', {id:'term-editor-overlay', className:'pc-modal-overlay'});
-  modal.innerHTML = [
-    '<div class="pc-modal" style="max-width:560px">',
-    '  <div class="pc-modal-hdr">',
-    '    <strong id="term-editor-hdr-title">Agregar término al glosario</strong>',
-    '    <button class="pc-modal-x" id="term-editor-x">×</button>',
-    '  </div>',
-    '  <div class="pc-modal-body">',
-    '    <div class="pc-ref-label" id="term-editor-sop-ref">'+sopId+'</div>',
-    '    <div>',
-    '      <div class="pc-label">Texto que aparece en el procedimiento</div>',
-    '      <input class="pc-input" id="te-display" placeholder="Ej: supervisor autorizado">',
-    '    </div>',
-    '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">',
-    '      <div>',
-    '        <div class="pc-label">Título del panel</div>',
-    '        <input class="pc-input" id="te-title" placeholder="Ej: Supervisores Autorizados">',
-    '      </div>',
-    '      <div>',
-    '        <div class="pc-label">Categoría</div>',
-    '        <select class="pc-select" id="te-cat">',
-    '          <option value="Autorización">Autorización</option>',
-    '          <option value="Contacto">Contacto</option>',
-    '          <option value="Sistema">Sistema</option>',
-    '          <option value="Proceso">Proceso</option>',
-    '          <option value="Herramienta">Herramienta</option>',
-    '          <option value="Concepto técnico">Concepto técnico</option>',
-    '          <option value="Procedimiento relacionado">Procedimiento relacionado</option>',
-    '          <option value="Otro">Otro</option>',
-    '        </select>',
-    '      </div>',
-    '    </div>',
-    '    <div>',
-    '      <div class="pc-label">Definición / Contenido del panel (HTML permitido)</div>',
-    '      <textarea class="pc-textarea" id="te-content" rows="6"',
-    '        placeholder="Escribe la definición. Puedes usar HTML básico:\n&lt;p&gt;texto&lt;/p&gt;\n&lt;h4&gt;Sección&lt;/h4&gt;\n&lt;ul&gt;&lt;li&gt;item&lt;/li&gt;&lt;/ul&gt;\n\nEjemplo de contacto:\n&lt;h4&gt;Contactos por sitio&lt;/h4&gt;\n&lt;p&gt;&lt;strong&gt;MVE:&lt;/strong&gt; Patricio Chapana · pchapana@capstone.com&lt;/p&gt;">',
-    '      </textarea>',
-    '    </div>',
-    '    <div class="pc-error-msg" id="te-error">Completa el texto y la definición.</div>',
-    '    <div style="background:#e8f5ee;border-radius:8px;padding:10px 12px;font-size:11px;color:#1a6b3a">',
-    '      💡 Este término quedará resaltado en <strong>todos los SOPs</strong> donde aparezca. Se guarda en el navegador de este equipo.',
-    '    </div>',
-    '  </div>',
-    '  <div class="pc-modal-ftr">',
-    '    <button class="pc-btn-secondary" id="te-cancel">Cancelar</button>',
-    '    <button class="pc-btn-primary" id="te-save">💾 Guardar en glosario</button>',
-    '  </div>',
-    '</div>',
-  ].join('');
- 
-  document.body.appendChild(modal);
- 
-  document.getElementById('term-editor-x').addEventListener('click', closeTermEditor);
-  document.getElementById('te-cancel').addEventListener('click', closeTermEditor);
-  document.getElementById('te-save').addEventListener('click', saveTerm);
-}
- 
-var _editingKey = null;
- 
-function openTermEditor(key, prefill) {
-  _editingKey = key;
-  prefill = prefill || {};
-  document.getElementById('term-editor-hdr-title').textContent = key ? 'Editar término del glosario' : 'Agregar término al glosario';
-  document.getElementById('te-display').value = prefill.displayText || prefill.title || '';
-  document.getElementById('te-title').value   = prefill.title || '';
-  document.getElementById('te-cat').value     = prefill.category || 'Autorización';
-  document.getElementById('te-content').value = (prefill.content || '').replace(/<[^>]+>/g, s => s); // keep HTML
-  document.getElementById('te-error').style.display = 'none';
-  document.getElementById('term-editor-overlay').classList.add('open');
-  document.getElementById('te-display').focus();
-  closeGlossaryPanel();
-}
- 
-function closeTermEditor() {
-  document.getElementById('term-editor-overlay').classList.remove('open');
-  _editingKey = null;
-  window.getSelection && window.getSelection().removeAllRanges();
-  hideSelBubble();
-}
- 
-function saveTerm() {
-  var display  = document.getElementById('te-display').value.trim();
-  var title    = document.getElementById('te-title').value.trim();
-  var cat      = document.getElementById('te-cat').value;
-  var content  = document.getElementById('te-content').value.trim();
- 
-  if (!display || !content) {
-    document.getElementById('te-error').style.display = 'block';
+
+  verifySession();
+});
+
+// ── Verificar sesión ─────────────────────────────────────────────────────────
+function verifySession() {
+  if (!A.workerUrl) {
+    // Sin Worker configurado: modo demo (sin auth real)
+    A.user = { email: 'demo@capstonecopper.com', name: 'Demo', role: 'agent' };
+    A.ready = true;
+    renderAuthBar();
+    loadVisibility();
+    if (A.onReady) A.onReady(A.user);
     return;
   }
- 
-  var key = _editingKey || display.toLowerCase().replace(/[^a-z0-9áéíóúüñ]+/g, '_').replace(/^_|_$/g,'');
-  saveGlossaryTerm(key, {
-    key        : key,
-    displayText: display,
-    title      : title || display,
-    category   : cat,
-    content    : content,
-  });
- 
-  closeTermEditor();
-  showToast('✅ Término "' + display + '" guardado en el glosario.');
+
+  fetch(A.workerUrl + '/auth/me', authHeaders())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.authenticated) { redirectToLogin(); return; }
+      A.user = { email: data.email, name: data.name, picture: data.picture, role: data.role };
+      A.ready = true;
+      renderAuthBar();
+      loadVisibility();
+      if (A.onReady) A.onReady(A.user);
+    })
+    .catch(function() {
+      // Sin conexión al Worker — permitir acceso en modo local
+      A.user = { email: 'local', name: 'Sin conexión', role: 'agent' };
+      A.ready = true;
+      renderAuthBar();
+      if (A.onReady) A.onReady(A.user);
+    });
 }
- 
-// ═══════════════════════════════════════════════════════════════════════
-// MODAL DE CONTRASEÑA
-// ═══════════════════════════════════════════════════════════════════════
-function buildPasswordModal() {
-  var modal = el('div', {id:'pwd-modal-overlay', className:'pc-modal-overlay'});
-  modal.innerHTML = [
-    '<div class="pc-modal" style="max-width:380px">',
-    '  <div class="pc-modal-hdr">',
-    '    <strong>🔐 Modo Edición — Acceso Restringido</strong>',
-    '    <button class="pc-modal-x" id="pwd-x">×</button>',
-    '  </div>',
-    '  <div class="pc-modal-body">',
-    '    <p style="font-size:13px;color:#555">Ingresa la clave de administrador Tres60 para activar el modo de edición del glosario y las secciones de contexto.</p>',
-    '    <div>',
-    '      <div class="pc-label">Clave de acceso</div>',
-    '      <input class="pc-input" type="password" id="pwd-input" placeholder="••••••••••">',
-    '    </div>',
-    '    <div class="pc-error-msg" id="pwd-error">Clave incorrecta.</div>',
-    '  </div>',
-    '  <div class="pc-modal-ftr">',
-    '    <button class="pc-btn-secondary" id="pwd-cancel">Cancelar</button>',
-    '    <button class="pc-btn-primary" id="pwd-ok">Acceder</button>',
-    '  </div>',
-    '</div>',
-  ].join('');
- 
-  document.body.appendChild(modal);
- 
-  document.getElementById('pwd-x').addEventListener('click', closePwdModal);
-  document.getElementById('pwd-cancel').addEventListener('click', closePwdModal);
-  document.getElementById('pwd-ok').addEventListener('click', checkPwd);
-  document.getElementById('pwd-input').addEventListener('keydown', function(e){
-    if(e.key==='Enter') checkPwd();
-  });
+
+function authHeaders() {
+  return { headers: { 'Authorization': 'Bearer ' + A.session, 'Content-Type': 'application/json' } };
 }
- 
-function checkPwd() {
-  var val = document.getElementById('pwd-input').value;
-  if (val === CFG.adminPwd) {
-    closePwdModal();
-    activateEditMode();
-  } else {
-    document.getElementById('pwd-error').style.display = 'block';
-    document.getElementById('pwd-input').value = '';
-    document.getElementById('pwd-input').focus();
+
+function redirectToLogin() {
+  if (!window.location.pathname.includes('login.html')) {
+    window.location.href = 'login.html';
   }
 }
- 
-function closePwdModal() {
-  document.getElementById('pwd-modal-overlay').classList.remove('open');
-  document.getElementById('pwd-input').value = '';
-  document.getElementById('pwd-error').style.display = 'none';
+
+// ── Cargar visibilidad ───────────────────────────────────────────────────────
+function loadVisibility() {
+  if (!A.workerUrl) return;
+  fetch(A.workerUrl + '/admin/visibility', authHeaders())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      A.hiddenProcs = data.hidden || [];
+      applyVisibility();
+    })
+    .catch(function() {});
 }
- 
-// ═══════════════════════════════════════════════════════════════════════
-// BOTÓN ADMINISTRADOR
-// ═══════════════════════════════════════════════════════════════════════
-function buildAdminButton() {
-  // El botón de modo edición solo en SOPs individuales
-  if (!document.querySelector('.sop-id')) return;
-  var btn = el('button', {id:'admin-fab'});
-  btn.textContent = '⚙ Modo Edición';
-  btn.addEventListener('click', function() {
-    if (!editMode) {
-      document.getElementById('pwd-modal-overlay').classList.add('open');
-      setTimeout(function(){ document.getElementById('pwd-input').focus(); }, 100);
-    } else {
-      deactivateEditMode();
+
+function applyVisibility() {
+  // En el catálogo: ocultar/mostrar filas según rol
+  var isAdmin = A.user && A.user.role === 'admin';
+  document.querySelectorAll('.proc-row[data-sop]').forEach(function(row) {
+    var sop = row.dataset.sop;
+    var hidden = A.hiddenProcs.includes(sop);
+    if (hidden && !isAdmin) {
+      row.style.display = 'none';
+    } else if (hidden && isAdmin) {
+      row.classList.add('proc-hidden');
+      row.style.opacity = '.6';
     }
   });
-  document.body.appendChild(btn);
- 
-  // Banner de aviso en modo edición
-  var banner = el('div', {className:'edit-mode-banner'});
-  banner.textContent = '✏️ MODO EDICIÓN ACTIVO — Selecciona cualquier texto del procedimiento para añadirlo al glosario';
-  document.body.insertBefore(banner, document.body.firstChild);
- 
-  // Burbuja de selección
-  buildSelectionBubble();
-  document.addEventListener('mouseup', handleSelection);
-  document.addEventListener('touchend', handleSelection);
 }
- 
-function activateEditMode() {
-  editMode = true;
-  document.body.classList.add('edit-mode');
-  document.getElementById('admin-fab').textContent = '✔ Salir de Edición';
-  document.getElementById('admin-fab').classList.add('active');
-  renderContextSections(); // re-render con botones de edición
-  showToast('✏️ Modo Edición activado. Selecciona texto para crear términos de glosario.');
-}
- 
-function deactivateEditMode() {
-  editMode = false;
-  document.body.classList.remove('edit-mode');
-  document.getElementById('admin-fab').textContent = '⚙ Modo Edición';
-  document.getElementById('admin-fab').classList.remove('active');
-  hideSelBubble();
-  renderContextSections();
-}
- 
-// ═══════════════════════════════════════════════════════════════════════
-// SECCIONES DE CONTEXTO
-// ═══════════════════════════════════════════════════════════════════════
-function buildContextSections() {
-  // Solo mostrar en páginas SOP individuales (tienen elemento .sop-id)
-  // NO mostrar en el catálogo principal
-  if (!document.querySelector('.sop-id')) return;
- 
-  var container = document.getElementById('sop-ctx');
-  if (!container) {
-    container = el('div', {id:'sop-ctx'});
-    var fbSection = document.querySelector('.fb-section');
-    var footer    = document.querySelector('.footer');
-    var ref = fbSection || footer;
-    if (ref) ref.parentNode.insertBefore(container, ref);
-    else document.body.appendChild(container);
-  }
-}
- 
-function renderContextSections() {
-  // Solo en páginas SOP individuales
-  if (!document.querySelector('.sop-id')) return;
-  var container = document.getElementById('sop-ctx');
-  if (!container) return;
- 
-  var contacts = lsGet(CFG.ctxPfx + sopId + '_contacts') || [];
-  var systems  = lsGet(CFG.ctxPfx + sopId + '_systems')  || [];
-  var errors   = lsGet(CFG.ctxPfx + sopId + '_errors')   || [];
- 
-  container.innerHTML = [
-    '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding:0 2px">📚 Contexto Operacional</div>',
-    buildContactsSection(contacts),
-    buildSystemsSection(systems),
-    buildErrorsSection(errors),
+
+// ── Auth Bar ─────────────────────────────────────────────────────────────────
+function buildAuthBar() {
+  var bar = document.createElement('div');
+  bar.id = 'auth-bar';
+  bar.innerHTML = [
+    '<span class="ab-brand">Playbook MDA · Capstone</span>',
+    '<div class="ab-spacer"></div>',
+    '<div id="ab-user-area"></div>',
   ].join('');
- 
-  attachCtxEvents();
+  document.body.insertBefore(bar, document.body.firstChild);
 }
- 
-// ── Contactos ──
-function buildContactsSection(contacts) {
-  var cards = contacts.length === 0
-    ? '<p class="ctx-empty">Sin contactos registrados aún.</p>'
-    : contacts.map(function(c) {
-        return [
-          '<div class="ctx-contact-card">',
-          '  <button class="ctx-del-item" data-type="contacts" data-id="'+c.id+'" title="Eliminar">✕</button>',
-          '  <div class="ctx-contact-name">'+esc(c.name)+'</div>',
-          '  <div class="ctx-contact-role">'+esc(c.role)+'</div>',
-          '  <div class="ctx-contact-site">'+esc(c.site)+'</div>',
-          '  <div class="ctx-contact-info">'+esc(c.email) + (c.phone ? '<br>'+esc(c.phone) : '')+'</div>',
-          '</div>',
-        ].join('');
-      }).join('');
- 
-  return ctxSection('📋', 'Contactos Clave', contacts.length,
-    '<div class="ctx-contacts-grid">' + cards + '</div>' +
-    '<button class="ctx-add-btn" data-modal="contact-modal">＋ Agregar contacto</button>'
-  );
-}
- 
-// ── Sistemas ──
-function buildSystemsSection(systems) {
-  var rows = systems.length === 0
-    ? '<tr><td colspan="4" class="ctx-empty" style="padding:10px">Sin sistemas registrados.</td></tr>'
-    : systems.map(function(s) {
-        return '<tr>' +
-          '<td><strong>'+esc(s.name)+'</strong></td>' +
-          '<td>'+esc(s.desc)+'</td>' +
-          '<td><code style="font-size:11px">'+esc(s.access)+'</code></td>' +
-          '<td><span class="sys-type-'+(s.type==='OT'?'ot':'it')+'">'+esc(s.type)+'</span></td>' +
-          '<td style="width:30px"><button class="ctx-del-item" data-type="systems" data-id="'+s.id+'">✕</button></td>' +
-          '</tr>';
-      }).join('');
- 
-  return ctxSection('💻', 'Sistemas Involucrados', systems.length,
-    '<table class="ctx-sys-table">' +
-    '<thead><tr><th>Sistema</th><th>Rol en este procedimiento</th><th>Cómo acceder</th><th>Tipo</th><th></th></tr></thead>' +
-    '<tbody>' + rows + '</tbody></table>' +
-    '<button class="ctx-add-btn" data-modal="system-modal">＋ Agregar sistema</button>'
-  );
-}
- 
-// ── Errores frecuentes ──
-function buildErrorsSection(errors) {
-  var items = errors.length === 0
-    ? '<p class="ctx-empty">Sin errores documentados aún.</p>'
-    : errors.map(function(e) {
-        return [
-          '<li class="ctx-error-item">',
-          '  <button class="ctx-del-item" data-type="errors" data-id="'+e.id+'" title="Eliminar">✕</button>',
-          '  <div class="ctx-error-title">'+esc(e.title)+'</div>',
-          '  <div class="ctx-error-desc">'+esc(e.desc)+'</div>',
-          '  <div class="ctx-error-fix">'+esc(e.fix)+'</div>',
-          '</li>',
-        ].join('');
-      }).join('');
- 
-  return ctxSection('⚠️', 'Errores Frecuentes', errors.length,
-    '<ul class="ctx-error-list">' + items + '</ul>' +
-    '<button class="ctx-add-btn" data-modal="error-modal">＋ Documentar error</button>'
-  );
-}
- 
-function ctxSection(icon, label, count, bodyHtml) {
-  return [
-    '<div class="ctx-block">',
-    '  <button class="ctx-trigger" onclick="this.classList.toggle(\'open\')">',
-    '    <div class="ctx-trigger-left">',
-    '      <span class="ctx-ico">'+icon+'</span>',
-    '      <span class="ctx-lbl">'+label+'</span>',
-    '      <span class="ctx-count">'+count+'</span>',
-    '    </div>',
-    '    <span class="ctx-arrow">▶</span>',
-    '  </button>',
-    '  <div class="ctx-body">'+bodyHtml+'</div>',
+
+function renderAuthBar() {
+  var area = document.getElementById('ab-user-area');
+  if (!area || !A.user) return;
+
+  var isAdmin = A.user.role === 'admin';
+  var avatar  = A.user.picture
+    ? '<img class="ab-avatar" src="' + A.user.picture + '" alt="">'
+    : '<div class="ab-avatar-fallback">' + (A.user.name || 'U')[0].toUpperCase() + '</div>';
+
+  area.innerHTML = [
+    isAdmin ? '<button class="ab-btn admin-btn" onclick="window.PlaybookAuth.openAdminPanel()">⚙ Admin</button>' : '',
+    '<div class="ab-user">',
+    avatar,
+    '<span class="ab-name">' + escH(A.user.name || A.user.email) + '</span>',
+    '<span class="ab-role ' + (isAdmin ? 'role-admin' : 'role-agent') + '">' + (isAdmin ? 'Admin' : 'Agente') + '</span>',
     '</div>',
+    '<button class="ab-btn" onclick="window.PlaybookAuth.logout()">Salir</button>',
   ].join('');
 }
- 
-function attachCtxEvents() {
-  // Botones eliminar
-  document.querySelectorAll('.ctx-del-item').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var type = this.dataset.type;
-      var id   = this.dataset.id;
-      if (!confirm('¿Eliminar este elemento?')) return;
-      var arr = lsGet(CFG.ctxPfx + sopId + '_' + type) || [];
-      arr = arr.filter(function(x){ return x.id !== id; });
-      lsSet(CFG.ctxPfx + sopId + '_' + type, arr);
-      renderContextSections();
-    });
-  });
- 
-  // Botones agregar
-  document.querySelectorAll('.ctx-add-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      openCtxModal(this.dataset.modal);
-    });
-  });
-}
- 
-// ── Modales para agregar items de contexto ──
-function openCtxModal(type) {
-  var modals = {
-    'contact-modal': buildContactModal,
-    'system-modal' : buildSystemModal,
-    'error-modal'  : buildErrorModal,
-  };
-  if (modals[type]) modals[type]();
-}
- 
-function buildContactModal() {
-  promptModal('➕ Agregar Contacto Clave', [
-    {id:'cm-name',  label:'Nombre',        ph:'Ej: Pablo Piombi'},
-    {id:'cm-role',  label:'Cargo / Rol',   ph:'Ej: ADC — Technology Manager'},
-    {id:'cm-site',  label:'Faena / Sitio', ph:'Ej: ⛏️ Mantoverde / Mantos Blancos'},
-    {id:'cm-email', label:'Correo',        ph:'usuario@capstonecopper.com'},
-    {id:'cm-phone', label:'Teléfono (opc)',ph:'+56 9 XXXX XXXX'},
-  ], function(vals) {
-    if (!vals['cm-name'] || !vals['cm-email']) return 'Nombre y correo son obligatorios.';
-    var arr = lsGet(CFG.ctxPfx + sopId + '_contacts') || [];
-    arr.push({id:uid(), name:vals['cm-name'], role:vals['cm-role'], site:vals['cm-site'], email:vals['cm-email'], phone:vals['cm-phone']});
-    lsSet(CFG.ctxPfx + sopId + '_contacts', arr);
-    renderContextSections();
-    syncContextToKV('contacts', arr);
-  });
-}
- 
-function buildSystemModal() {
-  promptModal('➕ Agregar Sistema Involucrado', [
-    {id:'sm-name',   label:'Nombre del sistema', ph:'Ej: Active Directory'},
-    {id:'sm-desc',   label:'Rol en este procedimiento', ph:'Ej: Deshabilitar la cuenta del usuario'},
-    {id:'sm-access', label:'Cómo acceder', ph:'Ej: dsa.msc o admanager.capstonecopper.com'},
-    {id:'sm-type',   label:'Tipo (IT u OT)', ph:'IT', type:'select', options:['IT','OT']},
-  ], function(vals) {
-    if (!vals['sm-name']) return 'El nombre del sistema es obligatorio.';
-    var arr = lsGet(CFG.ctxPfx + sopId + '_systems') || [];
-    arr.push({id:uid(), name:vals['sm-name'], desc:vals['sm-desc'], access:vals['sm-access'], type:vals['sm-type']||'IT'});
-    lsSet(CFG.ctxPfx + sopId + '_systems', arr);
-    renderContextSections();
-    syncContextToKV('systems', arr);
-  });
-}
- 
-function buildErrorModal() {
-  promptModal('➕ Documentar Error Frecuente', [
-    {id:'em-title', label:'Título del error',           ph:'Ej: Las sesiones M365 no se cierran al deshabilitar AD'},
-    {id:'em-desc',  label:'Descripción del problema',   ph:'Qué pasa y cuándo ocurre...', type:'textarea'},
-    {id:'em-fix',   label:'Solución / Cómo evitarlo',  ph:'Qué debe hacer el agente...', type:'textarea'},
-  ], function(vals) {
-    if (!vals['em-title'] || !vals['em-fix']) return 'Título y solución son obligatorios.';
-    var arr = lsGet(CFG.ctxPfx + sopId + '_errors') || [];
-    arr.push({id:uid(), title:vals['em-title'], desc:vals['em-desc'], fix:vals['em-fix']});
-    lsSet(CFG.ctxPfx + sopId + '_errors', arr);
-    renderContextSections();
-    syncContextToKV('errors', arr);
-  });
-}
- 
-// Modal genérico de formulario
-function promptModal(title, fields, onSave) {
-  var existing = document.getElementById('prompt-modal-overlay');
-  if (existing) existing.remove();
- 
-  var fieldsHtml = fields.map(function(f) {
-    var input = f.type === 'textarea'
-      ? '<textarea class="pc-textarea" id="'+f.id+'" placeholder="'+esc(f.ph)+'" rows="3"></textarea>'
-      : f.type === 'select'
-        ? '<select class="pc-select" id="'+f.id+'">' + (f.options||[]).map(function(o){ return '<option>'+o+'</option>'; }).join('') + '</select>'
-        : '<input class="pc-input" type="text" id="'+f.id+'" placeholder="'+esc(f.ph)+'">';
-    return '<div><div class="pc-label">'+esc(f.label)+'</div>'+input+'</div>';
-  }).join('');
- 
-  var overlay = el('div', {id:'prompt-modal-overlay', className:'pc-modal-overlay'});
+
+// ── Panel de administración ──────────────────────────────────────────────────
+function openAdminPanel() {
+  var existing = document.getElementById('admin-panel-overlay');
+  if (existing) { existing.classList.add('open'); loadAdminData(); return; }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'admin-panel-overlay';
   overlay.innerHTML = [
-    '<div class="pc-modal">',
-    '  <div class="pc-modal-hdr"><strong>'+esc(title)+'</strong>',
-    '    <button class="pc-modal-x" id="pm-x">×</button>',
+    '<div id="admin-panel">',
+    '  <div id="admin-panel-hdr">',
+    '    <div>',
+    '      <h2>⚙ Panel de Administración</h2>',
+    '      <div class="user-tag">' + escH(A.user.email) + ' · rol: admin</div>',
+    '    </div>',
+    '    <button class="admin-x" onclick="window.PlaybookAuth.closeAdminPanel()">×</button>',
     '  </div>',
-    '  <div class="pc-modal-body">'+fieldsHtml,
-    '    <div class="pc-error-msg" id="pm-error"></div>',
+    '  <div class="admin-tabs">',
+    '    <div class="admin-tab active" data-tab="access" onclick="switchTab(this)">🔑 Gestión de Acceso</div>',
+    '    <div class="admin-tab" data-tab="roles" onclick="switchTab(this)">👥 Roles</div>',
+    '    <div class="admin-tab" data-tab="visibility" onclick="switchTab(this)">👁 Visibilidad</div>',
     '  </div>',
-    '  <div class="pc-modal-ftr">',
-    '    <button class="pc-btn-secondary" id="pm-cancel">Cancelar</button>',
-    '    <button class="pc-btn-primary" id="pm-save">💾 Guardar</button>',
+    '  <div class="admin-tab-body active" id="tab-access">',
+    '    <div class="ap-note">Agrega el correo Google de cada persona que debe tener acceso. Pueden usar gmail.com, correos corporativos o cualquier cuenta Google.</div>',
+    '    <div id="access-add-row" style="display:flex;gap:8px;margin-bottom:14px">',
+    '      <input id="access-new-email" type="email" class="pc-input" placeholder="jorge.palma@tres60.cl" style="flex:1">',
+    '      <button onclick="window.PlaybookAuth.addToWhitelist()" class="ap-btn-primary" style="white-space:nowrap">＋ Agregar acceso</button>',
+    '    </div>',
+    '    <div id="access-container">Cargando lista de acceso...</div>',
+    '  </div>',
+    '  <div class="admin-tab-body" id="tab-roles">',
+    '    <div class="ap-note">Los usuarios aparecen aquí después de su primer login. Puedes cambiar el rol desde el menú desplegable.</div>',
+    '    <div id="roles-container">Cargando usuarios...</div>',
+    '  </div>',
+    '  <div class="admin-tab-body" id="tab-visibility">',
+    '    <div class="ap-note">👁 = visible para todos · 🙈 = oculto (solo tú lo ves con marca naranja). Los procedimientos ocultos NO aparecen para los agentes.</div>',
+    '    <div id="vis-container">Cargando procedimientos...</div>',
     '  </div>',
     '</div>',
   ].join('');
- 
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closeAdminPanel();
+  });
   document.body.appendChild(overlay);
   overlay.classList.add('open');
- 
-  var close = function(){ overlay.remove(); };
-  document.getElementById('pm-x').addEventListener('click', close);
-  document.getElementById('pm-cancel').addEventListener('click', close);
-  document.getElementById('pm-save').addEventListener('click', function() {
-    var vals = {};
-    fields.forEach(function(f){ vals[f.id] = (document.getElementById(f.id)||{}).value || ''; });
-    var err = onSave(vals);
-    if (err) { document.getElementById('pm-error').textContent = err; document.getElementById('pm-error').style.display='block'; }
-    else close();
-  });
- 
-  // Focus primer campo
-  if (fields[0]) {
-    var first = document.getElementById(fields[0].id);
-    if (first) setTimeout(function(){ first.focus(); }, 100);
-  }
+  loadAdminData();
 }
- 
-// ── Sync contexto a KV ─────────────────────────────────────────────────────
-function syncContextToKV(type, arr) {
-  if (!CFG.workerUrl) return;
-  fetch(CFG.workerUrl + '/context/' + sopId + '/' + type, {
-    method  : 'POST',
-    headers : { 'Content-Type': 'application/json', 'X-Admin-Key': CFG.adminPwd },
-    body    : JSON.stringify({ data: arr }),
-  }).catch(function(e) { console.warn('[Playbook] KV context sync error:', e.message); });
+
+function closeAdminPanel() {
+  var o = document.getElementById('admin-panel-overlay');
+  if (o) o.classList.remove('open');
 }
- 
-// También sync el delete de items de contexto
-var _origAttachCtxEvents = null;  // no-op, el delete ya llama lsSet, solo añadir sync
- 
-// ═══════════════════════════════════════════════════════════════════════
-// ASISTENTE IA
-// ═══════════════════════════════════════════════════════════════════════
-var aiCost = 0;
-var aiHistory = [];
- 
-function buildAIPanel() {
-  var fab = el('button', {id:'ai-fab'});
-  fab.innerHTML = '✨';
-  fab.title = 'Asistente IA — Pregúntame sobre este procedimiento';
-  fab.addEventListener('click', function(){ document.getElementById('ai-panel').classList.toggle('open'); });
-  document.body.appendChild(fab);
- 
-  var panel = el('div', {id:'ai-panel'});
-  panel.innerHTML = [
-    '<div id="ai-panel-hdr">',
-    '  <div id="ai-panel-hdr-left">',
-    '    <div class="ai-avatar">🤖</div>',
-    '    <div><div class="ai-name">Asistente MDA</div><div class="ai-status" id="ai-status">Conectando...</div></div>',
-    '  </div>',
-    '  <button class="ai-x" onclick="document.getElementById(\'ai-panel\').classList.remove(\'open\')">✕</button>',
-    '</div>',
-    '<div id="ai-msgs">',
-    '  <div id="ai-thinking" style="display:none">escribiendo...</div>',
-    '</div>',
-    '<div class="ai-cost-bar">',
-    '  <span>💰 Costo sesión: <strong id="ai-cost-label">$0.000</strong> USD</span>',
-    '  <span id="ai-config-note" style="color:#c0392b;font-size:10px;display:none">⚠ proxy.py no conectado</span>',
-    '</div>',
-    '<div id="ai-input-row">',
-    '  <input id="ai-input" type="text" placeholder="Pregunta sobre este procedimiento...">',
-    '  <button id="ai-send">↑</button>',
-    '</div>',
-  ].join('');
- 
-  document.body.appendChild(panel);
- 
-  document.getElementById('ai-input').addEventListener('keydown', function(e){
-    if (e.key === 'Enter') sendAIMessage();
-  });
-  document.getElementById('ai-send').addEventListener('click', sendAIMessage);
- 
-  checkProxyStatus();
-  addAIMessage('bot', 'Hola 👋 Soy el asistente de <strong>' + sopId + '</strong>. Puedo responder preguntas sobre este procedimiento, ayudarte a interpretar pasos o aclarar términos.');
+
+function switchTab(el) {
+  document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.admin-tab-body').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  var body = document.getElementById('tab-' + el.dataset.tab);
+  if (body) body.classList.add('active');
 }
- 
-var proxyConnected = false;
- 
-function checkProxyStatus() {
-  var pingUrl = CFG.workerUrl ? CFG.workerUrl + '/ping' : 'http://localhost:5001/ping';
-  fetch(pingUrl, {method:'GET'})
-    .then(function(){ proxyConnected = true; setAIStatus('● En línea', '#4ade80'); })
-    .catch(function(){ proxyConnected = false; setAIStatus('● Proxy no conectado', '#f87171'); document.getElementById('ai-config-note').style.display=''; });
+
+window.switchTab = switchTab; // Acceso desde onclick inline
+
+function loadAdminData() {
+  loadAccess();
+  loadRoles();
+  loadVisibilityAdmin();
 }
- 
-function setAIStatus(text, color) {
-  var el = document.getElementById('ai-status');
-  if (el){ el.textContent = text; el.style.color = color || 'rgba(255,255,255,.7)'; }
-}
- 
-function sendAIMessage() {
-  var input = document.getElementById('ai-input');
-  var msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
- 
-  addAIMessage('user', msg);
-  aiHistory.push({role:'user', content:msg});
- 
-  if (!proxyConnected) {
-    addAIMessage('bot', '⚠️ El proxy de IA no está conectado. Ejecuta <code>python proxy.py</code> en la carpeta del playbook y recarga la página.');
+
+// ── Tab Lista de Acceso ───────────────────────────────────────────────────────
+function loadAccess() {
+  var container = document.getElementById('access-container');
+  if (!container) return;
+  if (!A.workerUrl) {
+    container.innerHTML = '<p style="color:#aaa;font-size:13px">Configura workerUrl para gestionar el acceso.</p>';
     return;
   }
- 
-  // Mostrar "escribiendo..."
-  var thinking = document.getElementById('ai-thinking');
-  thinking.style.display = 'block';
-  scrollAI();
- 
-  // Contexto del SOP para el sistema prompt
-  var sopContext = document.querySelector('.paso-body, .step-body')
-    ? Array.from(document.querySelectorAll('.paso-body, .step-body')).map(function(e){ return e.textContent; }).join('\n')
-    : '';
- 
-  var systemPrompt = 'Eres el asistente de la Mesa de Ayuda de Capstone Copper Chile. ' +
-    'Responde preguntas sobre el procedimiento ' + sopId + ' (' + sopTitle + '). ' +
-    'Respuestas concisas, en español, orientadas a acción. Máximo 120 palabras. ' +
-    'Contenido del procedimiento:\n\n' + sopContext.slice(0, 3000);
- 
-  var aiUrl = CFG.workerUrl ? CFG.workerUrl + '/chat' : 'http://localhost:5001/chat';
-  fetch(aiUrl, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      system  : systemPrompt,
-      messages: aiHistory,
-      sopId   : sopId,
+
+  fetch(A.workerUrl + '/admin/access', A.authHeaders())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = data.allowed || [];
+      var itemsHtml = list.length === 0
+        ? '<p class="ctx-empty">No hay emails en la lista aún. Agrega el primero.</p>'
+        : list.map(function(email) {
+            return '<div class="access-item">' +
+              '<span class="access-email">📧 ' + escH(email) + '</span>' +
+              (email.toLowerCase() !== A.user.email.toLowerCase()
+                ? '<button class="btn-del-access" onclick="removeAccess('' + escH(email) + '')">✕ Quitar</button>'
+                : '<span style="font-size:11px;color:#aaa">(tú)</span>') +
+              '</div>';
+          }).join('');
+
+      container.innerHTML = [
+        '<div class="access-list">' + itemsHtml + '</div>',
+        '<div class="access-add-row">',
+        '  <input type="email" id="new-access-email" class="pc-input" placeholder="email@empresa.com" style="flex:1">',
+        '  <button class="ap-btn-primary" onclick="addAccess()" style="white-space:nowrap">＋ Agregar email</button>',
+        '</div>',
+        '<p style="font-size:11px;color:#888;margin-top:8px">',
+        '  El usuario debe entrar a la URL del playbook e iniciar sesión con Google usando este email. ',
+        '  No necesitas saber su contraseña.',
+        '</p>',
+      ].join('');
+
+      // Enter key en el input
+      var inp = document.getElementById('new-access-email');
+      if (inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') addAccess(); });
     })
+    .catch(function() { container.innerHTML = '<p style="color:#c0392b">Error al cargar la lista.</p>'; });
+}
+
+function addAccess() {
+  var inp   = document.getElementById('new-access-email');
+  var email = (inp ? inp.value : '').trim();
+  if (!email || !email.includes('@')) { A.showToast('❌ Ingresa un email válido', true); return; }
+  fetch(A.workerUrl + '/admin/access', {
+    method : 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, A.authHeaders().headers),
+    body   : JSON.stringify({ email: email }),
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) { loadAccess(); A.showToast('✅ ' + email + ' puede ingresar ahora.'); }
+    else A.showToast('❌ ' + (d.error || 'Error'), true);
+  })
+  .catch(function() { A.showToast('❌ Error de conexión', true); });
+}
+
+function removeAccess(email) {
+  if (!confirm('¿Quitar el acceso a ' + email + '? No podrá iniciar sesión hasta que lo vuelvas a agregar.')) return;
+  fetch(A.workerUrl + '/admin/access/' + encodeURIComponent(email), {
+    method : 'DELETE',
+    headers: A.authHeaders().headers,
+  })
+  .then(function() { loadAccess(); A.showToast('✅ Acceso revocado para ' + email); })
+  .catch(function() { A.showToast('❌ Error', true); });
+}
+
+window.addAccess    = addAccess;
+window.removeAccess = removeAccess;
+
+// ── Tab Acceso (Whitelist) ────────────────────────────────────────────────────
+function loadWhitelist() {
+  var container = document.getElementById('access-container');
+  if (!container) return;
+  if (!A.workerUrl) {
+    container.innerHTML = '<p style="color:#aaa;font-size:13px;padding:8px 0">Configura workerUrl para gestionar el acceso.</p>';
+    return;
+  }
+  fetch(A.workerUrl + '/admin/whitelist', A.authHeaders())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var list = d.whitelist || [];
+      if (list.length === 0) {
+        container.innerHTML = '<p class="ctx-empty">La lista de acceso está vacía. Agrega el primer correo arriba.</p>';
+        return;
+      }
+      var html = '<div style="background:#fff;border-radius:8px;border:1px solid #eef1f7;overflow:hidden">';
+      html += list.map(function(u) {
+        var initials = (u.name || u.email)[0].toUpperCase();
+        var avatar = u.picture
+          ? '<img class="access-avatar" src="' + escH(u.picture) + '" alt="">'
+          : '<div class="access-avatar-ph">' + initials + '</div>';
+        var loginInfo = u.hasLoggedIn
+          ? '<span class="access-meta">Último acceso: ' + (u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-CL') : '—') + ' · Rol: ' + (u.role === 'admin' ? '⚙ Admin' : 'Agente') + '</span>'
+          : '<span class="access-never">⏳ Aún no ha iniciado sesión</span>';
+        return '<div class="access-item' + (u.hasLoggedIn ? '' : ' not-logged') + '">' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            avatar +
+            '<div>' +
+              '<div class="access-email">' + escH(u.email) + '</div>' +
+              loginInfo +
+            '</div>' +
+          '</div>' +
+          (u.email !== A.user.email
+            ? '<button class="btn-revoke" onclick="window.PlaybookAuth.revokeAccess('' + escH(u.email) + '')">✕ Revocar</button>'
+            : '<span style="font-size:11px;color:#aaa">(tú)</span>') +
+        '</div>';
+      }).join('');
+      html += '</div>';
+      html += '<p style="font-size:11px;color:#aaa;margin-top:8px;padding:0 2px">Total: ' + list.length + ' usuarios con acceso autorizado</p>';
+      container.innerHTML = html;
+    })
+    .catch(function() { container.innerHTML = '<p style="color:#c0392b">Error al cargar la lista de acceso.</p>'; });
+}
+
+function addToWhitelist() {
+  var input = document.getElementById('access-new-email');
+  if (!input) return;
+  var email = input.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    A.showToast('⚠️ Escribe un correo válido', true); return;
+  }
+  if (!A.workerUrl) { A.showToast('Worker no configurado', true); return; }
+
+  fetch(A.workerUrl + '/admin/whitelist', {
+    method : 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, A.authHeaders().headers),
+    body   : JSON.stringify({ email: email }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      input.value = '';
+      loadWhitelist();
+      A.showToast('✅ Acceso otorgado a ' + email);
+    } else {
+      A.showToast('❌ ' + (d.error || 'Error'), true);
+    }
+  })
+  .catch(function() { A.showToast('❌ Error de conexión', true); });
+}
+
+function revokeAccess(email) {
+  if (!confirm('¿Revocar acceso a ' + email + '? La próxima vez que intente entrar verá "Acceso denegado".')) return;
+  fetch(A.workerUrl + '/admin/whitelist/' + encodeURIComponent(email), {
+    method : 'DELETE',
+    headers: A.authHeaders().headers,
+  })
+  .then(function() { loadWhitelist(); A.showToast('✅ Acceso revocado para ' + email); })
+  .catch(function() { A.showToast('❌ Error', true); });
+}
+
+// ── Tab Roles ─────────────────────────────────────────────────────────────────
+function loadRoles() {
+  var container = document.getElementById('roles-container');
+  if (!container) return;
+  if (!A.workerUrl) {
+    container.innerHTML = '<p style="color:#aaa;font-size:13px">Worker no configurado.</p>';
+    return;
+  }
+
+  fetch(A.workerUrl + '/admin/users', authHeaders())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var users = data.users || {};
+      var emails = Object.keys(users);
+
+      var addBtn = '<div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">' +
+        '<button class="ap-btn-primary" style="font-size:12px;padding:7px 16px" onclick="window.PlaybookAuth.openInviteModal()">+ Agregar usuario</button>' +
+        '<span style="font-size:11px;color:#888">Agrega el correo ANTES de que el usuario intente ingresar.</span>' +
+        '</div>';
+
+      if (emails.length === 0) {
+        container.innerHTML = addBtn + '<p style="color:#aaa;font-size:13px">Sin usuarios aún. Usa el botón para agregar el primero.</p>';
+        return;
+      }
+
+      var rows = emails.map(function(email) {
+        var u = users[email];
+        var isPending = u.status === 'invited';
+        var avatar = u.picture
+          ? '<img class="user-avatar-sm" src="' + escH(u.picture) + '" alt="">'
+          : '<div class="ab-avatar-fallback" style="width:30px;height:30px;font-size:12px">' + (u.name||email)[0].toUpperCase() + '</div>';
+        var badge = isPending
+          ? '<span style="background:#fff8e1;color:#b45309;border:1px solid #fde68a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px">PENDIENTE</span>'
+          : '<span style="background:#e8f5ee;color:#1a6b3a;border:1px solid #a7d7b9;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px">ACTIVO</span>';
+
+        return '<tr>' +
+          '<td>' + avatar + '</td>' +
+          '<td><strong>' + escH(u.name||email) + '</strong>' + badge +
+            '<br><span style="font-size:11px;color:#888">' + escH(email) + '</span></td>' +
+          '<td><select class="role-select" data-email="' + escH(email) + '" onchange="window.PlaybookAuth.changeRole(this)">' +
+            '<option value="admin"' + (u.role==='admin'?' selected':'') + '>Admin</option>' +
+            '<option value="agent"' + (u.role==='agent'?' selected':'') + '>Agente</option>' +
+            '</select></td>' +
+          '<td><small style="color:#aaa">' + (u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-CL') : (isPending ? 'Aun no ha entrado' : '\u2014')) + '</small></td>' +
+          (email !== A.user.email
+            ? '<td><button class="btn-del-user" onclick="window.PlaybookAuth.deleteUser(\'' + escH(email) + '\')">\u00d7 Quitar</button></td>'
+            : '<td><small style="color:#aaa">(tu)</small></td>') +
+          '</tr>';
+      }).join('');
+
+      container.innerHTML = addBtn +
+        '<table class="roles-table"><thead><tr><th></th><th>Usuario</th><th>Rol</th><th>Ultimo acceso</th><th></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table>';
+    })
+    .catch(function() { container.innerHTML = '<p style="color:#c0392b">Error al cargar usuarios.</p>'; });
+}
+
+function changeRole(select) {
+  var email = select.dataset.email;
+  var role  = select.value;
+  fetch(A.workerUrl + '/admin/users/' + encodeURIComponent(email), {
+    method : 'PATCH',
+    headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
+    body   : JSON.stringify({ role: role }),
+  }).then(function() { showToast('✅ Rol actualizado para ' + email); })
+    .catch(function() { showToast('❌ Error al actualizar el rol', true); });
+}
+
+function deleteUser(email) {
+  if (!confirm('¿Quitar el acceso a ' + email + '? Deberá volver a iniciar sesión para registrarse.')) return;
+  fetch(A.workerUrl + '/admin/users/' + encodeURIComponent(email), {
+    method : 'DELETE',
+    headers: authHeaders().headers,
+  }).then(function() { loadRoles(); showToast('✅ Usuario eliminado'); })
+    .catch(function() { showToast('❌ Error', true); });
+}
+
+
+// ── Modal invitar usuario ─────────────────────────────────────────────────────
+function openInviteModal() {
+  var existing = document.getElementById('invite-modal-overlay');
+  if (existing) { existing.remove(); }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'invite-modal-overlay';
+  overlay.className = 'pc-modal-overlay open';
+  overlay.innerHTML = [
+    '<div class="pc-modal" style="max-width:440px">',
+    '  <div class="pc-modal-hdr">',
+    '    <strong>+ Agregar acceso a usuario</strong>',
+    '    <button class="pc-modal-x" onclick="document.getElementById('invite-modal-overlay').remove()">×</button>',
+    '  </div>',
+    '  <div class="pc-modal-body">',
+    '    <div class="ap-note" style="margin:0">',
+    '      El usuario debe tener una cuenta Google con este correo. Cuando intente ingresar, ',
+    '      se autenticará con su propia cuenta. Tú nunca ves su contraseña.',
+    '    </div>',
+    '    <div>',
+    '      <div class="pc-label">Correo electrónico del usuario</div>',
+    '      <input class="pc-input" type="email" id="invite-email" placeholder="jorge.palma@tres60.cl" autofocus>',
+    '    </div>',
+    '    <div>',
+    '      <div class="pc-label">Nombre (opcional)</div>',
+    '      <input class="pc-input" type="text" id="invite-name" placeholder="Jorge Palma">',
+    '    </div>',
+    '    <div>',
+    '      <div class="pc-label">Rol</div>',
+    '      <select class="pc-select" id="invite-role">',
+    '        <option value="agent" selected>Agente — ve los procedimientos</option>',
+    '        <option value="admin">Admin — acceso total y panel de administración</option>',
+    '      </select>',
+    '    </div>',
+    '    <div class="pc-error-msg" id="invite-error" style="display:none"></div>',
+    '  </div>',
+    '  <div class="pc-modal-ftr">',
+    '    <button class="pc-btn-secondary" onclick="document.getElementById('invite-modal-overlay').remove()">Cancelar</button>',
+    '    <button class="pc-btn-primary" onclick="window.PlaybookAuth.confirmInvite()">✅ Dar acceso</button>',
+    '  </div>',
+    '</div>',
+  ].join('');
+  document.body.appendChild(overlay);
+  setTimeout(function(){ document.getElementById('invite-email').focus(); }, 100);
+}
+
+function confirmInvite() {
+  var email = (document.getElementById('invite-email').value || '').trim().toLowerCase();
+  var name  = (document.getElementById('invite-name').value  || '').trim();
+  var role  =  document.getElementById('invite-role').value;
+  var errEl = document.getElementById('invite-error');
+
+  if (!email || !email.includes('@')) {
+    errEl.textContent = 'Ingresa un correo válido.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if (!A.workerUrl) {
+    errEl.textContent = 'Worker no configurado.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  fetch(A.workerUrl + '/admin/users/' + encodeURIComponent(email), {
+    method : 'PATCH',
+    headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
+    body   : JSON.stringify({ email: email, name: name, role: role }),
+  })
+  .then(function(r) { return r.json(); })
   .then(function(data) {
-    thinking.style.display = 'none';
-    var reply = data.response || 'Sin respuesta del servidor.';
-    var cost  = data.cost || 0.013;
-    aiCost += cost;
-    aiHistory.push({role:'assistant', content:reply});
-    addAIMessage('bot', reply, '~$' + cost.toFixed(3));
-    document.getElementById('ai-cost-label').textContent = '$' + aiCost.toFixed(3);
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.style.display = 'block';
+      return;
+    }
+    document.getElementById('invite-modal-overlay').remove();
+    showToast('✅ Acceso concedido a ' + email + '. El usuario puede ingresar ahora.');
+    loadRoles();
   })
-  .catch(function(e) {
-    thinking.style.display = 'none';
-    addAIMessage('bot', '❌ Error al contactar el proxy: ' + e.message);
+  .catch(function() {
+    errEl.textContent = 'Error al guardar. Intenta nuevamente.';
+    errEl.style.display = 'block';
   });
 }
- 
-function addAIMessage(who, html, costNote) {
-  var msgs = document.getElementById('ai-msgs');
-  var thinking = document.getElementById('ai-thinking');
-  var div = el('div', {className:'ai-msg ai-msg-' + (who==='bot'?'bot':'user')});
-  div.innerHTML = '<div class="ai-bubble">' + (who==='bot' ? html : esc(html)) + '</div>' +
-    (costNote ? '<div class="ai-time">' + costNote + '</div>' : '');
-  msgs.insertBefore(div, thinking);
-  scrollAI();
+
+
+// ── Modal: Invitar usuario ────────────────────────────────────────────────────
+function openInviteModal() {
+  var ex = document.getElementById('invite-overlay');
+  if (ex) ex.remove();
+  var ov = document.createElement('div');
+  ov.id = 'invite-overlay';
+  ov.className = 'pc-modal-overlay open';
+  ov.innerHTML = [
+    '<div class="pc-modal" style="max-width:440px">',
+    '<div class="pc-modal-hdr"><strong>+ Dar acceso a usuario</strong>',
+    '<button class="pc-modal-x" onclick="document.getElementById(\'invite-overlay\').remove()">x</button></div>',
+    '<div class="pc-modal-body">',
+    '<div class="ap-note" style="margin:0 0 4px">El usuario se autentica con su propia cuenta Google. Tu nunca ves su contrasena.</div>',
+    '<div><div class="pc-label">Correo del usuario</div>',
+    '<input class="pc-input" type="email" id="inv-email" placeholder="jorge.palma@tres60.cl"></div>',
+    '<div><div class="pc-label">Nombre (opcional)</div>',
+    '<input class="pc-input" type="text" id="inv-name" placeholder="Jorge Palma"></div>',
+    '<div><div class="pc-label">Rol</div>',
+    '<select class="pc-select" id="inv-role">',
+    '<option value="agent" selected>Agente - solo lectura del playbook</option>',
+    '<option value="admin">Admin - acceso total y panel de administracion</option>',
+    '</select></div>',
+    '<div class="pc-error-msg" id="inv-err" style="display:none"></div>',
+    '</div>',
+    '<div class="pc-modal-ftr">',
+    '<button class="pc-btn-secondary" onclick="document.getElementById(\'invite-overlay\').remove()">Cancelar</button>',
+    '<button class="pc-btn-primary" onclick="window.PlaybookAuth.confirmInvite()">Dar acceso</button>',
+    '</div></div>',
+  ].join('');
+  document.body.appendChild(ov);
+  setTimeout(function(){ var el=document.getElementById('inv-email'); if(el) el.focus(); }, 80);
 }
- 
-function scrollAI() {
-  var msgs = document.getElementById('ai-msgs');
-  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+function confirmInvite() {
+  var email = (document.getElementById('inv-email').value||'').trim().toLowerCase();
+  var name  = (document.getElementById('inv-name').value ||'').trim();
+  var role  =  document.getElementById('inv-role').value;
+  var err   =  document.getElementById('inv-err');
+
+  if (!email || !email.includes('@')) {
+    err.textContent='Ingresa un correo valido.'; err.style.display='block'; return;
+  }
+  if (!A.workerUrl) {
+    err.textContent='Worker no configurado.'; err.style.display='block'; return;
+  }
+
+  fetch(A.workerUrl + '/admin/users', {
+    method : 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
+    body   : JSON.stringify({ email:email, name:name, role:role }),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.error) { err.textContent=d.error; err.style.display='block'; return; }
+    document.getElementById('invite-overlay').remove();
+    showToast('Acceso concedido a ' + email + '. Ya puede ingresar.');
+    loadRoles();
+  })
+  .catch(function(){ err.textContent='Error al guardar. Intenta de nuevo.'; err.style.display='block'; });
 }
- 
-// ═══════════════════════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════════════════════
-function showToast(msg) {
-  var t = document.getElementById('pc-toast');
+
+// ── Tab Visibilidad ───────────────────────────────────────────────────────────
+var _allProcs = []; // se llena desde el catálogo o los datos del playbook-core
+
+
+// ── Ocultar/mostrar todos los procedimientos ────────────────────────────────
+function setAllVisibility(visible) {
+  var procs = (window.PROCS || []).map(function(p){ return p.sop; });
+  if (procs.length === 0) { showToast('Abre el Catalogo para usar esta funcion.', true); return; }
+  var msg = visible
+    ? 'Hacer VISIBLES todos los procedimientos para los agentes?'
+    : 'OCULTAR todos los procedimientos para los agentes?';
+  if (!confirm(msg)) return;
+  A.hiddenProcs = visible ? [] : procs.slice();
+  if (A.workerUrl) {
+    fetch(A.workerUrl + '/admin/visibility', {
+      method : 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
+      body   : JSON.stringify({ hidden: A.hiddenProcs }),
+    }).catch(function(){});
+  }
+  loadVisibilityAdmin();
+  applyVisibility();
+  showToast(visible ? 'Todos los procedimientos son visibles' : 'Todos los procedimientos estan ocultos');
+}
+
+function loadVisibilityAdmin() {
+  var container = document.getElementById('vis-container');
+  if (!container) return;
+
+  var procs = (window.PROCS || []).map(function(p) { return { sop: p.sop, titulo: p.titulo, dom: p.dom }; });
+  if (procs.length === 0) {
+    container.innerHTML = '<p style="color:#aaa;font-size:13px">Este panel está disponible en el Catálogo principal.</p>';
+    return;
+  }
+
+  _allProcs = procs;
+
+  var visibles  = procs.filter(function(p){ return !A.hiddenProcs.includes(p.sop); }).length;
+  var total     = procs.length;
+  var pct       = Math.round(visibles / total * 100);
+
+  // Barra de progreso y controles globales
+  var controls = [
+    '<div style="margin-bottom:16px">',
+    '  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">',
+    '    <span style="font-size:13px;font-weight:700;color:#1a1a2e">' + visibles + ' de ' + total + ' procedimientos visibles</span>',
+    '    <div style="display:flex;gap:8px">',
+    '      <button class="ap-btn-primary" style="font-size:11px;padding:6px 12px;background:#1a6b3a" onclick="window.PlaybookAuth.setAllVisibility(true)">👁 Mostrar todos</button>',
+    '      <button class="ap-btn-primary" style="font-size:11px;padding:6px 12px;background:#c0392b" onclick="window.PlaybookAuth.setAllVisibility(false)">🙈 Ocultar todos</button>',
+    '    </div>',
+    '  </div>',
+    '  <div style="background:#f0f3f8;border-radius:20px;height:8px;overflow:hidden">',
+    '    <div style="background:#1a6b3a;height:100%;width:' + pct + '%;transition:width .3s;border-radius:20px"></div>',
+    '  </div>',
+    '  <div style="font-size:11px;color:#888;margin-top:4px">' + pct + '% del playbook visible para los agentes</div>',
+    '</div>',
+  ].join('');
+
+  // Agrupar por dominio
+  var dominios = {};
+  procs.forEach(function(p) {
+    if (!dominios[p.dom]) dominios[p.dom] = [];
+    dominios[p.dom].push(p);
+  });
+
+  var domNames = {
+    'GIA':'🔑 Gestión de Identidad','SAP':'⚙️ SAP','APP':'💼 Aplicaciones',
+    'EQU':'💻 Equipos','NET':'🌐 Red e Infraestructura','MIN':'🏭 Operaciones Mina',
+    'VHF':'📻 VHF','COL':'💬 Colaboración','CYB':'🛡️ Ciberseguridad','SOT':'🔧 Soporte Transversal'
+  };
+
+  var sections = Object.keys(dominios).map(function(dom) {
+    var domProcs  = dominios[dom];
+    var domHidden = domProcs.filter(function(p){ return A.hiddenProcs.includes(p.sop); }).length;
+    var domLabel  = domNames[dom] || dom;
+
+    var items = domProcs.map(function(p) {
+      var hidden = A.hiddenProcs.includes(p.sop);
+      return '<div class="vis-item' + (hidden ? ' is-hidden' : '') + '" id="vis-' + p.sop + '" style="padding:8px 14px">' +
+        '<div>' +
+          '<div class="vis-item-id" style="font-size:11px">' + escH(p.sop) +
+            (hidden ? ' <span class="proc-hidden-badge">OCULTO</span>' : '') + '</div>' +
+          '<div class="vis-item-title">' + escH(p.titulo) + '</div>' +
+        '</div>' +
+        '<button class="vis-toggle" onclick="window.PlaybookAuth.toggleVisibility('' + p.sop + '')" ' +
+          'title="' + (hidden ? 'Hacer visible para agentes' : 'Ocultar para agentes') + '">' +
+          (hidden ? '🙈' : '👁') +
+        '</button>' +
+      '</div>';
+    }).join('');
+
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;' +
+        'background:#f7f9fc;border-radius:8px 8px 0 0;border-bottom:1px solid #eef1f7;cursor:pointer"' +
+        ' onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">' +
+        '<span style="font-size:13px;font-weight:700">' + escH(domLabel) + '</span>' +
+        '<span style="font-size:11px;color:#888">' +
+          (domProcs.length - domHidden) + '/' + domProcs.length + ' visibles &nbsp;▼</span>' +
+      '</div>' +
+      '<div class="vis-list" style="border:1px solid #eef1f7;border-top:none;border-radius:0 0 8px 8px">' +
+        items +
+      '</div></div>';
+  }).join('');
+
+  container.innerHTML = controls + sections;
+}
+
+function toggleVisibility(sopId) {
+  var idx = A.hiddenProcs.indexOf(sopId);
+  if (idx >= 0) {
+    A.hiddenProcs.splice(idx, 1);
+  } else {
+    A.hiddenProcs.push(sopId);
+  }
+
+  // Guardar en Worker
+  if (A.workerUrl) {
+    fetch(A.workerUrl + '/admin/visibility', {
+      method : 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, authHeaders().headers),
+      body   : JSON.stringify({ hidden: A.hiddenProcs }),
+    }).catch(function() {});
+  }
+
+  // Re-renderizar la lista y aplicar en el DOM
+  loadVisibilityAdmin();
+  applyVisibility();
+  showToast(A.hiddenProcs.includes(sopId) ? '🙈 Procedimiento oculto' : '👁 Procedimiento visible');
+}
+
+// ── Logout ───────────────────────────────────────────────────────────────────
+function logout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  localStorage.removeItem('mda_session');
+  if (A.workerUrl) {
+    fetch(A.workerUrl + '/auth/logout', { method: 'GET', headers: authHeaders().headers })
+      .finally(function() { window.location.href = 'login.html'; });
+  } else {
+    window.location.href = 'login.html';
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, isError) {
+  var t = document.getElementById('ar-toast');
   if (!t) {
-    t = el('div', {id:'pc-toast'});
-    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap';
+    t = document.createElement('div');
+    t.id = 'ar-toast';
+    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap';
     document.body.appendChild(t);
   }
   t.textContent = msg;
-  t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+  t.style.background = isError ? '#c0392b' : '#1a1a2e';
+  t.style.color = '#fff';
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
   clearTimeout(t._to);
-  t._to = setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3200);
+  t._to = setTimeout(function() {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3000);
 }
- 
-// ═══════════════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════════════
-function el(tag, attrs) {
-  var e = document.createElement(tag);
-  if (attrs) Object.keys(attrs).forEach(function(k){ e[k] = attrs[k]; });
-  return e;
+
+function escH(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
- 
-function esc(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
- 
-})(); // fin IIFE
+
+// ── API pública ───────────────────────────────────────────────────────────────
+A.openAdminPanel   = openAdminPanel;
+  A.setAllVisibility  = setAllVisibility;
+  A.openInviteModal  = openInviteModal;
+  A.confirmInvite    = confirmInvite;
+A.openInviteModal  = openInviteModal;
+A.confirmInvite    = confirmInvite;
+A.closeAdminPanel  = closeAdminPanel;
+A.logout           = logout;
+A.changeRole       = changeRole;
+A.deleteUser       = deleteUser;
+A.toggleVisibility = toggleVisibility;
+A.addToWhitelist   = addToWhitelist;
+A.revokeAccess     = revokeAccess;
+A.authHeaders      = authHeaders;
+A.showToast        = showToast;
+
+})();
