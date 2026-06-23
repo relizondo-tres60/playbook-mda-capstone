@@ -365,11 +365,11 @@ function applyFilters(rawEntries) {
   // Contadores
   var total    = entries.length;
   var hl       = entries.filter(function(e){return e.type==='highlight';}).length;
-  var esc      = entries.filter(function(e){return e.type==='escalation';}).length;
+  var escCount = entries.filter(function(e){return e.type==='escalation';}).length;
   document.getElementById('section-counts').innerHTML =
     '<div class="count-pill"><span>' + total + '</span> anotaciones</div>' +
-    (hl  ? '<div class="count-pill">⭐ <span>' + hl + '</span> destacadas</div>' : '') +
-    (esc ? '<div class="count-pill">🔴 <span>' + esc + '</span> escalamientos</div>' : '');
+    (hl       ? '<div class="count-pill">&#11088; <span>' + hl + '</span> destacadas</div>' : '') +
+    (escCount ? '<div class="count-pill">&#128308; <span>' + escCount + '</span> escalamientos</div>' : '');
 
   var list = document.getElementById('entries-list');
   if (!filtered.length) {
