@@ -463,6 +463,8 @@ function loadVisibility() {
     .then(function(d) {
       A.hiddenProcs = d.hidden || [];
       applyVisibility();
+      // Actualizar contadores del catálogo si estamos en esa página
+      if (typeof buildOpsGrid === 'function') buildOpsGrid();
       if (A.isSOP) refreshSOPToolbar();
     })
     .catch(function() {});
