@@ -280,9 +280,9 @@ setInterval(updateGreeting, 60000);
 /* ── BUILD WELCOME OPS CARDS ── */
 function buildOpsGrid(){
   const grid = document.getElementById('ops-grid');
+  const _hiddenSet = new Set(window.PlaybookAuth ? (window.PlaybookAuth.hiddenProcs || []) : []);
   grid.innerHTML = OPS_DEF.map(op => {
-    const hiddenSet = new Set(window.PlaybookAuth ? (window.PlaybookAuth.hiddenProcs || []) : []);
-    const count = PROCS.filter(p => p.ops.includes(op.id) && !hiddenSet.has(p.sop)).length;
+    const count = PROCS.filter(p => p.ops.includes(op.id) && !_hiddenSet.has(p.sop)).length;
     return `<button class="op-card" style="background:${op.bg}" onclick="selectOp('${op.id}')">
       <span class="op-count">${count} procedimientos</span>
       <span class="op-icon">${op.icon}</span>
@@ -538,8 +538,8 @@ var _origApply = null;
     window.PlaybookAuth.applyVisibility = function() {
       orig.apply(this, arguments);
       // Re-renderizar contadores de la pantalla de bienvenida
-      if (typeof renderOpsGrid === 'function') renderOpsGrid();
-      if (typeof renderIndex  === 'function' && currentOp) renderIndex();
+      if (typeof buildOpsGrid === 'function') buildOpsGrid();
+      if (typeof renderIndex  === 'function' && typeof currentOp !== 'undefined') renderIndex();
     };
   } else {
     setTimeout(patchApplyVisibility, 150);
