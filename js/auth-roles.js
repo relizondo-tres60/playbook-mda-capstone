@@ -1631,7 +1631,7 @@ function buildCatalogAIChat() {
   });
 
   // Mensaje de bienvenida
-  addCatalogAIMessage('bot', '¡Hola! Soy el Asistente MDA. Puedo ayudarte a encontrar el procedimiento correcto para un incidente, orientarte sobre qué SOP consultar o responder preguntas generales del servicio.<br><br>¿Qué necesitas?');
+  addCatalogAIMessage('bot', '¡Hola! Soy el Asistente MDA. Puedo ayudarte a:\n- Encontrar el procedimiento correcto para un incidente\n- Orientarte sobre qué SOP consultar\n- Responder preguntas generales del servicio\n\n¿Qué necesitas?');
 }
 
 function sendCatalogAI() {
