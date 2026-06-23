@@ -19,8 +19,7 @@
 var NAV_MAIN = [
   { id: 'catalog',   label: '&#128203; Cat\u00e1logo', roles: ['admin','agent'],
     href: function() { return base() + 'Catalogo_Servicios_MDA_Capstone.html'; } },
-  { id: 'feedback',  label: '&#128172; Feedback Interno',       roles: ['admin'],
-    href: function() { return base() + 'feedback.html'; } },
+
 ];
 
 var NAV_ADMIN = [
@@ -28,6 +27,7 @@ var NAV_ADMIN = [
   { id: 'visibility', label: '&#128065; Visibilidad de SOPs',    action: 'openTab', tab: 'vis' },
   { id: 'upload',     label: '&#11014;&#65039; Subir Procedimiento', action: 'openUploadModal' },
   { id: 'knowledge', label: '\ud83d\udcda Base de Conocimiento', action: 'openTab', tab: 'knowledge' },
+  { id: 'feedback',  label: '&#128172; Feedback Interno',        action: 'goFeedback' },
   { id: 'divider' },
   { id: 'shifts',     label: '&#128260; Cambio de Turno',        soon: true },
   { id: 'ai_draft',   label: '&#9997;&#65039; Redacci\u00f3n con IA', soon: true },
@@ -411,6 +411,7 @@ function buildNav() {
       var tab    = btn.dataset.tab;
       if (action === 'openTab')         openAdminPanel(tab);
       if (action === 'openUploadModal') openUploadModal();
+      if (action === 'goFeedback')      window.location.href = base() + 'feedback.html';
     });
   });
 
