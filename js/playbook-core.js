@@ -146,7 +146,7 @@ function injectCSS() {
     '.pc-ref-label{background:#f7f9fc;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;color:'+CFG.primary+';font-family:monospace}',
 
     /* ── Secciones de contexto ── */
-    '#sop-ctx{max-width:1320px;margin:0 auto 20px;padding:0 20px}',
+    '#sop-ctx{max-width:1320px;margin:0 auto 20px;padding:0 calc(320px + 40px) 0 20px}',
     '.ctx-block{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-bottom:8px}',
     '.ctx-trigger{width:100%;background:none;border:none;text-align:left;padding:14px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background .12s}',
     '.ctx-trigger:hover{background:#f7f9fc}',
