@@ -495,6 +495,53 @@ document.addEventListener('keydown', e => {
     });
   }
 });
+
+// Cargar SOPs custom subidos por el admin desde el Worker
+window.loadCustomSOPs = function() {
+  var A = window.PlaybookAuth;
+  if (!A || !A.workerUrl) return;
+  A.authFetch(A.workerUrl + '/sop/list')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.sops || !data.sops.length) return;
+      // Agregar a PROCS si no están ya
+      data.sops.forEach(function(sop){
+        var exists = PROCS.some(function(p){ return p.sop === sop.sopId; });
+        if (!exists) {
+          PROCS.push({
+            sop   : sop.sopId,
+            titulo: sop.titulo,
+            dom   : sop.dom,
+            faenas: (sop.faenas||'').split(',').map(function(f){return f.trim();}),
+            crit  : sop.criticidad || 'MEDIO',
+            tiempo: '—',
+            href  : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
+            custom: true
+          });
+        }
+      });
+      // Re-renderizar si hay una vista activa
+      if (typeof renderIndex === 'function') renderIndex(currentFaena);
+    })
+    .catch(function(){});
+};
+
+// Disparar carga de SOPs custom cuando PlaybookAuth esté listo
+(function waitForAuth() {
+  if (window.PlaybookAuth && window.PlaybookAuth.ready) {
+    window.loadCustomSOPs();
+  } else {
+    var prev = window.PlaybookAuth ? window.PlaybookAuth.onReady : null;
+    if (window.PlaybookAuth) {
+      window.PlaybookAuth.onReady = function(user) {
+        if (prev) prev(user);
+        window.loadCustomSOPs();
+      };
+    } else {
+      setTimeout(waitForAuth, 100);
+    }
+  }
+})();
 </script>
 <script src="js/auth-roles.js"></script>
 
