@@ -4,7 +4,7 @@
  * Incluye: glosario emergente editable · secciones de contexto · asistente IA
  * Requiere: localStorage · Para IA: proxy.py corriendo en localhost:5001
  *
- * Para activar Modo Edición: clic en el botón ⚙ → clave Tres60admin
+ * Para activar Modo Edición: clic en el botón ⚙ → clave 
  */
 (function () {
 'use strict';
@@ -13,7 +13,6 @@
 // CONFIGURACIÓN
 // ═══════════════════════════════════════════════════════════════════════
 var CFG = {
-  adminPwd    : 'Tres60admin',
   glossaryKey : 'mda_glossary',
   ctxPfx      : 'mda_ctx_',
   // ▼ PEGA AQUÍ LA URL DE TU CLOUDFLARE WORKER después del despliegue
@@ -42,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   injectCSS();
   buildGlossaryPanel();
-  buildPasswordModal();
   buildTermEditorModal();
   buildAIPanel();
   buildAdminButton();
@@ -302,7 +300,7 @@ function saveGlossaryTerm(key, data) {
   if (CFG.workerUrl) {
     fetch(CFG.workerUrl + '/glossary', {
       method  : 'POST',
-      headers : { 'Content-Type': 'application/json', 'X-Admin-Key': CFG.adminPwd },
+      headers : { 'Content-Type': 'application/json', 'X-Admin-Key': '' },
       body    : JSON.stringify({ key: key, data: data }),
     }).catch(function(e) { console.warn('[Playbook] KV sync error:', e.message); });
   }
@@ -319,7 +317,7 @@ function deleteTerm(key) {
   if (CFG.workerUrl) {
     fetch(CFG.workerUrl + '/glossary/' + encodeURIComponent(key), {
       method  : 'DELETE',
-      headers : { 'X-Admin-Key': CFG.adminPwd },
+      headers : { 'X-Admin-Key': '' },
     }).catch(function(e) { console.warn('[Playbook] KV delete error:', e.message); });
   }
 }
@@ -554,90 +552,36 @@ function saveTerm() {
 // ═══════════════════════════════════════════════════════════════════════
 // MODAL DE CONTRASEÑA
 // ═══════════════════════════════════════════════════════════════════════
-function buildPasswordModal() {
-  var modal = el('div', {id:'pwd-modal-overlay', className:'pc-modal-overlay'});
-  modal.innerHTML = [
-    '<div class="pc-modal" style="max-width:380px">',
-    '  <div class="pc-modal-hdr">',
-    '    <strong>🔐 Modo Glosario — Acceso Restringido</strong>',
-    '    <button class="pc-modal-x" id="pwd-x">×</button>',
-    '  </div>',
-    '  <div class="pc-modal-body">',
-    '    <p style="font-size:13px;color:#555">Ingresa la clave de administrador Tres60 para activar el modo de edición del glosario y las secciones de contexto.</p>',
-    '    <div>',
-    '      <div class="pc-label">Clave de acceso</div>',
-    '      <input class="pc-input" type="password" id="pwd-input" placeholder="••••••••••">',
-    '    </div>',
-    '    <div class="pc-error-msg" id="pwd-error">Clave incorrecta.</div>',
-    '  </div>',
-    '  <div class="pc-modal-ftr">',
-    '    <button class="pc-btn-secondary" id="pwd-cancel">Cancelar</button>',
-    '    <button class="pc-btn-primary" id="pwd-ok">Acceder</button>',
-    '  </div>',
-    '</div>',
-  ].join('');
-
-  document.body.appendChild(modal);
-
-  document.getElementById('pwd-x').addEventListener('click', closePwdModal);
-  document.getElementById('pwd-cancel').addEventListener('click', closePwdModal);
-  document.getElementById('pwd-ok').addEventListener('click', checkPwd);
-  document.getElementById('pwd-input').addEventListener('keydown', function(e){
-    if(e.key==='Enter') checkPwd();
-  });
-}
-
-function checkPwd() {
-  var val = document.getElementById('pwd-input').value;
-  if (val === CFG.adminPwd) {
-    closePwdModal();
-    activateEditMode();
-  } else {
-    document.getElementById('pwd-error').style.display = 'block';
-    document.getElementById('pwd-input').value = '';
-    document.getElementById('pwd-input').focus();
-  }
-}
-
-function closePwdModal() {
-  document.getElementById('pwd-modal-overlay').classList.remove('open');
-  document.getElementById('pwd-input').value = '';
-  document.getElementById('pwd-error').style.display = 'none';
-}
-
 // ═══════════════════════════════════════════════════════════════════════
 // BOTÓN ADMINISTRADOR
 // ═══════════════════════════════════════════════════════════════════════
 function buildAdminButton() {
-  // El botón de modo edición solo en SOPs individuales
-  if (!document.querySelector('.sop-id')) return;
-  var btn = el('button', {id:'admin-fab'});
-  btn.textContent = '📖 Modo Glosario';
-  btn.addEventListener('click', function() {
-    if (!editMode) {
-      document.getElementById('pwd-modal-overlay').classList.add('open');
-      setTimeout(function(){ document.getElementById('pwd-input').focus(); }, 100);
-    } else {
-      deactivateEditMode();
-    }
-  });
-  document.body.appendChild(btn);
+  // Solo mostrar el botón si el usuario es admin autenticado con Google
+  function tryBuild() {
+    var auth = window.PlaybookAuth;
+    if (!auth || !auth.ready) { setTimeout(tryBuild, 150); return; }
+    if (!auth.user || auth.user.role !== 'admin') return;  // agentes no ven el botón
 
-  // Banner de aviso en modo edición
-  var banner = el('div', {className:'edit-mode-banner'});
-  banner.textContent = '📖 MODO GLOSARIO ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
-  // Insertar después del auth-bar (si existe) para no solapar el header de auth
-  var authBar = document.getElementById('auth-bar');
-  if (authBar && authBar.nextSibling) {
-    document.body.insertBefore(banner, authBar.nextSibling);
-  } else {
+    var btn = el('div', {id:'admin-fab'});
+    btn.textContent = '📖 Modo Glosario';
+    btn.style.cssText = 'position:fixed;bottom:28px;left:28px;background:#1a1a2e;color:#fff;border:none;cursor:pointer;border-radius:30px;padding:9px 16px;font-size:12px;font-weight:700;letter-spacing:.3px;z-index:700;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background .15s';
+    btn.addEventListener('click', function() {
+      if (!editMode) activateEditMode();
+      else deactivateEditMode();
+    });
+    document.body.appendChild(btn);
+
+    // Banner de aviso en modo glosario
+    var banner = el('div', {className:'edit-mode-banner'});
+    banner.textContent = '📖 MODO GLOSARIO ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
     document.body.insertBefore(banner, document.body.firstChild);
-  }
 
-  // Burbuja de selección
-  buildSelectionBubble();
-  document.addEventListener('mouseup', handleSelection);
-  document.addEventListener('touchend', handleSelection);
+    // Burbuja de selección
+    buildSelectionBubble();
+    document.addEventListener('mouseup', handleSelection);
+    document.addEventListener('touchend', handleSelection);
+  }
+  tryBuild();
 }
 
 function activateEditMode() {
@@ -915,7 +859,7 @@ function syncContextToKV(type, arr) {
   if (!CFG.workerUrl) return;
   fetch(CFG.workerUrl + '/context/' + sopId + '/' + type, {
     method  : 'POST',
-    headers : { 'Content-Type': 'application/json', 'X-Admin-Key': CFG.adminPwd },
+    headers : { 'Content-Type': 'application/json', 'X-Admin-Key': '' },
     body    : JSON.stringify({ data: arr }),
   }).catch(function(e) { console.warn('[Playbook] KV context sync error:', e.message); });
 }
