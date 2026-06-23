@@ -80,6 +80,8 @@ function injectCSS() {
   var css = [
     /* ── Ancho del contenedor ampliado 20% (1100px → 1320px) ── */
     '.container{max-width:1320px !important}',
+    /* ── Sección feedback alineada al mismo ancho que el contenido ── */
+    '.fb-section{max-width:1320px !important;padding-right:calc(320px + 40px) !important}',
 
     /* ── Término del glosario ── */
     '.gl-term{color:'+CFG.primary+';border-bottom:2px dotted '+CFG.accent+';cursor:pointer;padding:1px 3px;border-radius:3px;font-weight:600;transition:background .12s}',
