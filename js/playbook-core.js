@@ -30,6 +30,25 @@ var selText    = '';
 // ═══════════════════════════════════════════════════════════════════════
 // ARRANQUE
 // ═══════════════════════════════════════════════════════════════════════
+
+// ── Pre-llenar nombre en feedback con usuario logueado ──────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  var fbBtn = document.querySelector('.fb-open-btn');
+  if (!fbBtn) return;
+  fbBtn.addEventListener('click', function() {
+    setTimeout(function() {
+      var fbAgent = document.getElementById('fb-agent');
+      if (!fbAgent) return;
+      var auth = window.PlaybookAuth;
+      if (auth && auth.user && auth.user.name) {
+        fbAgent.value    = auth.user.name;
+        fbAgent.readOnly = true;
+        fbAgent.setAttribute('readonly', 'readonly');
+      }
+    }, 50);
+  }, true); // capture phase para asegurarse de correr antes de mostrar
+});
+
 document.addEventListener('DOMContentLoaded', function () {
   sopId    = extractSopId();
   sopTitle = (document.title || '').split('—').slice(1).join('—').trim();
@@ -84,6 +103,8 @@ function injectCSS() {
     '.icon-big{display:none !important}',
     /* ── Sección feedback alineada al mismo ancho que el contenido ── */
     '.fb-section{max-width:1320px !important;padding-right:calc(320px + 40px) !important}',
+    /* ── Campo nombre feedback: read-only ── */
+    '#fb-agent[readonly]{background:#f0f3f8;color:#555;cursor:default;border-color:#d0d8e8}',
 
     /* ── Término del glosario ── */
     '.gl-term{color:'+CFG.primary+';border-bottom:2px dotted '+CFG.accent+';cursor:pointer;padding:1px 3px;border-radius:3px;font-weight:600;transition:background .12s}',
