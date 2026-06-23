@@ -29,7 +29,7 @@ var NAV_ADMIN = [
   { id: 'knowledge', label: '\ud83d\udcda Base de Conocimiento', action: 'openTab', tab: 'knowledge' },
   { id: 'feedback',  label: '&#128172; Feedback Interno',        action: 'goFeedback' },
   { id: 'divider' },
-  { id: 'shifts',     label: '&#128260; Cambio de Turno',        soon: true },
+  { id: 'shifts',     label: '&#128211; Bit\u00e1cora de Turno',  action: 'goShifts' },
   { id: 'ai_draft',   label: '&#9997;&#65039; Redacci\u00f3n con IA', soon: true },
   { id: 'analytics',  label: '&#128202; Estad\u00edsticas',      soon: true },
 ];
@@ -412,6 +412,7 @@ function buildNav() {
       if (action === 'openTab')         openAdminPanel(tab);
       if (action === 'openUploadModal') openUploadModal();
       if (action === 'goFeedback')      window.location.href = base() + 'feedback.html';
+      if (action === 'goShifts')        window.location.href = base() + 'bitacora.html';
     });
   });
 
