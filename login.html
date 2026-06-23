@@ -64,6 +64,8 @@ h1{font-size:21px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
 <script>
 // ── Configura aquí la URL de tu Cloudflare Worker ──────────────────────────
 var WORKER_URL = 'https://playbook-mda-capstone.relizondo-0d3.workers.dev';
+// Guardar en localStorage para que todas las páginas lo usen automáticamente
+if (WORKER_URL) localStorage.setItem('mda_worker_url', WORKER_URL);
 
 var ERRORS = {
   not_authorized : { title: '&#9940; Tu correo no est&aacute; autorizado', body: 'Tu cuenta Google (<strong id="err-email"></strong>) no tiene acceso. Contacta al administrador para solicitar acceso.' },
