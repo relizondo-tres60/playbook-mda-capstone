@@ -66,7 +66,7 @@ A.authFetch = authFetch;
 function showToast(msg, isError) {
   var t = document.getElementById('ar-toast');
   if (!t) { t = document.createElement('div'); t.id = 'ar-toast'; document.body.appendChild(t); }
-  t.textContent = msg;
+  t.innerHTML = msg;
   t.style.background = isError ? '#c0392b' : '#1a6b3a';
   t.style.opacity = '1';
   t.style.transform = 'translateX(-50%) translateY(0)';
@@ -448,18 +448,43 @@ function loadVisibility() {
 
 function applyVisibility() {
   var isAdmin = A.user && A.user.role === 'admin';
+
+  // Ocultar/mostrar filas individuales
   document.querySelectorAll('.proc-row[data-sop]').forEach(function(row) {
     var hidden = A.hiddenProcs.includes(row.dataset.sop);
     if (hidden && !isAdmin) {
-      row.style.display = 'none';
-    } else if (hidden && isAdmin) {
-      row.classList.add('is-hidden');
-      row.style.display = '';
-    } else {
+      // Agente: completamente invisible
+      row.style.display    = 'none';
+      row.style.opacity    = '';
+      row.style.pointerEvents = 'none';
       row.classList.remove('is-hidden');
-      row.style.display = '';
+    } else if (hidden && isAdmin) {
+      // Admin: visible pero marcado
+      row.style.display    = '';
+      row.style.opacity    = '0.45';
+      row.style.pointerEvents = '';
+      row.classList.add('is-hidden');
+    } else {
+      row.style.display    = '';
+      row.style.opacity    = '';
+      row.style.pointerEvents = '';
+      row.classList.remove('is-hidden');
     }
   });
+
+  // Ocultar secciones de dominio vacías (para agentes)
+  if (!isAdmin) {
+    document.querySelectorAll('.dom-section').forEach(function(sec) {
+      var visible = sec.querySelectorAll('.proc-row[data-sop]');
+      var hasVisible = false;
+      visible.forEach(function(r) { if (r.style.display !== 'none') hasVisible = true; });
+      sec.style.display = hasVisible ? '' : 'none';
+    });
+  } else {
+    document.querySelectorAll('.dom-section').forEach(function(sec) {
+      sec.style.display = '';
+    });
+  }
 }
 
 function syncVisibility() {
@@ -1012,6 +1037,7 @@ A.setAllVisibility = setAllVisibility;
 A.openInviteModal  = openInviteModal;
 A.openUploadModal  = openUploadModal;
 A.showToast        = showToast;
+A.applyVisibility  = applyVisibility;
 A.authFetch        = authFetch;
 
 })();
