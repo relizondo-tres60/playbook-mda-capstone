@@ -234,7 +234,7 @@ function injectCSS() {
     '.pc-modal-overlay{position:fixed;inset:0;background:rgba(10,10,30,.55);z-index:11000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}',
     '.pc-modal-overlay.open{display:flex}',
     '.pc-modal{background:#fff;border-radius:14px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}',
-    '.pc-modal.wide{max-width:900px}',
+    '.pc-modal.wide{max-width:100%;width:100%;height:95vh;margin:0;border-radius:0}',
     '.pc-modal-hdr{background:linear-gradient(135deg,#0057a8,#003d7a);color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}',
     '.pc-modal-hdr strong{font-size:15px}',
     '.pc-modal-x{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.8;line-height:1}',
@@ -257,7 +257,7 @@ function injectCSS() {
     '.ap-btn.green{background:#1a6b3a}.ap-btn.green:hover{background:#0d3d20}',
     '.ap-btn.red{background:#c0392b}.ap-btn.red:hover{background:#922b21}',
     /* Editor de contenido */
-    '.edit-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:55vh}',
+    '.edit-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:calc(95vh - 160px)}',
     '.edit-split textarea{width:100%;height:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:10px;font-family:monospace;font-size:12px;resize:none;outline:none;color:#1a1a2e}',
     '.edit-split textarea:focus{border-color:#0057a8}',
     '.edit-preview-wrap{border:1.5px solid #d0d8e8;border-radius:8px;overflow:auto;height:100%;background:#fff}',
@@ -765,7 +765,11 @@ function loadVisibilityAdmin() {
   var c = document.getElementById('vis-container');
   if (!c) return;
 
-  var procs = (window.PROCS || []).map(function(p) { return { sop:p.sop, titulo:p.titulo, dom:p.dom }; });
+  // Buscar PROCS en window o en window._mdaProcs (alias global)
+  var rawProcs = window.PROCS || window._mdaProcs || [];
+  var procs = rawProcs.map(function(p) {
+    return { sop: p.sop || p.cs_id, titulo: p.titulo, dom: p.dom };
+  });
   if (!procs.length) {
     c.innerHTML = '<p style="color:#aaa;font-size:13px">Este panel est\u00e1 disponible en el Cat\u00e1logo principal.</p>';
     return;
