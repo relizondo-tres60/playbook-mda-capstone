@@ -463,9 +463,10 @@ function loadVisibility() {
     .then(function(d) {
       A.hiddenProcs = d.hidden || [];
       applyVisibility();
-      // Actualizar contadores del catálogo si estamos en esa página
       if (typeof buildOpsGrid === 'function') buildOpsGrid();
       if (A.isSOP) refreshSOPToolbar();
+      // Cargar keywords personalizadas para el buscador
+      loadProcKeywords();
     })
     .catch(function() {});
 }
@@ -1041,6 +1042,159 @@ function openUploadModal() {
   });
 }
 
+
+// ═══════════════════════════════════════════════════════
+// KEYWORDS DE BÚSQUEDA POR PROCEDIMIENTO
+// ═══════════════════════════════════════════════════════
+
+function loadProcKeywords() {
+  if (!A.workerUrl) return;
+  authFetch(A.workerUrl + '/proc/keywords')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      window._procKeywords = data.keywords || {};
+      // Re-renderizar el índice para mostrar los keywords actualizados
+      if (typeof window._renderIndexIfActive === 'function') window._renderIndexIfActive();
+      // Si somos admin, agregar botones de edición y parchear renderIndex
+      if (A.user && A.user.role === 'admin') {
+        document.body.classList.add('admin-mode');
+        injectKeywordEditButtons();
+        // Parchear renderIndex del catálogo para re-inyectar botones tras cada re-render
+        if (typeof renderIndex === 'function' && !renderIndex._patched) {
+          var _origRender = renderIndex;
+          renderIndex = function() {
+            _origRender.apply(this, arguments);
+            setTimeout(injectKeywordEditButtons, 50);
+          };
+          renderIndex._patched = true;
+        }
+      }
+    })
+    .catch(function() {});
+}
+
+function injectKeywordEditButtons() {
+  // Agregar botón editar a cada .proc-keywords visible
+  document.querySelectorAll('.proc-keywords[data-sop]').forEach(function(div) {
+    if (div.querySelector('.kw-edit-btn')) return; // ya tiene botón
+    var btn = document.createElement('button');
+    btn.className = 'kw-edit-btn';
+    btn.textContent = '✏️ editar';
+    btn.dataset.sop = div.dataset.sop;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openKeywordModal(div.dataset.sop);
+    });
+    div.appendChild(btn);
+  });
+}
+
+function openKeywordModal(sopId) {
+  // Encontrar el título del SOP para mostrarlo en el modal
+  var row  = document.querySelector('.proc-row[data-sop="' + sopId + '"]');
+  var title = row ? (row.querySelector('.proc-titulo') || {}).textContent || sopId : sopId;
+  var current = (window._procKeywords || {})[sopId] || '';
+
+  var ex = document.getElementById('kw-modal-overlay');
+  if (ex) ex.remove();
+
+  var o = document.createElement('div');
+  o.id = 'kw-modal-overlay';
+  o.className = 'pc-modal-overlay open';
+  o.innerHTML = [
+    '<div class="pc-modal" style="max-width:560px">',
+    '<div class="pc-modal-hdr">',
+    '<div>',
+    '<strong>🔍 Términos de búsqueda</strong>',
+    '<div style="font-size:11px;opacity:.8;margin-top:2px">' + esc(sopId) + ' — ' + esc(title) + '</div>',
+    '</div>',
+    '<button class="pc-modal-x" id="kw-x">×</button>',
+    '</div>',
+    '<div class="pc-modal-body">',
+    '<div class="ap-note">',
+    'Agrega sinónimos, términos alternativos o palabras clave separadas por comas o espacios.<br>',
+    'Estos términos <strong>NO reemplazan</strong> el texto original — se suman al buscador.',
+    '</div>',
+    '<div>',
+    '<div class="pc-label">Texto actual bajo el título (no editable)</div>',
+    '<div style="background:#f7f9fc;border-radius:8px;padding:9px 12px;font-size:12px;color:#555;font-style:italic">' + esc(row ? (row.querySelector('.proc-desc') || {}).textContent || '' : '') + '</div>',
+    '</div>',
+    '<div>',
+    '<div class="pc-label">Términos adicionales para búsqueda</div>',
+    '<textarea class="pc-input" id="kw-input" rows="3" style="resize:vertical" ',
+    'placeholder="Ej: alta usuario, onboarding, nuevo ingreso, acceso red corporativa, crear cuenta"></textarea>',
+    '</div>',
+    '<div style="background:#e8f5ee;border-radius:8px;padding:9px 12px;font-size:11px;color:#1a6b3a">',
+    '💡 Ejemplo: para "Creación de Cuenta AD" podrías agregar:<br>',
+    '<em>alta usuario, nuevo empleado, onboarding, incorporación, acceso dominio</em>',
+    '</div>',
+    '<div class="pc-error" id="kw-err"></div>',
+    '</div>',
+    '<div class="pc-modal-ftr">',
+    '<button class="pc-btn-danger" id="kw-clear">🗑 Limpiar términos</button>',
+    '<div style="flex:1"></div>',
+    '<button class="pc-btn-secondary" id="kw-cancel">Cancelar</button>',
+    '<button class="pc-btn-primary" id="kw-save">💾 Guardar</button>',
+    '</div>',
+    '</div>',
+  ].join('');
+
+  document.body.appendChild(o);
+  o.addEventListener('click', function(e) { if (e.target === o) o.remove(); });
+
+  var input = document.getElementById('kw-input');
+  input.value = current;
+
+  document.getElementById('kw-x').addEventListener('click', function() { o.remove(); });
+  document.getElementById('kw-cancel').addEventListener('click', function() { o.remove(); });
+
+  document.getElementById('kw-clear').addEventListener('click', function() {
+    if (!confirm('¿Eliminar todos los términos personalizados de este procedimiento?')) return;
+    saveKeyword(sopId, '', o);
+  });
+
+  document.getElementById('kw-save').addEventListener('click', function() {
+    saveKeyword(sopId, input.value.trim(), o);
+  });
+
+  setTimeout(function() { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 80);
+}
+
+function saveKeyword(sopId, keywords, modal) {
+  if (!A.workerUrl) {
+    showToast('Worker no configurado.', true);
+    return;
+  }
+  authFetch(A.workerUrl + '/proc/keywords', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sopId: sopId, keywords: keywords }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) {
+      var errEl = document.getElementById('kw-err');
+      if (errEl) { errEl.textContent = d.error; errEl.style.display = 'block'; }
+      return;
+    }
+    // Actualizar cache local
+    if (!window._procKeywords) window._procKeywords = {};
+    window._procKeywords[sopId] = keywords;
+
+    // Cerrar modal
+    if (modal) modal.remove();
+
+    // Re-renderizar el índice para reflejar el cambio
+    if (typeof window._renderIndexIfActive === 'function') window._renderIndexIfActive();
+    setTimeout(injectKeywordEditButtons, 100);
+
+    showToast(keywords
+      ? '✅ Términos guardados — el buscador ya los incluye'
+      : '✅ Términos eliminados');
+  })
+  .catch(function() { showToast('❌ Error al guardar.', true); });
+}
+
 // ═══════════════════════════════════════════════════════
 // LOGOUT
 // ═══════════════════════════════════════════════════════
@@ -1065,6 +1219,8 @@ A.setAllVisibility = setAllVisibility;
 A.openInviteModal  = openInviteModal;
 A.openUploadModal  = openUploadModal;
 A.showToast        = showToast;
+A.loadProcKeywords = loadProcKeywords;
+A.openKeywordModal = openKeywordModal;
 A.applyVisibility  = applyVisibility;
 A.authFetch        = authFetch;
 
