@@ -94,7 +94,7 @@ function injectCSS() {
 
 /* ── BOOT ─────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function () {
-  A.workerUrl = (window.CFG && CFG.workerUrl) || localStorage.getItem('mda_worker_url') || '';
+  A.workerUrl = (window.CFG && window.CFG.workerUrl) || localStorage.getItem('mda_worker_url') || 'https://playbook-mda-capstone.relizondo-0d3.workers.dev';
   A.session   = localStorage.getItem('mda_session') || '';
 
   var urlParams = new URLSearchParams(window.location.search);
@@ -139,8 +139,8 @@ function finishBoot() {
 }
 
 function redirectToLogin() {
-  if (!window.location.pathname.includes('login.html'))
-    window.location.href = 'login.html';
+  if (!window.location.pathname.includes('/login'))
+    window.location.href = '/login';
 }
 
 /* ── WIDGET FLOTANTE ──────────────────────────────────────────────────────── */
@@ -501,9 +501,9 @@ function logout() {
   localStorage.removeItem('mda_session');
   if (A.workerUrl) {
     fetch(A.workerUrl + '/auth/logout', { headers: { 'Authorization': 'Bearer ' + A.session } })
-      .finally(function () { window.location.href = 'login.html'; });
+      .finally(function () { window.location.href = '/login'; });
   } else {
-    window.location.href = 'login.html';
+    window.location.href = '/login';
   }
 }
 
