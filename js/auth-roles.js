@@ -27,6 +27,7 @@ var NAV_ADMIN = [
   { id: 'users',      label: '&#128101; Usuarios y Roles',       action: 'openTab', tab: 'users' },
   { id: 'visibility', label: '&#128065; Visibilidad de SOPs',    action: 'openTab', tab: 'vis' },
   { id: 'upload',     label: '&#11014;&#65039; Subir Procedimiento', action: 'openUploadModal' },
+  { id: 'knowledge', label: '\ud83d\udcda Base de Conocimiento', action: 'openTab', tab: 'knowledge' },
   { id: 'divider' },
   { id: 'shifts',     label: '&#128260; Cambio de Turno',        soon: true },
   { id: 'ai_draft',   label: '&#9997;&#65039; Redacci\u00f3n con IA', soon: true },
@@ -274,6 +275,27 @@ function injectCSS() {
     '.file-preview .fp-name{font-weight:700;color:#0057a8}',
     /* Toast */
     '#ar-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a6b3a;color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}',
+  /* Knowledge base */
+  '.kb-entry{background:#f7f9fc;border-radius:10px;padding:14px 16px;margin-bottom:10px;border-left:3px solid #0057a8}',
+  '.kb-entry.pending{border-left-color:#f59e0b;background:#fffbeb}',
+  '.kb-entry-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}',
+  '.kb-situation{font-weight:700;font-size:13px;color:#1a1a2e;flex:1}',
+  '.kb-cat{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e8f0fb;color:#0057a8;white-space:nowrap}',
+  '.kb-responses{list-style:none;margin:6px 0 8px}',
+  '.kb-responses li{font-size:12px;color:#444;padding:2px 0 2px 14px;position:relative}',
+  '.kb-responses li::before{content:"\u2192";position:absolute;left:0;color:#0057a8}',
+  '.kb-meta{font-size:10px;color:#aaa;margin-top:4px}',
+  '.kb-actions{display:flex;gap:6px;margin-top:8px}',
+  '.kb-btn{border:none;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700}',
+  '.kb-btn.approve{background:#e8f5ee;color:#1a6b3a}',
+  '.kb-btn.edit{background:#e8f0fb;color:#0057a8}',
+  '.kb-btn.del{background:#fde8e8;color:#c0392b}',
+  '.conv-textarea{width:100%;height:220px;border:1.5px solid #d0d8e8;border-radius:8px;padding:10px;font-family:inherit;font-size:12px;resize:vertical;outline:none;line-height:1.6}',
+  '.conv-textarea:focus{border-color:#0057a8}',
+  '.extract-result{border:1px solid #d0d8e8;border-radius:8px;overflow:hidden;margin-top:10px}',
+  '.extract-item{padding:12px 14px;border-bottom:1px solid #f0f3f8;display:flex;align-items:flex-start;gap:10px}',
+  '.extract-item:last-child{border-bottom:none}',
+  '.extract-item input[type=checkbox]{margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer}',
     /* Proc hidden overlay in catalog */
     '.proc-row.is-hidden{opacity:.5;font-style:italic}',
   ].join('');
@@ -625,10 +647,12 @@ function openAdminPanel(tab) {
     '</div>',
     '<div class="adm-tabs">',
     '<div class="adm-tab" data-tab="users">&#128101; Usuarios y Roles</div>',
-    '<div class="adm-tab" data-tab="vis">&#128065; Visibilidad de Procedimientos</div>',
+    '<div class="adm-tab" data-tab="vis">&#128065; Visibilidad</div>',
+    '<div class="adm-tab" data-tab="knowledge">&#128218; Base de Conocimiento</div>',
     '</div>',
     '<div class="adm-body" id="adm-tab-users"><div id="users-container">Cargando...</div></div>',
     '<div class="adm-body" id="adm-tab-vis"><div id="vis-container">Cargando...</div></div>',
+    '<div class="adm-body" id="adm-tab-knowledge"><div id="knowledge-container">Cargando...</div></div>',
     '</div>',
   ].join('');
 
@@ -642,8 +666,9 @@ function openAdminPanel(tab) {
   });
 
   switchAdminTab(tab);
-  if (tab === 'users') loadRoles();
-  if (tab === 'vis')   loadVisibilityAdmin();
+  if (tab === 'users')    loadRoles();
+  if (tab === 'vis')      loadVisibilityAdmin();
+  if (tab === 'knowledge') loadKnowledge();
 }
 
 function switchAdminTab(tab) {
@@ -653,8 +678,9 @@ function switchAdminTab(tab) {
   document.querySelectorAll('.adm-body').forEach(function(b) {
     b.classList.toggle('active', b.id === 'adm-tab-' + tab);
   });
-  if (tab === 'users') loadRoles();
-  if (tab === 'vis')   loadVisibilityAdmin();
+  if (tab === 'users')    loadRoles();
+  if (tab === 'vis')      loadVisibilityAdmin();
+  if (tab === 'knowledge') loadKnowledge();
 }
 
 function closeAdminPanel() {
@@ -1041,3 +1067,258 @@ A.applyVisibility  = applyVisibility;
 A.authFetch        = authFetch;
 
 })();
+
+// ═══════════════════════════════════════════════════════
+// BASE DE CONOCIMIENTO (Tab en panel admin)
+// ═══════════════════════════════════════════════════════
+
+function loadKnowledge() {
+  var c = document.getElementById('knowledge-container');
+  if (!c) return;
+  if (!A.workerUrl) { c.innerHTML = '<p style="color:#aaa;font-size:13px">Worker no configurado.</p>'; return; }
+
+  authFetch(A.workerUrl + '/knowledge')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var entries  = data.entries || [];
+      var approved = entries.filter(function(e) { return e.approved; });
+      var pending  = entries.filter(function(e) { return !e.approved; });
+
+      var cats = ['Conectividad','M365','Hardware','SAP','VHF','Escalamiento','General'];
+
+      var html = [
+        '<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">',
+        '<button class="ap-btn" id="btn-add-knowledge">+ Agregar manualmente</button>',
+        '<button class="ap-btn" style="background:#7b2d8b" id="btn-extract-conv">&#129302; Extraer de conversaci\u00f3n</button>',
+        '<span style="font-size:11px;color:#888;margin-left:4px">' + approved.length + ' aprobadas &nbsp;\u00b7&nbsp; ' + pending.length + ' pendientes de revisi\u00f3n</span>',
+        '</div>',
+      ].join('');
+
+      if (pending.length > 0) {
+        html += '<div style="background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7c5c00">' +
+          '&#9888;&#65039; <strong>' + pending.length + ' entrada(s) pendiente(s) de aprobaci\u00f3n</strong> \u2014 revisar abajo' +
+          '</div>';
+        pending.forEach(function(e) { html += renderKBEntry(e, true); });
+        html += '<hr style="margin:16px 0;border:none;border-top:1px solid #eef1f7">';
+      }
+
+      if (!approved.length && !pending.length) {
+        html += '<div style="text-align:center;padding:40px;color:#aaa">' +
+          '<div style="font-size:40px;margin-bottom:10px">&#128218;</div>' +
+          '<div style="font-size:14px;font-weight:700">La base de conocimiento est\u00e1 vac\u00eda</div>' +
+          '<div style="font-size:12px;margin-top:6px">Agrega entradas manualmente o pega una conversaci\u00f3n de Teams para extraer aprendizajes con IA.</div>' +
+          '</div>';
+      } else {
+        // Agrupar por categoría
+        cats.forEach(function(cat) {
+          var catEntries = approved.filter(function(e) { return (e.category || 'General') === cat; });
+          if (!catEntries.length) return;
+          html += '<div style="font-size:11px;font-weight:700;color:#0057a8;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px">' + cat + ' (' + catEntries.length + ')</div>';
+          catEntries.forEach(function(e) { html += renderKBEntry(e, false); });
+        });
+      }
+
+      c.innerHTML = html;
+
+      document.getElementById('btn-add-knowledge').addEventListener('click', openAddKnowledgeModal);
+      document.getElementById('btn-extract-conv').addEventListener('click', openExtractModal);
+
+      c.querySelectorAll('[data-kb-approve]').forEach(function(btn) {
+        btn.addEventListener('click', function() { approveKBEntry(btn.dataset.kbApprove); });
+      });
+      c.querySelectorAll('[data-kb-delete]').forEach(function(btn) {
+        btn.addEventListener('click', function() { deleteKBEntry(btn.dataset.kbDelete); });
+      });
+    })
+    .catch(function() { c.innerHTML = '<p style="color:#c0392b">Error al cargar la base de conocimiento.</p>'; });
+}
+
+function renderKBEntry(e, isPending) {
+  var responses = (e.responses || []).map(function(r) { return '<li>' + esc(r) + '</li>'; }).join('');
+  return '<div class="kb-entry' + (isPending ? ' pending' : '') + '">' +
+    '<div class="kb-entry-hdr">' +
+    '<div class="kb-situation">' + (isPending ? '&#8987; ' : '') + esc(e.situation) + '</div>' +
+    '<span class="kb-cat">' + esc(e.category || 'General') + '</span>' +
+    '</div>' +
+    '<ul class="kb-responses">' + responses + '</ul>' +
+    '<div class="kb-meta">Fuente: ' + esc(e.source || 'manual') + ' &nbsp;\u00b7&nbsp; ' +
+    (e.addedBy ? 'por ' + esc(e.addedBy.split('@')[0]) : '') + ' &nbsp;\u00b7&nbsp; ' +
+    (e.addedAt ? new Date(e.addedAt).toLocaleDateString('es-CL') : '') + '</div>' +
+    '<div class="kb-actions">' +
+    (isPending ? '<button class="kb-btn approve" data-kb-approve="' + esc(e.id) + '">&#10003; Aprobar</button>' : '') +
+    '<button class="kb-btn del" data-kb-delete="' + esc(e.id) + '">\u00d7 Eliminar</button>' +
+    '</div></div>';
+}
+
+function approveKBEntry(id) {
+  authFetch(A.workerUrl + '/knowledge/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approved: true }),
+  }).then(function() { loadKnowledge(); showToast('&#10003; Entrada aprobada y activa para la IA'); })
+    .catch(function() { showToast('&#10060; Error', true); });
+}
+
+function deleteKBEntry(id) {
+  if (!confirm('\u00bfEliminar esta entrada de conocimiento?')) return;
+  authFetch(A.workerUrl + '/knowledge/' + id, { method: 'DELETE' })
+    .then(function() { loadKnowledge(); showToast('Entrada eliminada'); })
+    .catch(function() { showToast('&#10060; Error', true); });
+}
+
+// ── Modal: Agregar entrada manualmente ────────────────────────────────────────
+function openAddKnowledgeModal() {
+  var ex = document.getElementById('kb-add-overlay');
+  if (ex) ex.remove();
+  var o = document.createElement('div');
+  o.id = 'kb-add-overlay'; o.className = 'pc-modal-overlay open';
+  o.innerHTML = [
+    '<div class="pc-modal" style="max-width:560px">',
+    '<div class="pc-modal-hdr"><strong>&#43; Agregar conocimiento</strong><button class="pc-modal-x" id="kba-x">\u00d7</button></div>',
+    '<div class="pc-modal-body">',
+    '<div><div class="pc-label">Situaci\u00f3n / Problema</div>',
+    '<input class="pc-input" id="kba-sit" placeholder="Ej: Usuario reporta conexi\u00f3n a Teams lenta"></div>',
+    '<div><div class="pc-label">Categor\u00eda</div>',
+    '<select class="pc-select" id="kba-cat">',
+    '<option>Conectividad</option><option>M365</option><option>Hardware</option>',
+    '<option>SAP</option><option>VHF</option><option>Escalamiento</option><option selected>General</option>',
+    '</select></div>',
+    '<div><div class="pc-label">Respuestas comprobadas (una por l\u00ednea)</div>',
+    '<textarea class="conv-textarea" id="kba-resp" rows="5" placeholder="Llamar al celular para descartar problema de app\nVerificar si otros del mismo switch tienen el problema\nTransferir a Networking si persiste m\u00e1s de 10 min"></textarea></div>',
+    '<div class="pc-error" id="kba-err"></div>',
+    '</div>',
+    '<div class="pc-modal-ftr">',
+    '<button class="pc-btn-secondary" id="kba-cancel">Cancelar</button>',
+    '<button class="pc-btn-primary" id="kba-save">&#128190; Guardar</button>',
+    '</div></div>',
+  ].join('');
+  document.body.appendChild(o);
+  o.addEventListener('click', function(e) { if (e.target === o) o.remove(); });
+  document.getElementById('kba-x').addEventListener('click', function() { o.remove(); });
+  document.getElementById('kba-cancel').addEventListener('click', function() { o.remove(); });
+  document.getElementById('kba-save').addEventListener('click', function() {
+    var sit      = (document.getElementById('kba-sit').value  || '').trim();
+    var cat      =  document.getElementById('kba-cat').value;
+    var respRaw  = (document.getElementById('kba-resp').value || '').trim();
+    var responses = respRaw.split('\n').map(function(r) { return r.trim(); }).filter(Boolean);
+    var errEl    =  document.getElementById('kba-err');
+    if (!sit || !responses.length) { errEl.textContent = 'Completa la situaci\u00f3n y al menos una respuesta.'; errEl.style.display = 'block'; return; }
+    authFetch(A.workerUrl + '/knowledge', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ situation: sit, responses: responses, category: cat, source: 'manual' }),
+    }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) { errEl.textContent = d.error; errEl.style.display = 'block'; return; }
+        o.remove(); loadKnowledge();
+        showToast('&#10003; Conocimiento guardado. El bot ya puede usarlo.');
+      }).catch(function() { errEl.textContent = 'Error al guardar.'; errEl.style.display = 'block'; });
+  });
+  setTimeout(function() { var el = document.getElementById('kba-sit'); if (el) el.focus(); }, 80);
+}
+
+// ── Modal: Extraer desde conversación ─────────────────────────────────────────
+function openExtractModal() {
+  var ex = document.getElementById('kb-ext-overlay');
+  if (ex) ex.remove();
+  var o = document.createElement('div');
+  o.id = 'kb-ext-overlay'; o.className = 'pc-modal-overlay open';
+  o.innerHTML = [
+    '<div class="pc-modal" style="max-width:680px">',
+    '<div class="pc-modal-hdr"><strong>&#129302; Extraer aprendizajes de conversaci\u00f3n</strong><button class="pc-modal-x" id="ext-x">\u00d7</button></div>',
+    '<div class="pc-modal-body">',
+    '<div class="ap-note">Pega aqu\u00ed una conversaci\u00f3n de Teams, WhatsApp u otro canal. La IA identificar\u00e1 los aprendizajes pr\u00e1cticos del equipo.</div>',
+    '<div><div class="pc-label">Conversaci\u00f3n (puedes pegar texto copiado directamente)</div>',
+    '<textarea class="conv-textarea" id="ext-conv" placeholder="Ejemplo:\nOscar: Me llega un ticket, el usuario dice que Teams va lento\nJorge: \u00bfest\u00e1 usando la app o el browser?\nOscar: app nativa\nJorge: dile que la cierre completamente y la reabra, generalmente eso resuelve\nOscar: funcionó, gracias!"></textarea></div>',
+    '<div id="ext-results" style="display:none">',
+    '<div class="pc-label" style="margin-top:4px">Aprendizajes detectados \u2014 selecciona los que quieres guardar:</div>',
+    '<div class="extract-result" id="ext-items"></div>',
+    '</div>',
+    '<div class="pc-error" id="ext-err"></div>',
+    '</div>',
+    '<div class="pc-modal-ftr">',
+    '<button class="pc-btn-secondary" id="ext-cancel">Cancelar</button>',
+    '<button class="pc-btn-primary" id="ext-extract">&#129302; Extraer con IA</button>',
+    '<button class="pc-btn-primary" id="ext-save" style="display:none;background:#1a6b3a">&#128190; Guardar seleccionados</button>',
+    '</div></div>',
+  ].join('');
+  document.body.appendChild(o);
+  o.addEventListener('click', function(e) { if (e.target === o) o.remove(); });
+  document.getElementById('ext-x').addEventListener('click', function() { o.remove(); });
+  document.getElementById('ext-cancel').addEventListener('click', function() { o.remove(); });
+
+  var extracted = [];
+
+  document.getElementById('ext-extract').addEventListener('click', function() {
+    var conv = (document.getElementById('ext-conv').value || '').trim();
+    var errEl = document.getElementById('ext-err');
+    if (conv.length < 30) { errEl.textContent = 'La conversaci\u00f3n es muy corta. Pega al menos un intercambio.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+
+    var btn = document.getElementById('ext-extract');
+    btn.textContent = 'Analizando...'; btn.disabled = true;
+
+    authFetch(A.workerUrl + '/knowledge/extract', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversation: conv }),
+    }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        btn.textContent = 'Extraer con IA'; btn.disabled = false;
+        if (d.error) { errEl.textContent = d.error; errEl.style.display = 'block'; return; }
+        extracted = d.extracted || [];
+        if (!extracted.length) {
+          errEl.textContent = 'La IA no encontr\u00f3 aprendizajes claros en esta conversaci\u00f3n. Intenta con un intercambio m\u00e1s concreto.';
+          errEl.style.display = 'block'; return;
+        }
+
+        var itemsHtml = extracted.map(function(item, idx) {
+          var resps = (item.responses || []).map(function(r) { return '<li>' + esc(r) + '</li>'; }).join('');
+          return '<div class="extract-item">' +
+            '<input type="checkbox" id="ext-chk-' + idx + '" checked>' +
+            '<div style="flex:1">' +
+            '<div style="font-weight:700;font-size:13px;color:#1a1a2e;margin-bottom:4px">' + esc(item.situation) + '</div>' +
+            '<ul class="kb-responses">' + resps + '</ul>' +
+            '<span class="kb-cat">' + esc(item.category || 'General') + '</span>' +
+            '</div></div>';
+        }).join('');
+
+        document.getElementById('ext-items').innerHTML = itemsHtml;
+        document.getElementById('ext-results').style.display = 'block';
+        document.getElementById('ext-save').style.display = 'inline-block';
+        showToast('&#129302; IA detect\u00f3 ' + extracted.length + ' aprendizaje(s). Revisa y guarda.');
+      })
+      .catch(function() {
+        btn.textContent = 'Extraer con IA'; btn.disabled = false;
+        errEl.textContent = 'Error al contactar el Worker.'; errEl.style.display = 'block';
+      });
+  });
+
+  document.getElementById('ext-save').addEventListener('click', function() {
+    var selected = extracted.filter(function(_, idx) {
+      var chk = document.getElementById('ext-chk-' + idx);
+      return chk && chk.checked;
+    });
+    if (!selected.length) { showToast('Selecciona al menos un aprendizaje.', true); return; }
+
+    var promises = selected.map(function(item) {
+      return authFetch(A.workerUrl + '/knowledge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          situation: item.situation, responses: item.responses,
+          category: item.category || 'General', source: 'extracted',
+        }),
+      });
+    });
+
+    Promise.all(promises).then(function() {
+      o.remove(); loadKnowledge();
+      showToast('&#10003; ' + selected.length + ' aprendizaje(s) guardados. El bot ya puede usarlos.');
+    }).catch(function() { showToast('&#10060; Error al guardar algunos aprendizajes.', true); });
+  });
+
+  setTimeout(function() { var el = document.getElementById('ext-conv'); if (el) el.focus(); }, 80);
+}
+
+// Exponer en API pública
+window.PlaybookAuth.loadKnowledge      = loadKnowledge;
+window.PlaybookAuth.openExtractModal   = openExtractModal;
+window.PlaybookAuth.openAddKnowledgeModal = openAddKnowledgeModal;
