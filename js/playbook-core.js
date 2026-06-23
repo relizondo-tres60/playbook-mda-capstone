@@ -900,7 +900,7 @@ function buildAIPanel() {
   document.getElementById('ai-send').addEventListener('click', sendAIMessage);
 
   checkProxyStatus();
-  addAIMessage('bot', 'Hola 👋 Soy el asistente de <strong>' + sopId + '</strong>. Puedo responder preguntas sobre este procedimiento, ayudarte a interpretar pasos o aclarar términos.');
+  addAIMessage('bot', 'Hola! Soy el asistente de **' + sopId + '**. Puedo responderte sobre:\n- Los pasos de este procedimiento\n- Aclarar términos o conceptos\n- Ayudarte si hay dudas durante un incidente');
 }
 
 var proxyConnected = false;
@@ -976,8 +976,10 @@ function addAIMessage(who, html, costNote) {
   var msgs = document.getElementById('ai-msgs');
   var thinking = document.getElementById('ai-thinking');
   var div = el('div', {className:'ai-msg ai-msg-' + (who==='bot'?'bot':'user')});
-  div.innerHTML = '<div class="ai-bubble">' + (who==='bot' ? html : esc(html)) + '</div>' +
-    (costNote ? '<div class="ai-time">' + costNote + '</div>' : '');
+  var formattedContent = (who === 'bot')
+    ? (window.formatAIResponse ? window.formatAIResponse(html) : html.replace(/\n/g,'<br>'))
+    : esc(html);
+  div.innerHTML = '<div class="ai-bubble">' + formattedContent + '</div>';
   msgs.insertBefore(div, thinking);
   scrollAI();
 }
