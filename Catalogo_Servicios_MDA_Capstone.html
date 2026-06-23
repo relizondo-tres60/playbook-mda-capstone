@@ -281,7 +281,8 @@ setInterval(updateGreeting, 60000);
 function buildOpsGrid(){
   const grid = document.getElementById('ops-grid');
   grid.innerHTML = OPS_DEF.map(op => {
-    const count = PROCS.filter(p => p.ops.includes(op.id)).length;
+    const hiddenSet = new Set(window.PlaybookAuth ? (window.PlaybookAuth.hiddenProcs || []) : []);
+    const count = PROCS.filter(p => p.ops.includes(op.id) && !hiddenSet.has(p.sop)).length;
     return `<button class="op-card" style="background:${op.bg}" onclick="selectOp('${op.id}')">
       <span class="op-count">${count} procedimientos</span>
       <span class="op-icon">${op.icon}</span>
@@ -359,11 +360,12 @@ function renderProcRow(proc){
 
 function renderIndex(){
   const op = currentOp;
+  const hiddenSet = new Set(window.PlaybookAuth ? (window.PlaybookAuth.hiddenProcs || []) : []);
   const container = document.getElementById('procedures-container');
   let html = '';
   DOMS.forEach(dom => {
     const procs = PROCS.filter(p =>
-      p.dom === dom.cod && (op === 'ALL' || p.ops.includes(op))
+      p.dom === dom.cod && (op === 'ALL' || p.ops.includes(op)) && !hiddenSet.has(p.sop)
     );
     if(procs.length === 0) return;
     html += `<div class="dom-section" data-dom="${dom.cod}">
@@ -528,6 +530,22 @@ window.loadCustomSOPs = function() {
 };
 
 // Disparar carga de SOPs custom cuando PlaybookAuth esté listo
+// Cuando PlaybookAuth carga la visibilidad, re-renderizar las cards de bienvenida
+var _origApply = null;
+(function patchApplyVisibility() {
+  if (window.PlaybookAuth && window.PlaybookAuth.applyVisibility) {
+    var orig = window.PlaybookAuth.applyVisibility;
+    window.PlaybookAuth.applyVisibility = function() {
+      orig.apply(this, arguments);
+      // Re-renderizar contadores de la pantalla de bienvenida
+      if (typeof renderOpsGrid === 'function') renderOpsGrid();
+      if (typeof renderIndex  === 'function' && currentOp) renderIndex();
+    };
+  } else {
+    setTimeout(patchApplyVisibility, 150);
+  }
+})();
+
 (function waitForAuth() {
   if (window.PlaybookAuth && window.PlaybookAuth.ready) {
     window.loadCustomSOPs();
