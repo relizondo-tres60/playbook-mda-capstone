@@ -136,6 +136,8 @@ function finishBoot() {
   loadVisibility();
   if (A.isSOP && A.user.role === 'admin') buildSOPToolbar();
   if (A.onReady) A.onReady(A.user);
+  // Chat IA en el catálogo (no en SOPs)
+  if (!A.isSOP) setTimeout(buildCatalogAIChat, 100);
 }
 
 function redirectToLogin() {
@@ -1258,7 +1260,7 @@ A.openKeywordModal = openKeywordModal;
 A.applyVisibility  = applyVisibility;
 A.authFetch        = authFetch;
 
-})();
+
 
 // ═══════════════════════════════════════════════════════
 // BASE DE CONOCIMIENTO (Tab en panel admin)
@@ -1583,9 +1585,11 @@ window.formatAIResponse = formatAIResponse;
 var _catAiHistory = [];
 
 function buildCatalogAIChat() {
-  // Solo en el catálogo (no SOPs, no otras páginas)
+  // Solo en el catálogo (no SOPs)
   if (A.isSOP) return;
   if (document.getElementById('cat-ai-fab')) return;
+  // Verificar que el DOM esté listo
+  if (!document.body) { setTimeout(buildCatalogAIChat, 100); return; }
 
   var fab = document.createElement('button');
   fab.id = 'cat-ai-fab';
@@ -1712,11 +1716,7 @@ function scrollCatalogAI() {
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
-// ── Arrancar el chat IA del catálogo cuando PlaybookAuth esté listo ───────────
-(function waitForCatalogAI() {
-  if (window.PlaybookAuth && window.PlaybookAuth.ready) {
-    buildCatalogAIChat();
-  } else {
-    setTimeout(waitForCatalogAI, 200);
-  }
+// Chat IA del catálogo arranca desde finishBoot()
+
+
 })();
