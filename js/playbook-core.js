@@ -1,12 +1,7 @@
-/*!
- * Playbook Core — MDA Capstone Copper  v1.0
- * ──────────────────────────────────────────
- * Incluye: glosario emergente editable · secciones de contexto · asistente IA
- * Requiere: localStorage · Para IA: proxy.py corriendo en localhost:5001
- *
- * Para activar Modo Edición: clic en el botón ⚙ → clave 
- */
-(function () {
+// Playbook Core - MDA Capstone Copper v1.0
+// Glosario emergente · Contexto operacional · Bot IA
+// Solo admins autenticados con Google pueden activar el Modo Glosario
+(function() {
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -215,7 +210,6 @@ function injectCSS() {
     '.ai-time{font-size:10px;color:#aaa;margin-top:2px;padding:0 3px}',
     '.ai-msg-bot .ai-time{text-align:left}',
     '.ai-msg-user .ai-time{text-align:right}',
-    '.ai-cost-bar{background:#e8f0fb;border-top:1px solid #d0ddef;padding:6px 14px;font-size:11px;color:'+CFG.primary+';flex-shrink:0;display:flex;justify-content:space-between}',
     '#ai-input-row{padding:9px 12px;border-top:1px solid #eef1f7;background:#fff;display:flex;gap:7px;flex-shrink:0}',
     '#ai-input{flex:1;border:1.5px solid #d0d8e8;border-radius:8px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;color:#1a1a2e}',
     '#ai-input:focus{border-color:'+CFG.primary+'}',
@@ -870,7 +864,6 @@ var _origAttachCtxEvents = null;  // no-op, el delete ya llama lsSet, solo añad
 // ═══════════════════════════════════════════════════════════════════════
 // ASISTENTE IA
 // ═══════════════════════════════════════════════════════════════════════
-var aiCost = 0;
 var aiHistory = [];
 
 function buildAIPanel() {
@@ -892,10 +885,7 @@ function buildAIPanel() {
     '<div id="ai-msgs">',
     '  <div id="ai-thinking" style="display:none">escribiendo...</div>',
     '</div>',
-    '<div class="ai-cost-bar">',
-    '  <span>💰 Costo sesión: <strong id="ai-cost-label">$0.000</strong> USD</span>',
-    '  <span id="ai-config-note" style="color:#c0392b;font-size:10px;display:none">⚠ proxy.py no conectado</span>',
-    '</div>',
+
     '<div id="ai-input-row">',
     '  <input id="ai-input" type="text" placeholder="Pregunta sobre este procedimiento...">',
     '  <button id="ai-send">↑</button>',
@@ -919,7 +909,7 @@ function checkProxyStatus() {
   var pingUrl = CFG.workerUrl ? CFG.workerUrl + '/ping' : 'http://localhost:5001/ping';
   fetch(pingUrl, {method:'GET'})
     .then(function(){ proxyConnected = true; setAIStatus('● En línea', '#4ade80'); })
-    .catch(function(){ proxyConnected = false; setAIStatus('● Proxy no conectado', '#f87171'); document.getElementById('ai-config-note').style.display=''; });
+    .catch(function(){ proxyConnected = false; setAIStatus('● Proxy no conectado', '#f87171'); });
 }
 
 function setAIStatus(text, color) {
@@ -959,7 +949,10 @@ function sendAIMessage() {
   var aiUrl = CFG.workerUrl ? CFG.workerUrl + '/chat' : 'http://localhost:5001/chat';
   fetch(aiUrl, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type' : 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('mda_session') || '')
+    },
     body: JSON.stringify({
       system  : systemPrompt,
       messages: aiHistory,
@@ -970,11 +963,8 @@ function sendAIMessage() {
   .then(function(data) {
     thinking.style.display = 'none';
     var reply = data.response || 'Sin respuesta del servidor.';
-    var cost  = data.cost || 0.013;
-    aiCost += cost;
     aiHistory.push({role:'assistant', content:reply});
-    addAIMessage('bot', reply, '~$' + cost.toFixed(3));
-    document.getElementById('ai-cost-label').textContent = '$' + aiCost.toFixed(3);
+    addAIMessage('bot', reply);
   })
   .catch(function(e) {
     thinking.style.display = 'none';
