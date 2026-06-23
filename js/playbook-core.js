@@ -78,6 +78,9 @@ function lsSet(key, val) {
 // ═══════════════════════════════════════════════════════════════════════
 function injectCSS() {
   var css = [
+    /* ── Ancho del contenedor ampliado 20% (1100px → 1320px) ── */
+    '.container{max-width:1320px !important}',
+
     /* ── Término del glosario ── */
     '.gl-term{color:'+CFG.primary+';border-bottom:2px dotted '+CFG.accent+';cursor:pointer;padding:1px 3px;border-radius:3px;font-weight:600;transition:background .12s}',
     '.gl-term:hover{background:#fff0e0;color:'+CFG.accent+'}',
@@ -189,7 +192,7 @@ function injectCSS() {
     '.ctx-empty{font-size:12px;color:#aaa;font-style:italic;padding:8px 0}',
 
     /* ── AI Chat ── */
-    '#ai-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;background:linear-gradient(135deg,'+CFG.primary+',#7b2d8b);border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 20px rgba(0,87,168,.4);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:700;transition:transform .15s}',
+    '#ai-fab{position:fixed;bottom:26px;right:26px;width:62px;height:62px;background:linear-gradient(135deg,'+CFG.primary+',#7b2d8b);border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 20px rgba(0,87,168,.4);display:flex;align-items:center;justify-content:center;font-size:26px;z-index:700;transition:transform .15s}',
     '#ai-fab:hover{transform:scale(1.08)}',
     '#ai-panel{position:fixed;bottom:90px;right:28px;width:360px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:700;display:none;flex-direction:column;overflow:hidden;max-height:520px}',
     '#ai-panel.open{display:flex}',
