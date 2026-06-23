@@ -261,8 +261,6 @@ window._mdaProcs = PROCS; // expuesto para auth-roles.js
 const DOMS = [{"cod": "GIA", "name": "Gestión de Identidad y Accesos", "color": "#1a6b3a", "icon": "🔑"}, {"cod": "SAP", "name": "SAP y Aplicaciones Globales", "color": "#7b2d8b", "icon": "⚙️"}, {"cod": "APP", "name": "Productividad y Aplicaciones Corporativas", "color": "#0057a8", "icon": "💼"}, {"cod": "EQU", "name": "Equipos y Dispositivos", "color": "#c0392b", "icon": "💻"}, {"cod": "NET", "name": "Red, Conectividad e Infraestructura", "color": "#1e5a8e", "icon": "🌐"}, {"cod": "MIN", "name": "Operaciones Mina — Sistemas de Flota", "color": "#8b4513", "icon": "🏭"}, {"cod": "VHF", "name": "Radiocomunicaciones VHF", "color": "#1a5276", "icon": "📻"}, {"cod": "COL", "name": "Colaboración y Comunicación", "color": "#155a6e", "icon": "💬"}, {"cod": "CYB", "name": "Ciberseguridad", "color": "#b03a2e", "icon": "🛡️"}, {"cod": "SOT", "name": "Soporte Transversal y CCTV", "color": "#4a4a5a", "icon": "🔧"}];
 const OPS_DEF = [{"id": "MVE", "nombre": "Mantoverde", "color": "#a04010", "bg": "linear-gradient(135deg,#b5450a,#7a2e05)", "icon": "⛏️", "desc": "Faena MVE — Región de Atacama"}, {"id": "MBL", "nombre": "Mantos Blancos", "color": "#1e5a96", "bg": "linear-gradient(135deg,#2e6da4,#1a3f6b)", "icon": "🏔️", "desc": "Faena MBL — Región de Antofagasta"}, {"id": "STG", "nombre": "Santiago", "color": "#1a3a5c", "bg": "linear-gradient(135deg,#253d5f,#0d1f35)", "icon": "🏢", "desc": "Oficinas corporativas Santiago"}, {"id": "VAN", "nombre": "Vancouver", "color": "#1a6b3a", "bg": "linear-gradient(135deg,#236b42,#0d3d20)", "icon": "🍁", "desc": "Operaciones Capstone Mining Corp"}];
 const FEEDBACK_KEY = 'mda_capstone_feedback';
-const FEEDBACK_PWD = 'Tres60admin';
-
 /* ── ESTADO ── */
 let currentOp = null;
 let currentProcForComment = null;
@@ -468,7 +466,7 @@ function openFeedbackAuth(){
 
 function checkFeedbackAuth(){
   const pwd = document.getElementById('feedback-pwd').value;
-  if(pwd === FEEDBACK_PWD){
+  if(pwd === null){
     closeModal('modal-feedback-auth');
     window.open('feedback.html', '_blank');
   } else {

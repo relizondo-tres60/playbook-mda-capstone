@@ -3,199 +3,235 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Feedback Interno — MDA Capstone</title>
+<title>Feedback Interno — Playbook MDA Capstone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;min-height:100vh;display:flex;flex-direction:column}
-/* Login */
-#screen-login{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
-.login-card{background:#fff;border-radius:16px;padding:40px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.12);text-align:center}
-.login-logo{font-size:48px;margin-bottom:16px}
-.login-title{font-size:22px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
-.login-subtitle{font-size:13px;color:#888;margin-bottom:28px}
-.login-input{width:100%;border:2px solid #d0d8e8;border-radius:10px;padding:12px 16px;font-size:15px;color:#1a1a2e;outline:none;text-align:center;letter-spacing:4px;transition:border-color .15s;margin-bottom:12px}
-.login-input:focus{border-color:#0057a8;box-shadow:0 0 0 3px rgba(0,87,168,.1)}
-.login-btn{width:100%;background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:10px;padding:12px;font-size:15px;font-weight:700;transition:background .15s;margin-bottom:10px}
-.login-btn:hover{background:#003d7a}
-.login-error{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;display:none;margin-top:4px}
-.login-back{color:#0057a8;font-size:12px;text-decoration:none;display:block;margin-top:16px}
-.login-back:hover{text-decoration:underline}
-/* Dashboard */
-#screen-dashboard{display:none;flex:1;flex-direction:column}
-.dash-header{background:linear-gradient(135deg,#0057a8,#003d7a);padding:20px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.dash-title{color:#fff;font-size:20px;font-weight:800}
-.dash-subtitle{color:rgba(255,255,255,.75);font-size:13px;margin-top:2px}
-.dash-actions{display:flex;gap:10px}
-.btn-export{background:#ff6b00;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;transition:background .15s}
-.btn-export:hover{background:#cc5500}
-.btn-clear{background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);cursor:pointer;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;transition:background .15s}
-.btn-clear:hover{background:rgba(255,255,255,.3)}
-.btn-back-cat{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);cursor:pointer;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;transition:background .15s}
-.btn-back-cat:hover{background:rgba(255,255,255,.25)}
-.dash-body{padding:24px 28px;flex:1;max-width:1000px;margin:0 auto;width:100%}
-.stats-row{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap}
-.stat-card{background:#fff;border-radius:10px;padding:14px 18px;flex:1;min-width:140px;box-shadow:0 1px 5px rgba(0,0,0,.07)}
-.stat-num{font-size:30px;font-weight:800;color:#0057a8}
-.stat-label{font-size:12px;color:#888;margin-top:2px}
-.empty-state{text-align:center;padding:60px 20px;background:#fff;border-radius:12px;color:#aaa}
-.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
-.empty-state p{font-size:15px}
-.feedback-group{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07)}
-.feedback-group-header{background:#f7f9fc;border-bottom:1px solid #eef1f7;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}
-.feedback-proc-id{font-family:monospace;font-size:11px;font-weight:700;background:#1a1a2e;color:#fff;padding:2px 8px;border-radius:5px}
-.feedback-proc-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-top:3px}
-.feedback-item{padding:14px 18px;border-bottom:1px solid #f3f5fa}
-.feedback-item:last-child{border-bottom:none}
-.feedback-meta{font-size:11px;color:#888;margin-bottom:6px;display:flex;gap:12px}
-.feedback-agent{font-weight:700;color:#0057a8}
-.feedback-comment{font-size:13px;color:#333;line-height:1.5;background:#f9fafb;border-left:3px solid #ff6b00;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:8px}
-.feedback-link{font-size:11px;color:#0057a8;text-decoration:none}
-.feedback-link:hover{text-decoration:underline}
-.btn-del-item{background:none;border:1px solid #ddd;cursor:pointer;border-radius:5px;padding:3px 8px;font-size:10px;color:#c0392b;float:right;margin-left:8px}
-.btn-del-item:hover{background:#fde8e8;border-color:#c0392b}
+body{font-family:'Barlow',sans-serif;background:#f0f3f8;color:#1a1a2e;padding-top:48px}
+/* ── Auth loading ── */
+.auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:#888}
+.spinner{width:36px;height:36px;border:3px solid #eef1f7;border-top-color:#0057a8;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.denied-box{max-width:480px;margin:80px auto;background:#fff;border-radius:14px;padding:36px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.denied-box .icon{font-size:48px;margin-bottom:14px}
+.denied-box h2{font-size:20px;font-weight:700;margin-bottom:8px;color:#1a1a2e}
+.denied-box p{font-size:13px;color:#888;line-height:1.6}
+.denied-box a{color:#0057a8;font-weight:600;text-decoration:none}
+/* ── Contenido principal ── */
+#feedback-app{display:none}
+.page-header{background:linear-gradient(135deg,#0057a8,#003d7a);color:#fff;padding:28px 32px}
+.page-header h1{font-size:22px;font-weight:800;margin-bottom:4px}
+.page-header p{font-size:13px;opacity:.8}
+.page-body{max-width:1000px;margin:28px auto;padding:0 24px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.stat-num{font-size:28px;font-weight:800;color:#0057a8}
+.stat-lbl{font-size:12px;color:#888;margin-top:2px}
+/* Filtros */
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-btn{background:#fff;border:1.5px solid #d0d8e8;color:#555;cursor:pointer;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;transition:all .12s}
+.filter-btn.active{background:#0057a8;border-color:#0057a8;color:#fff}
+.search-input{border:1.5px solid #d0d8e8;border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;width:220px}
+.search-input:focus{border-color:#0057a8}
+/* Tarjetas de feedback */
+.fb-list{display:flex;flex-direction:column;gap:10px}
+.fb-card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 5px rgba(0,0,0,.07);border-left:3px solid #0057a8;display:flex;gap:14px;align-items:flex-start}
+.fb-avatar{width:36px;height:36px;border-radius:50%;background:#0057a8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+.fb-body{flex:1;min-width:0}
+.fb-sop{font-family:monospace;font-size:11px;font-weight:700;color:#0057a8;margin-bottom:3px}
+.fb-comment{font-size:13px;color:#1a1a2e;line-height:1.55;margin-bottom:6px}
+.fb-meta{font-size:11px;color:#aaa}
+.fb-del{background:none;border:1px solid #fca5a5;color:#c0392b;cursor:pointer;border-radius:6px;padding:3px 9px;font-size:11px;margin-left:auto;flex-shrink:0}
+.fb-del:hover{background:#fde8e8}
+.empty-state{text-align:center;padding:50px 20px;color:#aaa}
+.empty-state .ei{font-size:40px;margin-bottom:12px}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="screen-login">
-  <div class="login-card">
-    <div class="login-logo">🔒</div>
-    <div class="login-title">Panel de Feedback Interno</div>
-    <div class="login-subtitle">Acceso restringido — Solo personal autorizado Tres60 IT Services</div>
-    <input class="login-input" type="password" id="login-pwd" placeholder="••••••••••"
-      onkeydown="if(event.key==='Enter')checkLogin()">
-    <button class="login-btn" onclick="checkLogin()">Ingresar</button>
-    <div class="login-error" id="login-error">Clave incorrecta. Intenta nuevamente.</div>
-    <a href="Catalogo_Servicios_MDA_Capstone.html" class="login-back">← Volver al Catálogo</a>
+<!-- Estado de carga mientras verifica auth -->
+<div id="auth-screen" class="auth-screen">
+  <div class="spinner"></div>
+  <div>Verificando acceso...</div>
+</div>
+
+<!-- Acceso denegado -->
+<div id="denied-screen" style="display:none">
+  <div class="denied-box">
+    <div class="icon">🔒</div>
+    <h2>Acceso restringido</h2>
+    <p>El panel de Feedback Interno es exclusivo para administradores del playbook.<br><br>
+    Si crees que deberías tener acceso, contacta a Rodrigo Elizondo.<br><br>
+    <a href="Catalogo_Servicios_MDA_Capstone.html">← Volver al Catálogo</a></p>
   </div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="screen-dashboard">
-  <div class="dash-header">
-    <div>
-      <div class="dash-title">📋 Feedback Interno — MDA Capstone</div>
-      <div class="dash-subtitle">Comentarios de mejora de procedimientos enviados por los agentes</div>
-    </div>
-    <div class="dash-actions">
-      <a href="Catalogo_Servicios_MDA_Capstone.html" class="btn-back-cat">← Volver al Catálogo</a>
-      <button class="btn-export" onclick="exportCSV()">⬇ Exportar CSV</button>
-      <button class="btn-clear" onclick="clearAll()">🗑 Borrar todo</button>
-    </div>
+<!-- Panel principal (solo admin) -->
+<div id="feedback-app">
+  <div class="page-header">
+    <h1>💬 Feedback Interno — Mesa de Ayuda</h1>
+    <p>Comentarios y sugerencias del equipo sobre los procedimientos del Playbook</p>
   </div>
-
-  <div class="dash-body">
-    <div class="stats-row" id="stats-row"></div>
-    <div id="feedback-list"></div>
+  <div class="page-body">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-lbl">Total de comentarios</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-sops">—</div><div class="stat-lbl">SOPs con feedback</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-agents">—</div><div class="stat-lbl">Agentes que participaron</div></div>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">Todos</button>
+      <div id="sop-filters" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <input class="search-input" id="fb-search" placeholder="🔍 Buscar..." type="text">
+    </div>
+    <div class="fb-list" id="fb-list"></div>
   </div>
 </div>
 
 <script>
-const FEEDBACK_KEY = 'mda_capstone_feedback';
-const FEEDBACK_PWD = 'Tres60admin';
+var WORKER_URL = localStorage.getItem('mda_worker_url') || '';
+var SESSION    = localStorage.getItem('mda_session')    || '';
+var ALL_FB     = [];
 
-function checkLogin(){
-  const pwd = document.getElementById('login-pwd').value;
-  if(pwd === FEEDBACK_PWD){
-    document.getElementById('screen-login').style.display = 'none';
-    document.getElementById('screen-dashboard').style.display = 'flex';
-    renderDashboard();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-    document.getElementById('login-pwd').value = '';
-    document.getElementById('login-pwd').focus();
-  }
-}
-
-function renderDashboard(){
-  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
-  
-  // Stats
-  const procs = new Set(feedback.map(f => f.cs_id)).size;
-  document.getElementById('stats-row').innerHTML = `
-    <div class="stat-card"><div class="stat-num">${feedback.length}</div><div class="stat-label">Comentarios totales</div></div>
-    <div class="stat-card"><div class="stat-num">${procs}</div><div class="stat-label">Procedimientos con feedback</div></div>
-    <div class="stat-card"><div class="stat-num">${new Set(feedback.map(f=>f.agent)).size}</div><div class="stat-label">Agentes que comentaron</div></div>
-  `;
-  
-  const container = document.getElementById('feedback-list');
-  if(feedback.length === 0){
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><p>No hay comentarios de feedback registrados aún.<br>Los agentes pueden enviar feedback desde el catálogo principal.</p></div>`;
+// ── Verificar autenticación ───────────────────────────────────────────────────
+(function checkAuth() {
+  if (!SESSION || !WORKER_URL) {
+    // Sin sesión → redirigir a login
+    window.location.href = 'login.html';
     return;
   }
-  
-  // Group by cs_id
-  const grouped = {};
-  feedback.forEach((f,i) => {
-    if(!grouped[f.cs_id]) grouped[f.cs_id] = [];
-    grouped[f.cs_id].push({...f, _idx: i});
+  fetch(WORKER_URL + '/auth/me', {
+    headers: { 'Authorization': 'Bearer ' + SESSION }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    document.getElementById('auth-screen').style.display = 'none';
+
+    if (!d.authenticated) {
+      window.location.href = 'login.html';
+      return;
+    }
+    if (d.role !== 'admin') {
+      document.getElementById('denied-screen').style.display = 'block';
+      return;
+    }
+    // Admin autenticado → mostrar panel
+    document.getElementById('feedback-app').style.display = 'block';
+    loadFeedback();
+  })
+  .catch(function() {
+    window.location.href = 'login.html';
   });
-  
-  let html = '';
-  Object.entries(grouped).sort().forEach(([cs_id, items]) => {
-    html += `<div class="feedback-group">
-      <div class="feedback-group-header">
-        <div>
-          <span class="feedback-proc-id">${cs_id}</span>
-          <div class="feedback-proc-title">${items[0].titulo}</div>
-        </div>
-        <span style="color:#888;font-size:12px">${items.length} comentario${items.length>1?'s':''}</span>
-      </div>
-      ${items.map(f => `
-        <div class="feedback-item">
-          <button class="btn-del-item" onclick="deleteItem(${f._idx})" title="Eliminar este comentario">✕</button>
-          <div class="feedback-meta">
-            <span class="feedback-agent">👤 ${f.agent}</span>
-            <span>🕐 ${new Date(f.date).toLocaleString('es-CL')}</span>
-          </div>
-          <div class="feedback-comment">${f.comment}</div>
-          <a class="feedback-link" href="procedimientos/${f.sop}.html" target="_blank">📄 Ver procedimiento ${f.sop} →</a>
-        </div>`).join('')}
-    </div>`;
+})();
+
+// ── Cargar feedback ───────────────────────────────────────────────────────────
+function loadFeedback() {
+  fetch(WORKER_URL + '/feedback', {
+    headers: { 'Authorization': 'Bearer ' + SESSION }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    ALL_FB = (data.feedback || []).sort(function(a,b){
+      return new Date(b.date) - new Date(a.date);
+    });
+    renderStats();
+    renderFilters();
+    renderList('all');
+  })
+  .catch(function() {
+    document.getElementById('fb-list').innerHTML =
+      '<div class="empty-state"><div class="ei">⚠️</div><p>Error al cargar el feedback.</p></div>';
   });
-  container.innerHTML = html;
 }
 
-function deleteItem(idx){
-  if(!confirm('¿Eliminar este comentario?')) return;
-  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
-  feedback.splice(idx, 1);
-  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedback));
-  renderDashboard();
+function renderStats() {
+  var sops    = new Set(ALL_FB.map(function(f){ return f.sop_id; })).size;
+  var agents  = new Set(ALL_FB.map(function(f){ return f.agentEmail; })).size;
+  document.getElementById('stat-total').textContent  = ALL_FB.length;
+  document.getElementById('stat-sops').textContent   = sops;
+  document.getElementById('stat-agents').textContent = agents;
 }
 
-function exportCSV(){
-  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
-  if(feedback.length === 0){ alert('No hay comentarios para exportar.'); return; }
-  const headers = ['SOP','Procedimiento','Agente','Fecha','Comentario'];
-  const rows = feedback.map(f => [
-    f.sop_id || f.cs_id,
-    `"${f.titulo.replace(/"/g,'""')}"`,
-    `"${f.agent.replace(/"/g,'""')}"`,
-    new Date(f.date).toLocaleString('es-CL'),
-    `"${f.comment.replace(/"/g,'""')}"`
-  ]);
-  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob(['\uFEFF' + csv, {type:'text/csv;charset=utf-8;'}]);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'feedback_mda_capstone.csv'; a.click();
-  URL.revokeObjectURL(url);
+function renderFilters() {
+  var sops = {};
+  ALL_FB.forEach(function(f) {
+    if (f.sop_id) sops[f.sop_id] = (sops[f.sop_id] || 0) + 1;
+  });
+  var sopBtns = Object.keys(sops).sort().map(function(sop) {
+    return '<button class="filter-btn" data-filter="' + sop + '">' + sop + ' (' + sops[sop] + ')</button>';
+  }).join('');
+  document.getElementById('sop-filters').innerHTML = sopBtns;
+
+  // Event listeners
+  document.querySelectorAll('.filter-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderList(btn.dataset.filter);
+    });
+  });
 }
 
-function clearAll(){
-  const feedback = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
-  if(feedback.length === 0){ alert('No hay comentarios para borrar.'); return; }
-  if(!confirm(`¿Eliminar TODOS los ${feedback.length} comentarios? Esta acción no se puede deshacer.`)) return;
-  localStorage.removeItem(FEEDBACK_KEY);
-  renderDashboard();
+function renderList(filter) {
+  var search  = (document.getElementById('fb-search').value || '').toLowerCase();
+  var items   = ALL_FB.filter(function(f) {
+    var matchFilter = filter === 'all' || f.sop_id === filter;
+    var matchSearch = !search ||
+      (f.comment || '').toLowerCase().includes(search) ||
+      (f.sop_id  || '').toLowerCase().includes(search) ||
+      (f.agentEmail || '').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  if (!items.length) {
+    document.getElementById('fb-list').innerHTML =
+      '<div class="empty-state"><div class="ei">💬</div><p>Sin comentarios' + (search ? ' que coincidan con la búsqueda' : ' en esta categoría') + '.</p></div>';
+    return;
+  }
+
+  document.getElementById('fb-list').innerHTML = items.map(function(f) {
+    var initial = (f.agentEmail || 'A')[0].toUpperCase();
+    var date    = f.date ? new Date(f.date).toLocaleDateString('es-CL', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    var agent   = f.agentEmail ? f.agentEmail.split('@')[0] : 'Anónimo';
+    return '<div class="fb-card">' +
+      '<div class="fb-avatar">' + initial + '</div>' +
+      '<div class="fb-body">' +
+      '<div class="fb-sop">' + (f.sop_id || 'Sin SOP') + (f.titulo ? ' — ' + f.titulo : '') + '</div>' +
+      '<div class="fb-comment">' + escHtml(f.comment || '') + '</div>' +
+      '<div class="fb-meta">' + agent + ' &nbsp;·&nbsp; ' + date + '</div>' +
+      '</div>' +
+      '<button class="fb-del" data-id="' + f.id + '">✕ Eliminar</button>' +
+      '</div>';
+  }).join('');
+
+  // Eventos de borrado
+  document.querySelectorAll('.fb-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (!confirm('¿Eliminar este comentario?')) return;
+      fetch(WORKER_URL + '/feedback/' + btn.dataset.id, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + SESSION }
+      }).then(function() {
+        ALL_FB = ALL_FB.filter(function(f){ return f.id !== btn.dataset.id; });
+        renderStats();
+        renderFilters();
+        renderList(filter);
+      });
+    });
+  });
 }
 
-document.getElementById('login-pwd').focus();
-document.getElementById('login-pwd').addEventListener('keydown', e => {
-  if(e.key === 'Enter') checkLogin();
+document.getElementById('fb-search').addEventListener('input', function() {
+  var activeFilter = document.querySelector('.filter-btn.active');
+  renderList(activeFilter ? activeFilter.dataset.filter : 'all');
 });
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
+
+<!-- Incluir auth-roles.js para mostrar el nav global -->
+<script src="js/auth-roles.js"></script>
 </body>
 </html>
