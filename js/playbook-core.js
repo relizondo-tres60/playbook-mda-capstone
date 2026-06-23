@@ -612,7 +612,7 @@ function buildAdminButton() {
   // El botón de modo edición solo en SOPs individuales
   if (!document.querySelector('.sop-id')) return;
   var btn = el('button', {id:'admin-fab'});
-  btn.textContent = '&#128214; Modo Glosario';
+  btn.textContent = '📖 Modo Glosario';
   btn.addEventListener('click', function() {
     if (!editMode) {
       document.getElementById('pwd-modal-overlay').classList.add('open');
@@ -625,7 +625,7 @@ function buildAdminButton() {
 
   // Banner de aviso en modo edición
   var banner = el('div', {className:'edit-mode-banner'});
-  banner.textContent = '&#128214; MODO GLOSARIO ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
+  banner.textContent = '📖 MODO GLOSARIO ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
   // Insertar después del auth-bar (si existe) para no solapar el header de auth
   var authBar = document.getElementById('auth-bar');
   if (authBar && authBar.nextSibling) {
@@ -643,7 +643,7 @@ function buildAdminButton() {
 function activateEditMode() {
   editMode = true;
   document.body.classList.add('edit-mode');
-  document.getElementById('admin-fab').textContent = '&#10004; Salir del Glosario';
+  document.getElementById('admin-fab').textContent = '✔ Salir del Glosario';
   document.getElementById('admin-fab').classList.add('active');
   renderContextSections(); // re-render con botones de edición
   // Mensaje mostrado por el banner sticky — toast eliminado para evitar duplicado
@@ -652,7 +652,7 @@ function activateEditMode() {
 function deactivateEditMode() {
   editMode = false;
   document.body.classList.remove('edit-mode');
-  document.getElementById('admin-fab').textContent = '&#128214; Modo Glosario';
+  document.getElementById('admin-fab').textContent = '📖 Modo Glosario';
   document.getElementById('admin-fab').classList.remove('active');
   hideSelBubble();
   renderContextSections();
