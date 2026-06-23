@@ -19,7 +19,7 @@
 var NAV_MAIN = [
   { id: 'catalog',   label: '&#128203; Cat\u00e1logo', roles: ['admin','agent'],
     href: function() { return base() + 'Catalogo_Servicios_MDA_Capstone.html'; } },
-  { id: 'feedback',  label: '&#128172; Feedback',       roles: ['admin'],
+  { id: 'feedback',  label: '&#128172; Feedback Interno',       roles: ['admin'],
     href: function() { return base() + 'feedback.html'; } },
 ];
 
