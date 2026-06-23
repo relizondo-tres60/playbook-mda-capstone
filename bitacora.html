@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitácora de Turno — MDA Capstone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:#f0f3f8;color:#1a1a2e;padding-top:48px}
+/* ── Layout ── */
+.page-wrap{max-width:980px;margin:0 auto;padding:24px 20px 80px}
+/* ── Header de turno ── */
+.shift-header{background:linear-gradient(135deg,#1a1a2e,#0057a8);color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.shift-main h1{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;letter-spacing:.3px}
+.shift-sub{font-size:12px;opacity:.8;margin-top:3px}
+.shift-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.3px}
+.badge-open{background:#22c55e;color:#fff}
+.badge-locked{background:#ef4444;color:#fff}
+.badge-soon{background:#f59e0b;color:#fff}
+.shift-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.shift-nav select{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif}
+.shift-nav select option{background:#1a1a2e;color:#fff}
+.sn-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;transition:background .15s}
+.sn-btn:hover{background:rgba(255,255,255,.25)}
+/* ── Barra de búsqueda + acciones ── */
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap input{width:100%;border:1.5px solid #d0d8e8;border-radius:10px;padding:9px 12px 9px 36px;font-size:13px;font-family:'Barlow',sans-serif;outline:none;background:#fff;color:#1a1a2e}
+.search-wrap input:focus{border-color:#0057a8}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#aaa;font-size:14px}
+.filter-tabs{display:flex;gap:6px}
+.ftab{border:1.5px solid #d0d8e8;background:#fff;color:#555;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
+.ftab.active{border-color:#0057a8;background:#0057a8;color:#fff}
+.ftab.f-highlight.active{border-color:#f59e0b;background:#f59e0b}
+.ftab.f-escalation.active{border-color:#ef4444;background:#ef4444}
+/* ── Botón agregar ── */
+.add-btn{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;transition:background .15s;white-space:nowrap}
+.add-btn:hover{background:#003d7a}
+.add-btn:disabled{background:#aaa;cursor:not-allowed}
+/* ── Lista de entradas ── */
+.entries-list{display:flex;flex-direction:column;gap:10px}
+.entry-card{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 1px 5px rgba(0,0,0,.07);border-left:4px solid #d0d8e8;position:relative;transition:box-shadow .15s}
+.entry-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.1)}
+.entry-card.type-normal{border-left-color:#0057a8}
+.entry-card.type-highlight{border-left-color:#f59e0b;background:#fffbeb}
+.entry-card.type-escalation{border-left-color:#ef4444;background:#fdf2f2}
+.entry-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+.entry-agent{font-size:12px;font-weight:700;color:#0057a8}
+.entry-time{font-size:11px;color:#aaa}
+.entry-type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap}
+.tb-normal{background:#e8f0fb;color:#0057a8}
+.tb-highlight{background:#fef3cd;color:#92400e}
+.tb-escalation{background:#fee2e2;color:#991b1b}
+.entry-text{font-size:13px;line-height:1.65;color:#1a1a2e;white-space:pre-wrap;word-break:break-word}
+.entry-edited{font-size:10px;color:#aaa;margin-top:5px;font-style:italic}
+.entry-actions{display:flex;gap:6px;margin-top:10px}
+.ea-btn{border:none;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600}
+.ea-edit{background:#e8f0fb;color:#0057a8}
+.ea-delete{background:#fee2e2;color:#991b1b}
+/* ── Estado vacío ── */
+.empty-state{text-align:center;padding:50px 20px;color:#aaa}
+.empty-state .ei{font-size:44px;margin-bottom:12px}
+.locked-notice{background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:12px 16px;color:#991b1b;font-size:13px;font-weight:600;margin-bottom:16px;display:none}
+.locked-notice.show{display:block}
+/* ── Modal base ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,10,30,.6);z-index:5000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;max-width:620px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.modal-hdr{background:linear-gradient(135deg,#0057a8,#003d7a);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-hdr strong{font-size:15px}
+.modal-x{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.8;line-height:1}
+.modal-x:hover{opacity:1}
+.modal-body{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;flex:1}
+.modal-ftr{padding:14px 20px;border-top:1px solid #eef1f7;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;flex-wrap:wrap}
+.lbl{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.pc-input,.pc-select,.pc-textarea{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:9px 12px;font-size:13px;font-family:'Barlow',sans-serif;color:#1a1a2e;outline:none;transition:border-color .15s}
+.pc-input:focus,.pc-select:focus,.pc-textarea:focus{border-color:#0057a8}
+.pc-textarea{resize:vertical;min-height:120px;line-height:1.6}
+.btn-primary{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700}
+.btn-primary:hover{background:#003d7a}
+.btn-secondary{background:#f0f3f8;color:#555;border:1.5px solid #d0d8e8;cursor:pointer;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600}
+.btn-secondary:hover{background:#e8ecf3}
+.btn-ai{background:linear-gradient(135deg,#7b2d8b,#0057a8);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.btn-ai:hover{opacity:.9}
+.type-selector{display:flex;gap:8px}
+.type-opt{flex:1;border:1.5px solid #d0d8e8;background:#fff;border-radius:8px;padding:8px 10px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;color:#555;transition:all .12s}
+.type-opt.sel-normal{border-color:#0057a8;background:#e8f0fb;color:#0057a8}
+.type-opt.sel-highlight{border-color:#f59e0b;background:#fef3cd;color:#92400e}
+.type-opt.sel-escalation{border-color:#ef4444;background:#fee2e2;color:#991b1b}
+/* ── AI Modal ── */
+.ai-modal-box{max-width:720px}
+.ai-chat-area{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;padding-right:4px}
+.ai-msg-user,.ai-msg-bot{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;max-width:90%}
+.ai-msg-user{background:#0057a8;color:#fff;align-self:flex-end;border-radius:12px 12px 4px 12px;margin-left:auto}
+.ai-msg-bot{background:#f7f9fc;color:#1a1a2e;border-radius:4px 12px 12px 12px;border:1px solid #eef1f7}
+.ai-questions{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-top:4px}
+.ai-q{font-size:13px;color:#92400e;margin-bottom:6px;font-weight:600}
+.ai-q:last-child{margin-bottom:0}
+.ai-improved{background:#e8f5ee;border:1px solid #a7d7b9;border-radius:10px;padding:12px 14px}
+.ai-improved-lbl{font-size:11px;font-weight:700;color:#1a6b3a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.ai-improved-text{font-size:13px;color:#1a1a2e;line-height:1.65;white-space:pre-wrap}
+.ai-input-row{display:flex;gap:8px;margin-top:8px}
+.ai-input-row input{flex:1;border:1.5px solid #d0d8e8;border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Barlow',sans-serif;outline:none}
+.ai-input-row input:focus{border-color:#0057a8}
+.ai-send-btn{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700}
+/* ── Contadores de sección ── */
+.section-counts{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.count-pill{background:#fff;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.count-pill span{color:#0057a8}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <!-- Shift Header -->
+  <div class="shift-header">
+    <div class="shift-main">
+      <h1 id="shift-title">📓 Bitácora de Turno</h1>
+      <div class="shift-sub" id="shift-sub">Cargando turno actual...</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="shift-badge" id="shift-badge">...</span>
+      <div class="shift-nav">
+        <select id="period-select" onchange="loadSelectedPeriod()"></select>
+        <button class="sn-btn" onclick="loadCurrentShift()">◀ Turno actual</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="locked-notice" id="locked-notice">
+    🔒 Este turno está cerrado. Las entradas son de solo lectura (período finalizado hace más de 1 hora).
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Buscar en la bitácora..." oninput="applyFilters()">
+    </div>
+    <div class="filter-tabs">
+      <button class="ftab active" data-f="all" onclick="setFilter(this,'all')">Todas</button>
+      <button class="ftab f-highlight" data-f="highlight" onclick="setFilter(this,'highlight')">⭐ Destacadas</button>
+      <button class="ftab f-escalation" data-f="escalation" onclick="setFilter(this,'escalation')">🔴 Escalamientos</button>
+    </div>
+    <button class="add-btn" id="add-btn" onclick="openAddModal()">＋ Nueva anotación</button>
+  </div>
+
+  <!-- Contadores -->
+  <div class="section-counts" id="section-counts"></div>
+
+  <!-- Lista -->
+  <div class="entries-list" id="entries-list">
+    <div class="empty-state"><div class="ei">📓</div><p>Cargando...</p></div>
+  </div>
+</div>
+
+<!-- Modal: Nueva anotación / Editar -->
+<div class="modal-overlay" id="entry-modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <strong id="entry-modal-title">➕ Nueva Anotación</strong>
+      <button class="modal-x" onclick="closeModal('entry-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="lbl">Tipo de anotación</div>
+        <div class="type-selector">
+          <button class="type-opt sel-normal" data-type="normal" onclick="selectType(this)">📝 Normal</button>
+          <button class="type-opt" data-type="highlight" onclick="selectType(this)">⭐ Destacada</button>
+          <button class="type-opt" data-type="escalation" onclick="selectType(this)">🔴 Escalamiento</button>
+        </div>
+      </div>
+      <div>
+        <div class="lbl">Anotación</div>
+        <textarea class="pc-textarea" id="entry-text" rows="6" placeholder="Describe el incidente, acción tomada, estado, responsable..."></textarea>
+      </div>
+      <div style="background:#e8f0fb;border-radius:8px;padding:10px 14px;font-size:12px;color:#0057a8;line-height:1.5">
+        💡 <strong>Tips:</strong> Incluye quién solicitó, qué sistema, qué acción se tomó, hora y resultado.
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn-ai" onclick="openAIModal()">✨ Revisar con IA</button>
+      <button class="btn-secondary" onclick="closeModal('entry-modal')">Cancelar</button>
+      <button class="btn-primary" id="entry-submit" onclick="submitEntry()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asistente IA -->
+<div class="modal-overlay" id="ai-modal">
+  <div class="modal-box ai-modal-box">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,#7b2d8b,#0057a8)">
+      <strong>✨ Asistente de Redacción IA</strong>
+      <button class="modal-x" onclick="closeModal('ai-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#f7f9fc;border-radius:8px;padding:10px 14px;font-size:12px;color:#555">
+        <strong>Texto a revisar:</strong><br>
+        <div id="ai-preview-text" style="margin-top:6px;white-space:pre-wrap;color:#1a1a2e;line-height:1.6"></div>
+      </div>
+      <div class="ai-chat-area" id="ai-chat"></div>
+      <div class="ai-input-row" id="ai-input-row" style="display:none">
+        <input type="text" id="ai-user-input" placeholder="Responde las preguntas de la IA..." onkeydown="if(event.key==='Enter')sendAIAnswer()">
+        <button class="ai-send-btn" onclick="sendAIAnswer()">↑</button>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn-secondary" onclick="closeModal('ai-modal')">Cerrar</button>
+      <button class="btn-primary" id="ai-apply-btn" onclick="applyImprovedText()" style="display:none">✅ Aplicar texto mejorado</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth-roles.js"></script>
+<script>
+var WORKER_URL = localStorage.getItem('mda_worker_url') || '';
+var SESSION    = localStorage.getItem('mda_session')    || '';
+var currentDate  = '';
+var currentShift = '';
+var currentPeriod = null;
+var isLocked = false;
+var selectedType = 'normal';
+var editingId = null;
+var aiConversation = [];
+var lastImprovedText = '';
+var currentFilter = 'all';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function authFetch(url, opts) {
+  opts = opts || {};
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Authorization'] = 'Bearer ' + SESSION;
+  return fetch(url, opts);
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatTime(iso) {
+  var d = new Date(iso);
+  return d.toLocaleString('es-CL', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Cálculo de turno actual ───────────────────────────────────────────────────
+function getCurrentShift() {
+  var now   = new Date();
+  var hour  = now.getHours();
+  var date  = now.toISOString().slice(0,10);
+
+  if (hour >= 8 && hour < 20) {
+    return { date: date, shift: 'dia', label: 'Turno Día (08:00–20:00)', endHour: 20 };
+  } else if (hour >= 20) {
+    return { date: date, shift: 'noche', label: 'Turno Noche (20:00–08:00)', endHour: 8 };
+  } else {
+    // 00:00–08:00 → turno noche de ayer
+    var yesterday = new Date(now); yesterday.setDate(yesterday.getDate()-1);
+    return { date: yesterday.toISOString().slice(0,10), shift: 'noche', label: 'Turno Noche (20:00–08:00)', endHour: 8 };
+  }
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  if (!SESSION || !WORKER_URL) { window.location.href = 'login.html'; return; }
+  loadCurrentShift();
+  loadPeriodList();
+});
+
+function loadCurrentShift() {
+  var s = getCurrentShift();
+  currentDate  = s.date;
+  currentShift = s.shift;
+  loadPeriod(s.date, s.shift);
+}
+
+function loadPeriod(date, shift) {
+  currentDate  = date;
+  currentShift = shift;
+  document.getElementById('entries-list').innerHTML = '<div class="empty-state"><div class="ei">⏳</div><p>Cargando bitácora...</p></div>';
+
+  authFetch(WORKER_URL + '/bitacora/' + date + '/' + shift)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { showError(data.error); return; }
+      currentPeriod = data;
+      isLocked      = data.isLocked;
+      renderShiftHeader(data);
+      renderEntries(data.entries || []);
+    })
+    .catch(function(e) { showError('Error al cargar: ' + e.message); });
+}
+
+function loadSelectedPeriod() {
+  var sel = document.getElementById('period-select').value;
+  if (!sel) return;
+  var parts = sel.split('_');
+  loadPeriod(parts[0], parts[1]);
+}
+
+function loadPeriodList() {
+  authFetch(WORKER_URL + '/bitacora/periods')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var sel = document.getElementById('period-select');
+      sel.innerHTML = '<option value="">-- Turno anterior --</option>';
+      (data.periods || []).forEach(function(p) {
+        var parts = p.id.split('_');
+        var label = parts[0] + ' · ' + (parts[1]==='dia'?'Día':'Noche');
+        var opt = document.createElement('option');
+        opt.value = p.id; opt.textContent = label;
+        sel.appendChild(opt);
+      });
+    }).catch(function(){});
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderShiftHeader(data) {
+  var s = getCurrentShift();
+  var isCurrent = data.date === currentDate && data.shift === currentShift;
+  document.getElementById('shift-title').textContent = '📓 Bitácora — ' + data.date;
+  document.getElementById('shift-sub').textContent   = data.label ||
+    (data.shift==='dia'?'Turno Día (08:00–20:00)':'Turno Noche (20:00–08:00)');
+
+  var badge = document.getElementById('shift-badge');
+  var addBtn = document.getElementById('add-btn');
+  var lockNotice = document.getElementById('locked-notice');
+
+  if (isLocked) {
+    badge.textContent = '🔒 Cerrado';
+    badge.className   = 'shift-badge badge-locked';
+    addBtn.disabled   = true;
+    addBtn.title      = 'Período cerrado - solo lectura';
+    lockNotice.classList.add('show');
+  } else {
+    // Calcular tiempo restante
+    var lockUTC  = data.lockUTC;
+    var remaining = Math.round((lockUTC - Date.now()) / 60000);
+    if (remaining > 60) {
+      badge.textContent = '✅ Abierto';
+      badge.className   = 'shift-badge badge-open';
+    } else if (remaining > 0) {
+      badge.textContent = '⚠️ Cierra en ' + remaining + ' min';
+      badge.className   = 'shift-badge badge-soon';
+    }
+    addBtn.disabled = false;
+    lockNotice.classList.remove('show');
+  }
+}
+
+function renderEntries(entries) {
+  applyFilters(entries);
+}
+
+function applyFilters(rawEntries) {
+  var entries = rawEntries || (currentPeriod ? currentPeriod.entries : []);
+  var search  = (document.getElementById('search-input').value || '').toLowerCase().trim();
+
+  var filtered = entries.filter(function(e) {
+    var matchFilter = currentFilter === 'all' || e.type === currentFilter;
+    var matchSearch = !search || e.text.toLowerCase().includes(search) ||
+      (e.agentName || '').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  // Contadores
+  var total    = entries.length;
+  var hl       = entries.filter(function(e){return e.type==='highlight';}).length;
+  var esc      = entries.filter(function(e){return e.type==='escalation';}).length;
+  document.getElementById('section-counts').innerHTML =
+    '<div class="count-pill"><span>' + total + '</span> anotaciones</div>' +
+    (hl  ? '<div class="count-pill">⭐ <span>' + hl + '</span> destacadas</div>' : '') +
+    (esc ? '<div class="count-pill">🔴 <span>' + esc + '</span> escalamientos</div>' : '');
+
+  var list = document.getElementById('entries-list');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ei">📓</div>' +
+      '<p>' + (search || currentFilter!=='all' ? 'Sin resultados para esta búsqueda.' : 'No hay anotaciones en este turno. ¡Agrega la primera!') + '</p></div>';
+    return;
+  }
+
+  var auth = window.PlaybookAuth;
+  var isAdmin = auth && auth.user && auth.user.role === 'admin';
+  var myEmail = auth && auth.user ? auth.user.email : '';
+
+  list.innerHTML = filtered.map(function(e) {
+    var typeLabel = e.type==='highlight' ? '⭐ Destacada' : e.type==='escalation' ? '🔴 Escalamiento' : '📝 Normal';
+    var typeClass = 'tb-' + (e.type||'normal');
+    var canEdit   = !isLocked && (isAdmin || e.agentEmail === myEmail);
+    return '<div class="entry-card type-' + (e.type||'normal') + '" id="ec-' + e.id + '">' +
+      '<div class="entry-header">' +
+      '<div>' +
+      '<div class="entry-agent">👤 ' + esc(e.agentName||e.agentEmail) + '</div>' +
+      '<div class="entry-time">' + formatTime(e.timestamp) + (e.editedAt?' · <em>editado</em>':'') + '</div>' +
+      '</div>' +
+      '<span class="entry-type-badge ' + typeClass + '">' + typeLabel + '</span>' +
+      '</div>' +
+      '<div class="entry-text">' + esc(e.text) + '</div>' +
+      (canEdit ? '<div class="entry-actions">' +
+        '<button class="ea-btn ea-edit" onclick="openEditModal(\'' + e.id + '\')">✏️ Editar</button>' +
+        '<button class="ea-btn ea-delete" onclick="deleteEntry(\'' + e.id + '\')">🗑 Eliminar</button>' +
+        '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function setFilter(btn, filter) {
+  document.querySelectorAll('.ftab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  currentFilter = filter;
+  applyFilters();
+}
+
+// ── CRUD ──────────────────────────────────────────────────────────────────────
+function openAddModal() {
+  if (isLocked) return;
+  editingId = null;
+  selectedType = 'normal';
+  document.querySelectorAll('.type-opt').forEach(function(b){b.className='type-opt';});
+  document.querySelector('[data-type="normal"]').className = 'type-opt sel-normal';
+  document.getElementById('entry-text').value = '';
+  document.getElementById('entry-modal-title').textContent = '➕ Nueva Anotación';
+  document.getElementById('entry-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('entry-text').focus();},80);
+}
+
+function openEditModal(id) {
+  if (isLocked) return;
+  var entry = (currentPeriod.entries||[]).find(function(e){return e.id===id;});
+  if (!entry) return;
+  editingId = id;
+  selectedType = entry.type || 'normal';
+  document.querySelectorAll('.type-opt').forEach(function(b){b.className='type-opt';});
+  var selBtn = document.querySelector('[data-type="'+selectedType+'"]');
+  if (selBtn) selBtn.className = 'type-opt sel-' + selectedType;
+  document.getElementById('entry-text').value = entry.text;
+  document.getElementById('entry-modal-title').textContent = '✏️ Editar Anotación';
+  document.getElementById('entry-modal').classList.add('open');
+}
+
+function selectType(btn) {
+  document.querySelectorAll('.type-opt').forEach(function(b){b.className='type-opt';});
+  var t = btn.dataset.type;
+  btn.className = 'type-opt sel-' + t;
+  selectedType = t;
+}
+
+function submitEntry() {
+  var text = (document.getElementById('entry-text').value || '').trim();
+  if (!text) { alert('Escribe una anotación antes de guardar.'); return; }
+
+  var url    = WORKER_URL + '/bitacora/' + currentDate + '/' + currentShift;
+  var method = 'POST';
+  var body   = { text: text, type: selectedType };
+
+  if (editingId) {
+    url    += '/' + editingId;
+    method  = 'PATCH';
+  }
+
+  authFetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (d.error) { alert(d.error); return; }
+      closeModal('entry-modal');
+      loadPeriod(currentDate, currentShift);
+      loadPeriodList();
+    }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+function deleteEntry(id) {
+  if (!confirm('¿Eliminar esta anotación?')) return;
+  authFetch(WORKER_URL + '/bitacora/' + currentDate + '/' + currentShift + '/' + id, { method: 'DELETE' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert(d.error); return; }
+      loadPeriod(currentDate, currentShift);
+    }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+// ── Asistente IA ──────────────────────────────────────────────────────────────
+function openAIModal() {
+  var text = (document.getElementById('entry-text').value || '').trim();
+  if (text.length < 10) { alert('Escribe al menos 10 caracteres antes de revisar con IA.'); return; }
+
+  aiConversation = [{ role: 'user', content: 'Revisa esta anotación de bitácora:\n\n"' + text + '"' }];
+  lastImprovedText = '';
+
+  document.getElementById('ai-preview-text').textContent = text;
+  document.getElementById('ai-chat').innerHTML = '<div class="ai-msg-bot">Analizando tu anotación... ⏳</div>';
+  document.getElementById('ai-input-row').style.display = 'none';
+  document.getElementById('ai-apply-btn').style.display = 'none';
+  document.getElementById('ai-modal').classList.add('open');
+
+  callBitacoraAI(text, aiConversation);
+}
+
+function callBitacoraAI(originalText, conversation) {
+  authFetch(WORKER_URL + '/bitacora/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: originalText, conversation: conversation }),
+  }).then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.ok || !d.result) {
+        addAIBotMsg('⚠️ Error al analizar. Intenta nuevamente.');
+        return;
+      }
+      renderAIResult(d.result);
+    }).catch(function(e){
+      addAIBotMsg('❌ Error de conexión: ' + e.message);
+    });
+}
+
+function renderAIResult(result) {
+  var chat = document.getElementById('ai-chat');
+  chat.innerHTML = '';
+
+  // Feedback general
+  if (result.feedback) {
+    var fb = document.createElement('div');
+    fb.className = 'ai-msg-bot';
+    fb.textContent = result.feedback;
+    chat.appendChild(fb);
+  }
+
+  // Preguntas
+  if (result.questions && result.questions.length > 0) {
+    var qDiv = document.createElement('div');
+    qDiv.className = 'ai-questions';
+    qDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">🔍 Información que falta o es ambigua:</div>' +
+      result.questions.map(function(q,i){
+        return '<div class="ai-q">• ' + esc(q.question) + '</div>';
+      }).join('');
+    chat.appendChild(qDiv);
+
+    // Mostrar input para responder
+    document.getElementById('ai-input-row').style.display = 'flex';
+    document.getElementById('ai-user-input').placeholder = 'Responde las preguntas anteriores...';
+    setTimeout(function(){document.getElementById('ai-user-input').focus();},100);
+  } else {
+    document.getElementById('ai-input-row').style.display = 'none';
+    var okMsg = document.createElement('div');
+    okMsg.className = 'ai-msg-bot';
+    okMsg.textContent = '✅ La anotación es clara y completa.';
+    chat.appendChild(okMsg);
+  }
+
+  // Texto mejorado
+  if (result.improved_text && result.improved_text !== document.getElementById('ai-preview-text').textContent) {
+    lastImprovedText = result.improved_text;
+    var impDiv = document.createElement('div');
+    impDiv.className = 'ai-improved';
+    impDiv.innerHTML = '<div class="ai-improved-lbl">✨ Versión mejorada sugerida:</div>' +
+      '<div class="ai-improved-text">' + esc(result.improved_text) + '</div>';
+    chat.appendChild(impDiv);
+    document.getElementById('ai-apply-btn').style.display = 'inline-block';
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addAIBotMsg(text) {
+  var chat = document.getElementById('ai-chat');
+  var div  = document.createElement('div');
+  div.className = 'ai-msg-bot';
+  div.textContent = text;
+  chat.innerHTML = '';
+  chat.appendChild(div);
+}
+
+function sendAIAnswer() {
+  var input = document.getElementById('ai-user-input');
+  var answer = (input.value || '').trim();
+  if (!answer) return;
+  input.value = '';
+
+  // Agregar respuesta del usuario al chat
+  var chat = document.getElementById('ai-chat');
+  var userDiv = document.createElement('div');
+  userDiv.className = 'ai-msg-user';
+  userDiv.textContent = answer;
+  chat.appendChild(userDiv);
+
+  // Agregar a la conversación y pedir nueva revisión
+  aiConversation.push({ role: 'assistant', content: JSON.stringify({questions:[],improved_text:'',is_complete:false,feedback:''}) });
+  aiConversation.push({ role: 'user', content: 'Respuestas a tus preguntas: ' + answer + '\n\nAhora genera el texto mejorado incorporando esta información.' });
+
+  var thinking = document.createElement('div');
+  thinking.className = 'ai-msg-bot';
+  thinking.textContent = '⏳ Procesando...';
+  chat.appendChild(thinking);
+  chat.scrollTop = chat.scrollHeight;
+
+  var originalText = document.getElementById('ai-preview-text').textContent;
+  authFetch(WORKER_URL + '/bitacora/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: originalText, conversation: aiConversation }),
+  }).then(function(r){ return r.json(); })
+    .then(function(d) {
+      thinking.remove();
+      if (!d.ok || !d.result) { addAIBotMsg('Error al procesar.'); return; }
+      renderAIResult(d.result);
+    }).catch(function(){ thinking.remove(); addAIBotMsg('Error de conexión.'); });
+}
+
+function applyImprovedText() {
+  if (!lastImprovedText) return;
+  document.getElementById('entry-text').value = lastImprovedText;
+  closeModal('ai-modal');
+}
+
+// ── Utilidades ────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showError(msg) {
+  document.getElementById('entries-list').innerHTML =
+    '<div class="empty-state"><div class="ei">⚠️</div><p>' + esc(msg) + '</p></div>';
+}
+</script>
+</body>
+</html>

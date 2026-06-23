@@ -136,6 +136,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
   .kw-edit-btn:hover{background:#e8f0fb}
   body.admin-mode .kw-edit-btn{display:inline}
   body.admin-mode .proc-keywords{color:#0057a8}
+.bitacora-main-btn{width:100%;background:linear-gradient(135deg,#1a1a2e,#0d2d5a);color:#fff;border:none;cursor:pointer;border-radius:14px;padding:18px 24px;display:flex;align-items:center;gap:18px;text-align:left;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.bitacora-main-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.bita-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;margin-bottom:2px}
+.bita-sub{font-size:12px;opacity:.75}
 </style>
 </head>
 <body>
@@ -177,6 +181,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
         <div class="op-name">Ver todos los procedimientos</div>
         <div class="op-desc">Mostrar el catálogo completo sin filtrar por faena</div>
       </div>
+    </button>
+    <button class="bitacora-main-btn" onclick="window.location.href='bitacora.html'" style="margin-top:14px">
+      <span style="font-size:26px">&#128211;</span>
+      <div style="flex:1">
+        <div class="bita-title">Bit&#225;cora de Turno</div>
+        <div class="bita-sub">Anotaciones, incidentes y registro por turno</div>
+      </div>
+      <span style="font-size:20px;opacity:.7">&#8250;</span>
     </button>
   </div>
 
