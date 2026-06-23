@@ -278,7 +278,7 @@ function injectCSS() {
     /* Toast */
     '#ar-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a6b3a;color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}',
   /* ── Chat IA del catálogo ── */
-  '#cat-ai-fab{position:fixed;bottom:24px;right:24px;width:54px;height:54px;background:linear-gradient(135deg,#0057a8,#7b2d8b);border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 20px rgba(0,87,168,.4);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:2000;transition:transform .15s}',
+  '#cat-ai-fab{position:fixed;bottom:24px;right:24px;width:70px;height:70px;background:linear-gradient(135deg,#0057a8,#7b2d8b);border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 24px rgba(0,87,168,.45);display:flex;align-items:center;justify-content:center;font-size:29px;z-index:2000;transition:transform .15s}',
   '#cat-ai-fab:hover{transform:scale(1.08)}',
   '#cat-ai-panel{position:fixed;bottom:88px;right:24px;width:380px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:2000;display:none;flex-direction:column;overflow:hidden;max-height:540px}',
   '#cat-ai-panel.open{display:flex}',
