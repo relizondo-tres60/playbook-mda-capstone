@@ -80,6 +80,8 @@ function injectCSS() {
   var css = [
     /* ── Ancho del contenedor ampliado 20% (1100px → 1320px) ── */
     '.container{max-width:1320px !important}',
+    /* ── Ocultar ícono grande de la tarjeta sidebar ── */
+    '.icon-big{display:none !important}',
     /* ── Sección feedback alineada al mismo ancho que el contenido ── */
     '.fb-section{max-width:1320px !important;padding-right:calc(320px + 40px) !important}',
 
