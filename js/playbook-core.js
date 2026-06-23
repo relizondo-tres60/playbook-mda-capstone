@@ -559,7 +559,7 @@ function buildPasswordModal() {
   modal.innerHTML = [
     '<div class="pc-modal" style="max-width:380px">',
     '  <div class="pc-modal-hdr">',
-    '    <strong>🔐 Modo Edición — Acceso Restringido</strong>',
+    '    <strong>🔐 Modo Glosario — Acceso Restringido</strong>',
     '    <button class="pc-modal-x" id="pwd-x">×</button>',
     '  </div>',
     '  <div class="pc-modal-body">',
@@ -612,7 +612,7 @@ function buildAdminButton() {
   // El botón de modo edición solo en SOPs individuales
   if (!document.querySelector('.sop-id')) return;
   var btn = el('button', {id:'admin-fab'});
-  btn.textContent = '⚙ Modo Edición';
+  btn.textContent = '&#128214; Modo Glosario';
   btn.addEventListener('click', function() {
     if (!editMode) {
       document.getElementById('pwd-modal-overlay').classList.add('open');
@@ -625,7 +625,7 @@ function buildAdminButton() {
 
   // Banner de aviso en modo edición
   var banner = el('div', {className:'edit-mode-banner'});
-  banner.textContent = '✏️ MODO EDICIÓN ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
+  banner.textContent = '&#128214; MODO GLOSARIO ACTIVO — Selecciona cualquier texto para añadirlo al glosario';
   // Insertar después del auth-bar (si existe) para no solapar el header de auth
   var authBar = document.getElementById('auth-bar');
   if (authBar && authBar.nextSibling) {
@@ -643,7 +643,7 @@ function buildAdminButton() {
 function activateEditMode() {
   editMode = true;
   document.body.classList.add('edit-mode');
-  document.getElementById('admin-fab').textContent = '✔ Salir de Edición';
+  document.getElementById('admin-fab').textContent = '&#10004; Salir del Glosario';
   document.getElementById('admin-fab').classList.add('active');
   renderContextSections(); // re-render con botones de edición
   // Mensaje mostrado por el banner sticky — toast eliminado para evitar duplicado
@@ -652,7 +652,7 @@ function activateEditMode() {
 function deactivateEditMode() {
   editMode = false;
   document.body.classList.remove('edit-mode');
-  document.getElementById('admin-fab').textContent = '⚙ Modo Edición';
+  document.getElementById('admin-fab').textContent = '&#128214; Modo Glosario';
   document.getElementById('admin-fab').classList.remove('active');
   hideSelBubble();
   renderContextSections();
