@@ -45,8 +45,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
 .op-card-all .texts .op-name{font-size:15px;font-weight:700}
 .op-card-all .texts .op-desc{font-size:12px;opacity:.7;margin-top:2px}
 
-/* Feedback corner button */
-.feedback-btn-wlc{position:fixed;bottom:24px;left:24px;background:#1a1a2e;color:#fff;border:none;cursor:pointer;border-radius:30px;padding:10px 18px;font-size:12px;font-weight:700;letter-spacing:.3px;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:background .15s;z-index:100}
+
 .feedback-btn-wlc:hover{background:#0057a8}
 
 /* ── INDEX ── */
@@ -181,7 +180,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
     </button>
   </div>
 
-  <button class="feedback-btn-wlc" onclick="openFeedbackAuth()">🔒 Feedback Interno</button>
+  
 </div>
 
 <!-- ═══════════════ INDEX SCREEN ═══════════════ -->
@@ -466,12 +465,7 @@ function submitComment(){
 }
 
 /* ── FEEDBACK AUTH ── */
-function openFeedbackAuth(){
-  document.getElementById('feedback-pwd').value = '';
-  document.getElementById('auth-error').classList.add('hidden');
-  document.getElementById('modal-feedback-auth').classList.remove('hidden');
-  setTimeout(()=>document.getElementById('feedback-pwd').focus(), 100);
-}
+
 
 function checkFeedbackAuth(){
   const pwd = document.getElementById('feedback-pwd').value;
