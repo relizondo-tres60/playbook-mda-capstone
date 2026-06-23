@@ -275,6 +275,40 @@ function injectCSS() {
     '.file-preview .fp-name{font-weight:700;color:#0057a8}',
     /* Toast */
     '#ar-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a6b3a;color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}',
+  /* ── Chat IA del catálogo ── */
+  '#cat-ai-fab{position:fixed;bottom:24px;right:24px;width:54px;height:54px;background:linear-gradient(135deg,#0057a8,#7b2d8b);border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 20px rgba(0,87,168,.4);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:2000;transition:transform .15s}',
+  '#cat-ai-fab:hover{transform:scale(1.08)}',
+  '#cat-ai-panel{position:fixed;bottom:88px;right:24px;width:380px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:2000;display:none;flex-direction:column;overflow:hidden;max-height:540px}',
+  '#cat-ai-panel.open{display:flex}',
+  '.cai-hdr{background:linear-gradient(135deg,#0057a8,#7b2d8b);padding:13px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}',
+  '.cai-hdr-l{display:flex;align-items:center;gap:10px}',
+  '.cai-avatar{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}',
+  '.cai-name{color:#fff;font-weight:700;font-size:13px}',
+  '.cai-sub{color:rgba(255,255,255,.7);font-size:10px;margin-top:1px}',
+  '.cai-x{background:none;border:none;color:#fff;cursor:pointer;font-size:18px;opacity:.8}',
+  '.cai-x:hover{opacity:1}',
+  '.cai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;background:#f7f9fc}',
+  '.cai-msg{max-width:88%}',
+  '.cai-msg-bot{align-self:flex-start}',
+  '.cai-msg-user{align-self:flex-end}',
+  '.cai-bubble{padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.55}',
+  '.cai-bubble p{margin:0 0 6px}.cai-bubble p:last-child{margin:0}',
+  '.cai-bubble ul,.cai-bubble ol{padding-left:16px;margin:4px 0}',
+  '.cai-bubble li{margin-bottom:3px}',
+  '.cai-bubble strong{font-weight:700}',
+  '.cai-msg-bot .cai-bubble{background:#fff;border-radius:4px 14px 14px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);color:#1a1a2e}',
+  '.cai-msg-user .cai-bubble{background:linear-gradient(135deg,#0057a8,#003d7a);color:#fff;border-radius:14px 14px 4px 14px}',
+  '.cai-thinking{font-size:12px;color:#aaa;font-style:italic;padding:6px 12px;background:#fff;border-radius:4px 14px 14px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);align-self:flex-start;display:none}',
+  '.cai-input-row{padding:9px 12px;border-top:1px solid #eef1f7;background:#fff;display:flex;gap:7px;flex-shrink:0}',
+  '.cai-input{flex:1;border:1.5px solid #d0d8e8;border-radius:8px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;color:#1a1a2e}',
+  '.cai-input:focus{border-color:#0057a8}',
+  '.cai-send{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:700}',
+  '.cai-send:hover{background:#003d7a}',
+  /* Mejoras de formato en SOP bot también */
+  '.ai-bubble p{margin:0 0 6px}.ai-bubble p:last-child{margin:0}',
+  '.ai-bubble ul,.ai-bubble ol{padding-left:16px;margin:4px 0}',
+  '.ai-bubble li{margin-bottom:3px}',
+  '.ai-bubble strong{font-weight:700}',
   /* Knowledge base */
   '.kb-entry{background:#f7f9fc;border-radius:10px;padding:14px 16px;margin-bottom:10px;border-left:3px solid #0057a8}',
   '.kb-entry.pending{border-left-color:#f59e0b;background:#fffbeb}',
@@ -1480,3 +1514,209 @@ function openExtractModal() {
 window.PlaybookAuth.loadKnowledge      = loadKnowledge;
 window.PlaybookAuth.openExtractModal   = openExtractModal;
 window.PlaybookAuth.openAddKnowledgeModal = openAddKnowledgeModal;
+
+// ═══════════════════════════════════════════════════════
+// FORMATEADOR DE RESPUESTAS IA (compartido: catálogo + SOPs)
+// ═══════════════════════════════════════════════════════
+
+function formatAIResponse(text) {
+  if (!text) return '';
+  // 1. Escapar HTML base
+  var t = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // 2. Negrita **texto** → <strong>
+  t = t.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+
+  // 3. Procesar línea a línea
+  var lines = t.split('\n');
+  var html = '';
+  var inUL = false, inOL = false;
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var bullet   = line.match(/^[-•*]\s+(.*)/);
+    var numbered = line.match(/^(\d+)\.\s+(.*)/);
+    var heading  = line.match(/^#{1,3}\s+(.*)/);
+
+    if (bullet) {
+      if (inOL) { html += '</ol>'; inOL = false; }
+      if (!inUL) { html += '<ul>'; inUL = true; }
+      html += '<li>' + bullet[1] + '</li>';
+    } else if (numbered) {
+      if (inUL) { html += '</ul>'; inUL = false; }
+      if (!inOL) { html += '<ol>'; inOL = true; }
+      html += '<li>' + numbered[2] + '</li>';
+    } else {
+      if (inUL) { html += '</ul>'; inUL = false; }
+      if (inOL) { html += '</ol>'; inOL = false; }
+      if (heading) {
+        html += '<strong>' + heading[1] + '</strong><br>';
+      } else if (line.trim() === '') {
+        // Línea vacía = separador de párrafo
+        if (html && !html.endsWith('<br>') && !html.endsWith('</ul>') && !html.endsWith('</ol>')) {
+          html += '<br>';
+        }
+      } else {
+        html += line + '<br>';
+      }
+    }
+  }
+  if (inUL) html += '</ul>';
+  if (inOL) html += '</ol>';
+
+  // Limpiar trailing <br>
+  html = html.replace(/(<br>\s*)+$/, '');
+  html = html.replace(/(<br>\s*){3,}/g, '<br><br>');
+
+  return html;
+}
+
+window.formatAIResponse = formatAIResponse;
+
+// ═══════════════════════════════════════════════════════
+// CHAT IA EN EL CATÁLOGO (asistente MDA general)
+// ═══════════════════════════════════════════════════════
+
+var _catAiHistory = [];
+
+function buildCatalogAIChat() {
+  // Solo en el catálogo (no SOPs, no otras páginas)
+  if (A.isSOP) return;
+  if (document.getElementById('cat-ai-fab')) return;
+
+  var fab = document.createElement('button');
+  fab.id = 'cat-ai-fab';
+  fab.innerHTML = '✨';
+  fab.title = 'Asistente MDA — Pregúntame sobre procedimientos';
+  fab.addEventListener('click', function() {
+    var panel = document.getElementById('cat-ai-panel');
+    if (panel) panel.classList.toggle('open');
+  });
+  document.body.appendChild(fab);
+
+  var panel = document.createElement('div');
+  panel.id = 'cat-ai-panel';
+  panel.innerHTML = [
+    '<div class="cai-hdr">',
+    '  <div class="cai-hdr-l">',
+    '    <div class="cai-avatar">🤖</div>',
+    '    <div><div class="cai-name">Asistente MDA</div>',
+    '    <div class="cai-sub">Capstone Copper · Mesa de Ayuda</div></div>',
+    '  </div>',
+    '  <button class="cai-x" id="cat-ai-close">✕</button>',
+    '</div>',
+    '<div class="cai-msgs" id="cat-ai-msgs">',
+    '  <div class="cai-thinking" id="cat-ai-thinking"></div>',
+    '</div>',
+    '<div class="cai-input-row">',
+    '  <input class="cai-input" id="cat-ai-input" type="text" placeholder="Ej: ¿Qué SOP uso para crear una cuenta AD?">',
+    '  <button class="cai-send" id="cat-ai-send">↑</button>',
+    '</div>',
+  ].join('');
+  document.body.appendChild(panel);
+
+  document.getElementById('cat-ai-close').addEventListener('click', function() {
+    panel.classList.remove('open');
+  });
+  document.getElementById('cat-ai-send').addEventListener('click', sendCatalogAI);
+  document.getElementById('cat-ai-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') sendCatalogAI();
+  });
+
+  // Mensaje de bienvenida
+  addCatalogAIMessage('bot', '¡Hola! Soy el Asistente MDA. Puedo ayudarte a encontrar el procedimiento correcto para un incidente, orientarte sobre qué SOP consultar o responder preguntas generales del servicio.<br><br>¿Qué necesitas?');
+}
+
+function sendCatalogAI() {
+  var input = document.getElementById('cat-ai-input');
+  var msg   = (input.value || '').trim();
+  if (!msg) return;
+  input.value = '';
+
+  addCatalogAIMessage('user', msg);
+  _catAiHistory.push({ role: 'user', content: msg });
+
+  if (!A.workerUrl) {
+    addCatalogAIMessage('bot', 'El Worker no está configurado. Configura workerUrl para activar el asistente.');
+    return;
+  }
+
+  var thinking = document.getElementById('cat-ai-thinking');
+  thinking.style.display = 'block';
+  thinking.textContent = 'escribiendo...';
+  scrollCatalogAI();
+
+  // Construir contexto: lista de procedimientos + base de conocimiento
+  var procContext = '';
+  if (window._mdaProcs && window._mdaProcs.length) {
+    procContext = '\n\nPROCEDIMIENTOS DISPONIBLES EN EL PLAYBOOK (' + window._mdaProcs.length + ' procedimientos):\n';
+    var domains = {};
+    window._mdaProcs.forEach(function(p) {
+      if (!domains[p.dom]) domains[p.dom] = [];
+      domains[p.dom].push(p.sop + ' — ' + p.titulo);
+    });
+    Object.keys(domains).forEach(function(dom) {
+      procContext += '\n[' + dom + ']\n' + domains[dom].join('\n');
+    });
+  }
+
+  var systemPrompt = 'Eres el Asistente MDA de la Mesa de Ayuda de Capstone Copper Chile.\n' +
+    'Ayudas a los agentes a:\n' +
+    '- Encontrar el procedimiento (SOP) correcto para un incidente o requerimiento\n' +
+    '- Orientarlos sobre qué sección del Playbook consultar\n' +
+    '- Responder preguntas generales sobre el servicio de soporte\n\n' +
+    'Usa formato estructurado en tus respuestas: listas con guiones, negritas para SOPs y conceptos clave.\n' +
+    'Cuando cites un SOP, usa el formato exacto: **SOP-GIA-001**.\n' +
+    'Respuestas en español, máximo 200 palabras.' +
+    procContext;
+
+  authFetch(A.workerUrl + '/chat', {
+    method  : 'POST',
+    headers : { 'Content-Type': 'application/json' },
+    body    : JSON.stringify({
+      system  : systemPrompt,
+      messages: _catAiHistory,
+      sopId   : 'CATALOGO',
+    }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    thinking.style.display = 'none';
+    var reply = data.response || 'Sin respuesta.';
+    _catAiHistory.push({ role: 'assistant', content: reply });
+    addCatalogAIMessage('bot', reply);
+  })
+  .catch(function(e) {
+    thinking.style.display = 'none';
+    addCatalogAIMessage('bot', '❌ Error al contactar el asistente: ' + e.message);
+  });
+}
+
+function addCatalogAIMessage(who, text) {
+  var msgs     = document.getElementById('cat-ai-msgs');
+  var thinking = document.getElementById('cat-ai-thinking');
+  var div      = document.createElement('div');
+  div.className = 'cai-msg cai-msg-' + (who === 'bot' ? 'bot' : 'user');
+  div.innerHTML = '<div class="cai-bubble">' +
+    (who === 'bot' ? formatAIResponse(text) : text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')) +
+    '</div>';
+  msgs.insertBefore(div, thinking);
+  scrollCatalogAI();
+}
+
+function scrollCatalogAI() {
+  var msgs = document.getElementById('cat-ai-msgs');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Arrancar el chat IA del catálogo cuando PlaybookAuth esté listo ───────────
+(function waitForCatalogAI() {
+  if (window.PlaybookAuth && window.PlaybookAuth.ready) {
+    buildCatalogAIChat();
+  } else {
+    setTimeout(waitForCatalogAI, 200);
+  }
+})();
