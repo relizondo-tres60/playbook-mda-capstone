@@ -436,7 +436,7 @@ function buildSOPToolbar() {
   var toolbar  = document.createElement('div');
   toolbar.id   = 'sop-admin-bar';
 
-  var isViewerPage = window.location.pathname.indexOf('viewer.html') >= 0;
+  var isViewerPage = !!window._mdaViewerMode;
 
   toolbar.innerHTML = [
     '<a class="sab-back" href="' + esc(base() + 'Catalogo_Servicios_MDA_Capstone.html') + '">&#8592; Cat\u00e1logo</a>',
@@ -911,10 +911,21 @@ function loadVisibilityAdmin() {
     html += '<div id="' + did + '" style="border:1px solid #eef1f7;border-top:none;border-radius:0 0 8px 8px">';
     dp.forEach(function(p) {
       var h = A.hiddenProcs.includes(p.sop);
+      // Verificar si es un SOP custom (tiene propiedad custom:true en _mdaProcs)
+      var rawP = rawProcs.find(function(rp){ return (rp.sop||rp.cs_id)===p.sop; });
+      var isCustom = rawP && rawP.custom === true;
       html += '<div class="vis-item' + (h?' is-hidden':'') + '">' +
-        '<div><div style="font-family:monospace;font-size:11px;font-weight:700;color:#0057a8">' + esc(p.sop) + (h?'<span class="hidden-badge">OCULTO</span>':'') + '</div>' +
+        '<div><div style="font-family:monospace;font-size:11px;font-weight:700;color:#0057a8">' + esc(p.sop) +
+          (h?'<span class="hidden-badge">OCULTO</span>':'') +
+          (isCustom?'<span style="background:#e8f0fb;color:#0057a8;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;font-family:sans-serif">CUSTOM</span>':'') +
+        '</div>' +
         '<div style="font-size:12px;color:#555">' + esc(p.titulo) + '</div></div>' +
-        '<button class="vis-toggle" data-sop="' + esc(p.sop) + '">' + (h?'&#128584;':'&#128065;') + '</button></div>';
+        '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">' +
+          '<button class="vis-toggle" data-sop="' + esc(p.sop) + '">' + (h?'&#128584;':'&#128065;') + '</button>' +
+          (isCustom
+            ? '<button class="vis-del-btn" data-sop="' + esc(p.sop) + '" data-titulo="' + esc(p.titulo) + '" title="Eliminar procedimiento" style="background:#fde8e8;color:#c0392b;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">&#128465;</button>'
+            : '') +
+        '</div></div>';
     });
     html += '</div></div>';
   });
@@ -930,6 +941,11 @@ function loadVisibilityAdmin() {
   });
   c.querySelectorAll('.vis-toggle').forEach(function(b) {
     b.addEventListener('click', function() { toggleVisibility(b.dataset.sop); });
+  });
+  c.querySelectorAll('.vis-del-btn').forEach(function(b) {
+    b.addEventListener('click', function() {
+      deleteCustomSOP(b.dataset.sop, b.dataset.titulo);
+    });
   });
 }
 
