@@ -141,7 +141,25 @@ function injectSOP(html) {
   document.getElementById('viewer-loading').style.display = 'none';
   container.style.display = 'block';
 
-  // 7. Actualizar A.isSOP ahora que el contenido está inyectado
+  // 7. Cargar contenido editado desde KV (si existe) — igual que SOPs estáticos
+  var A7 = window.PlaybookAuth;
+  if (A7 && A7.workerUrl && A7.sopId) {
+    A7.authFetch(A7.workerUrl + '/content/' + A7.sopId)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d.hasEdit && d.html) {
+          var c = document.querySelector('.container');
+          if (c) {
+            c.innerHTML = d.html;
+            // Marcar badge de editado en el toolbar
+            var badge = document.getElementById('sab-edit-badge');
+            if (badge) badge.style.display = 'inline-block';
+          }
+        }
+      }).catch(function(){});
+  }
+
+  // 8. Actualizar A.isSOP ahora que el contenido está inyectado
   var A = window.PlaybookAuth;
   if (A) {
     var sopEl = document.querySelector('.sop-id');
@@ -171,7 +189,7 @@ function injectSOP(html) {
     }
   }
 
-  // 8. Cargar playbook-core.js UNA VEZ (glosario, contexto operacional, bot IA)
+  // 9. Cargar playbook-core.js UNA VEZ (glosario, contexto operacional, bot IA)
   if (!document.getElementById('playbook-core-loaded')) {
     var script   = document.createElement('script');
     script.id    = 'playbook-core-loaded';
