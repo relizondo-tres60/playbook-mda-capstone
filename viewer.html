@@ -141,22 +141,25 @@ function injectSOP(html) {
   document.getElementById('viewer-loading').style.display = 'none';
   container.style.display = 'block';
 
-  // 7. Cargar contenido editado desde KV (si existe) — igual que SOPs estáticos
-  var A7 = window.PlaybookAuth;
-  if (A7 && A7.workerUrl && A7.sopId) {
-    A7.authFetch(A7.workerUrl + '/content/' + A7.sopId)
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if (d.hasEdit && d.html) {
-          var c = document.querySelector('.container');
-          if (c) {
-            c.innerHTML = d.html;
-            // Marcar badge de editado en el toolbar
-            var badge = document.getElementById('sab-edit-badge');
-            if (badge) badge.style.display = 'inline-block';
-          }
+  // 7. Cargar contenido editado desde KV (si existe)
+  // TARGET_SOP siempre está disponible — A.sopId aún no se ha asignado en este punto
+  var _wUrl = (window.PlaybookAuth && window.PlaybookAuth.workerUrl) || localStorage.getItem('mda_worker_url') || '';
+  var _sess = localStorage.getItem('mda_session') || '';
+  if (_wUrl && TARGET_SOP) {
+    fetch(_wUrl + '/content/' + encodeURIComponent(TARGET_SOP), {
+      headers: { 'Authorization': 'Bearer ' + _sess }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.hasEdit && d.html) {
+        var c = document.querySelector('.container');
+        if (c) {
+          c.innerHTML = d.html;
+          var badge = document.getElementById('sab-edit-badge');
+          if (badge) badge.style.display = 'inline-block';
         }
-      }).catch(function(){});
+      }
+    }).catch(function(){});
   }
 
   // 8. Actualizar A.isSOP ahora que el contenido está inyectado
