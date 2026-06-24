@@ -1116,7 +1116,10 @@ function openUploadModal() {
                         dom     : sop.dom,
                         ops     : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
                         desc    : sop.titulo,
-                        nivel   : sop.nivel  || 'N1',
+                        nivel   : (function(n){
+                          n=n||'N1';
+                          return n.replace(/^N1$/i,'Nivel 1').replace(/^N2$/i,'Nivel 2').replace(/^N3$/i,'Nivel 3');
+                        })(sop.nivel),
                         grupos  : sop.grupo  || sop.grupos || '',
                         acciones: Array.isArray(sop.acciones)?sop.acciones:[],
                         esc     : sop.esc    || '',
