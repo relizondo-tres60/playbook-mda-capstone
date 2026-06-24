@@ -3,53 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Playbook MDA — Cargando procedimiento...</title>
+<title>Cargando procedimiento — MDA Playbook</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:#888}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e}
+/* Loading state */
+#viewer-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px;color:#888}
 .spinner{width:40px;height:40px;border:4px solid #eef1f7;border-top-color:#0057a8;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-box{max-width:500px;margin:60px auto;background:#fff;border-radius:12px;padding:32px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-.error-box h2{color:#c0392b;margin-bottom:10px}
-.error-box p{color:#555;font-size:14px;line-height:1.6}
-.error-box a{color:#0057a8;font-weight:600}
+/* Error state */
+#viewer-error{display:none;max-width:500px;margin:60px auto;background:#fff;border-radius:12px;padding:32px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+#viewer-error .ei{font-size:48px;margin-bottom:14px}
+#viewer-error h2{color:#c0392b;margin-bottom:10px}
+#viewer-error p{color:#555;font-size:14px;line-height:1.6}
+#viewer-error a{color:#0057a8;font-weight:600;text-decoration:none}
+/* SOP content container */
+#sop-content{display:none}
 </style>
 </head>
 <body>
 
-<div id="viewer-root">
-  <div class="loading-screen">
-    <div class="spinner"></div>
-    <div>Cargando procedimiento...</div>
-  </div>
+<!-- Estado de carga -->
+<div id="viewer-loading">
+  <div class="spinner"></div>
+  <div id="viewer-loading-msg">Autenticando...</div>
 </div>
 
+<!-- Estado de error -->
+<div id="viewer-error">
+  <div class="ei">⚠️</div>
+  <h2 id="err-title">Error</h2>
+  <p id="err-body"></p>
+</div>
+
+<!-- Contenido del SOP (se inyecta aquí) -->
+<div id="sop-content"></div>
+
 <script>
-// Leer el SOP ID de los parámetros de URL
+// ── Obtener el SOP ID de la URL ───────────────────────────────────────────────
 var params = new URLSearchParams(window.location.search);
-var sopId  = params.get('sop') || params.get('id') || '';
+var TARGET_SOP = params.get('sop') || params.get('id') || '';
 
-if (!sopId) {
-  showError('SOP no especificado', 'No se indicó un ID de procedimiento en la URL. <a href="Catalogo_Servicios_MDA_Capstone.html">Ir al Catálogo</a>');
-} else {
-  // Obtener workerUrl del mismo lugar que auth-roles.js
-  var WORKER_URL = localStorage.getItem('mda_worker_url') || '';
-
-  // Intentar leer workerUrl del CFG si está disponible
-  if (!WORKER_URL && window.CFG && CFG.workerUrl) WORKER_URL = CFG.workerUrl;
-
-  if (!WORKER_URL) {
-    showError('Worker no configurado', 'La URL del Worker no está configurada. <a href="Catalogo_Servicios_MDA_Capstone.html">Volver al Catálogo</a>');
-  } else {
-    loadSOP(sopId, WORKER_URL);
-  }
+function showError(title, body) {
+  document.getElementById('viewer-loading').style.display = 'none';
+  document.getElementById('viewer-error').style.display  = 'block';
+  document.getElementById('err-title').textContent = title;
+  document.getElementById('err-body').innerHTML   = body;
 }
 
-function loadSOP(sopId, workerUrl) {
-  var session = localStorage.getItem('mda_session') || '';
-  fetch(workerUrl + '/sop/' + encodeURIComponent(sopId), {
-    headers: { 'Authorization': 'Bearer ' + session }
+function setLoadingMsg(msg) {
+  var el = document.getElementById('viewer-loading-msg');
+  if (el) el.textContent = msg;
+}
+
+if (!TARGET_SOP) {
+  showError('SOP no especificado',
+    'No se indicó un ID de procedimiento en la URL.<br><br>' +
+    '<a href="Catalogo_Servicios_MDA_Capstone.html">← Ir al Catálogo</a>');
+}
+
+// ── Esta función se llama UNA VEZ cuando PlaybookAuth termina su auth ─────────
+function onAuthReady(user) {
+  var A = window.PlaybookAuth;
+  if (!A || !A.workerUrl) {
+    showError('Worker no configurado',
+      'La URL del Worker no está disponible. ' +
+      '<a href="Catalogo_Servicios_MDA_Capstone.html">Volver al Catálogo</a>');
+    return;
+  }
+  if (!TARGET_SOP) return;
+
+  setLoadingMsg('Cargando procedimiento ' + TARGET_SOP + '...');
+
+  // Fetch del SOP desde KV via Worker
+  fetch(A.workerUrl + '/sop/' + encodeURIComponent(TARGET_SOP), {
+    headers: { 'Authorization': 'Bearer ' + (A.session || localStorage.getItem('mda_session') || '') }
   })
   .then(function(r) {
     if (r.status === 401) { window.location.href = 'login.html'; return null; }
@@ -57,56 +85,116 @@ function loadSOP(sopId, workerUrl) {
   })
   .then(function(data) {
     if (!data) return;
-    if (data.error) { showError('Procedimiento no encontrado', 'El procedimiento <strong>' + sopId + '</strong> no existe o fue eliminado. <a href="Catalogo_Servicios_MDA_Capstone.html">Ir al Catálogo</a>'); return; }
-
-    // Inyectar el HTML del SOP custom
-    document.title = sopId + ' — Playbook MDA Capstone';
-
-    // Crear un nuevo body con el HTML del SOP
-    var parser  = new DOMParser();
-    var doc     = parser.parseFromString(data.html, 'text/html');
-
-    // Copiar estilos
-    doc.querySelectorAll('style, link[rel="stylesheet"]').forEach(function(el) {
-      document.head.appendChild(el.cloneNode(true));
-    });
-
-    // Reemplazar el contenido del body
-    document.getElementById('viewer-root').innerHTML = '';
-    doc.body.childNodes.forEach(function(node) {
-      document.body.appendChild(document.adoptNode(node.cloneNode(true)));
-    });
-
-    // Ejecutar scripts inline del SOP (feedback JS, etc.)
-    document.querySelectorAll('script:not([src])').forEach(function(script) {
-      if (script.textContent.includes('submitFB') || script.textContent.includes('closeFB')) {
-        var s = document.createElement('script');
-        s.textContent = script.textContent;
-        document.body.appendChild(s);
-      }
-    });
-
-    // Cargar auth-roles y playbook-core si no están ya
-    if (!document.getElementById('ar-css')) {
-      loadScript('js/auth-roles.js');
+    if (data.error) {
+      showError('Procedimiento no encontrado',
+        'El procedimiento <strong>' + TARGET_SOP + '</strong> no existe o fue eliminado.<br><br>' +
+        '<a href="Catalogo_Servicios_MDA_Capstone.html">← Ir al Catálogo</a>');
+      return;
     }
-    loadScript('js/playbook-core.js');
+    injectSOP(data.html);
   })
   .catch(function(e) {
-    showError('Error al cargar', 'No se pudo obtener el procedimiento. Verifica tu conexión. <a href="Catalogo_Servicios_MDA_Capstone.html">Ir al Catálogo</a>');
+    showError('Error al cargar',
+      'No se pudo obtener el procedimiento: ' + e.message + '<br><br>' +
+      '<a href="Catalogo_Servicios_MDA_Capstone.html">← Ir al Catálogo</a>');
   });
 }
 
-function loadScript(src) {
-  var s = document.createElement('script');
-  s.src = src;
-  document.body.appendChild(s);
+function injectSOP(html) {
+  // Parsear el HTML del SOP
+  var parser  = new DOMParser();
+  var sopDoc  = parser.parseFromString(html, 'text/html');
+
+  // 1. Inyectar CSS del SOP en <head>
+  sopDoc.querySelectorAll('style').forEach(function(s) {
+    var st = document.createElement('style');
+    st.textContent = s.textContent;
+    document.head.appendChild(st);
+  });
+
+  // 2. Inyectar fonts del SOP
+  sopDoc.querySelectorAll('link[rel="stylesheet"]').forEach(function(l) {
+    if (!document.querySelector('link[href="' + l.href + '"]')) {
+      document.head.appendChild(l.cloneNode(true));
+    }
+  });
+
+  // 3. Actualizar título de la página
+  if (sopDoc.title) document.title = sopDoc.title;
+
+  // 4. Inyectar contenido del body (sin scripts para evitar doble carga)
+  var container = document.getElementById('sop-content');
+  var bodyHtml  = sopDoc.body.innerHTML
+    // Eliminar referencias a los scripts de auth y playbook (ya cargados)
+    .replace(/<script[^>]*auth-roles\.js[^>]*><\/script>/gi, '')
+    .replace(/<script[^>]*playbook-core\.js[^>]*><\/script>/gi, '');
+  container.innerHTML = bodyHtml;
+
+  // 5. Ejecutar scripts inline del SOP (feedback, etc.) — de forma segura
+  container.querySelectorAll('script:not([src])').forEach(function(orig) {
+    var s = document.createElement('script');
+    s.textContent = orig.textContent;
+    document.body.appendChild(s);
+  });
+
+  // 6. Ocultar loading, mostrar contenido
+  document.getElementById('viewer-loading').style.display = 'none';
+  container.style.display = 'block';
+
+  // 7. Actualizar A.isSOP ahora que el contenido está inyectado
+  var A = window.PlaybookAuth;
+  if (A) {
+    var sopEl = document.querySelector('.sop-id');
+    var match = sopEl ? sopEl.textContent.match(/SOP-[A-Z]+-\d+/) : null;
+    A.isSOP   = !!sopEl;
+    A.sopId   = match ? match[0] : TARGET_SOP;
+    A.sopTitle = document.title.replace(/SOP-[A-Z]+-\d+\s*[^\w]*/,'').trim();
+    // Construir toolbar de admin si corresponde
+    if (A.isSOP && A.user && A.user.role === 'admin' && typeof buildSOPToolbar === 'function') {
+      if (!document.getElementById('sop-admin-bar')) buildSOPToolbar();
+    }
+  }
+
+  // 8. Cargar playbook-core.js UNA VEZ (glosario, contexto operacional, bot IA)
+  if (!document.getElementById('playbook-core-loaded')) {
+    var script   = document.createElement('script');
+    script.id    = 'playbook-core-loaded';
+    script.src   = 'js/playbook-core.js';
+    // Después de cargar, disparar el boot manualmente
+    script.onload = function() {
+      if (window.PlaybookCoreInit) window.PlaybookCoreInit();
+    };
+    document.body.appendChild(script);
+  }
 }
 
-function showError(title, html) {
-  document.getElementById('viewer-root').innerHTML =
-    '<div class="error-box"><h2>' + title + '</h2><p>' + html + '</p></div>';
-}
+// ── Configurar el hook ANTES de que auth-roles.js cargue ─────────────────────
+// Si auth-roles.js ya completó su auth, llamar directamente.
+// Si no, registrar el callback para cuando termine.
+(function hookAuth() {
+  if (window.PlaybookAuth && window.PlaybookAuth.ready) {
+    onAuthReady(window.PlaybookAuth.user);
+  } else {
+    // PlaybookAuth aún no existe o no está listo — registrar el hook
+    var checkInterval = setInterval(function() {
+      if (window.PlaybookAuth) {
+        clearInterval(checkInterval);
+        var prevOnReady = window.PlaybookAuth.onReady;
+        window.PlaybookAuth.onReady = function(user) {
+          if (prevOnReady) prevOnReady(user);
+          onAuthReady(user);
+        };
+        // Si ya está ready cuando configuramos el hook
+        if (window.PlaybookAuth.ready) onAuthReady(window.PlaybookAuth.user);
+      }
+    }, 50);
+  }
+})();
 </script>
+
+<!-- auth-roles.js carga UNA SOLA VEZ — proporciona nav bar + auth -->
+<script src="js/auth-roles.js"></script>
+<!-- playbook-core.js se carga dinámicamente DESPUÉS de inyectar el contenido -->
+
 </body>
 </html>
