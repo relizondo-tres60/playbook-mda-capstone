@@ -436,6 +436,8 @@ function buildSOPToolbar() {
   var toolbar  = document.createElement('div');
   toolbar.id   = 'sop-admin-bar';
 
+  var isViewerPage = window.location.pathname.indexOf('viewer.html') >= 0;
+
   toolbar.innerHTML = [
     '<a class="sab-back" href="' + esc(base() + 'Catalogo_Servicios_MDA_Capstone.html') + '">&#8592; Cat\u00e1logo</a>',
     '<div class="sab-sep"></div>',
@@ -446,6 +448,9 @@ function buildSOPToolbar() {
       (isHidden ? '&#128584; Oculto &mdash; publicar' : '&#128065; Visible &mdash; ocultar') +
     '</button>',
     '<span class="sab-badge" id="sab-edit-badge" style="display:none">&#9998; Editado</span>',
+    isViewerPage
+      ? '<button class="sab-btn" id="sab-del-btn" style="background:#fde8e8;color:#c0392b;border:1.5px solid #fca5a5;margin-left:8px;">&#128465; Eliminar</button>'
+      : '',
   ].join('');
 
   // Insertar después del nav
@@ -458,6 +463,12 @@ function buildSOPToolbar() {
 
   document.getElementById('sab-edit-btn').addEventListener('click', openContentEditor);
   document.getElementById('sab-vis-btn').addEventListener('click', toggleCurrentSOP);
+  if (isViewerPage) {
+    var delBtn = document.getElementById('sab-del-btn');
+    if (delBtn) delBtn.addEventListener('click', function() {
+      deleteCustomSOP(A.sopId, A.sopTitle || A.sopId);
+    });
+  }
 
   // Verificar si este SOP tiene contenido editado
   if (A.workerUrl && A.sopId) {
@@ -471,19 +482,7 @@ function buildSOPToolbar() {
       }).catch(function() {});
   }
 
-  // Bot\u00f3n eliminar: solo en viewer.html (SOPs custom subidos)
-  if (window.location.pathname.indexOf('viewer.html') >= 0) {
-    var delSopBtn = document.createElement('button');
-    delSopBtn.className = 'sab-btn';
-    delSopBtn.innerHTML = '\uD83D\uDDD1\uFE0F Eliminar';
-    delSopBtn.title = 'Eliminar este procedimiento (solo admins)';
-    delSopBtn.style.cssText = 'background:#fde8e8;color:#c0392b;border:1.5px solid #fca5a5;margin-left:8px;';
-    delSopBtn.addEventListener('click', function() {
-      deleteCustomSOP(A.sopId, A.sopTitle || A.sopId);
-    });
-    var sab = document.getElementById('sop-admin-bar');
-    if (sab) sab.appendChild(delSopBtn);
-  }
+
 }
 
 function refreshSOPToolbar() {
