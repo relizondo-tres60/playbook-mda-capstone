@@ -392,6 +392,7 @@ function getNivelClass(n){
 }
 
 function renderGrupos(grupos){
+  if(!grupos||grupos.trim()==='') return '<span style="color:#aaa;font-size:11px">—</span>';
   return grupos.split('/').map(g =>
     `<span>${g.trim()}</span>`
   ).join('');
@@ -644,19 +645,19 @@ window.loadCustomSOPs = function() {
         var exists = PROCS.some(function(p){ return p.sop === sop.sopId; });
         if (!exists) {
           PROCS.push({
-            sop   : sop.sopId,
-            titulo: sop.titulo,
-            dom   : sop.dom,
-            ops   : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
-            desc  : sop.titulo,
-            nivel : sop.nivel  || 'N1',
-            grupos: sop.grupo  || sop.grupos || '',
-            acciones: [],
-            esc   : '',
-            crit  : sop.criticidad || 'MEDIO',
-            tiempo: sop.tiempo || '—',
-            href  : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
-            custom: true
+            sop     : sop.sopId,
+            titulo  : sop.titulo,
+            dom     : sop.dom,
+            ops     : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
+            desc    : sop.titulo,
+            nivel   : sop.nivel   || 'N1',
+            grupos  : sop.grupo   || sop.grupos || '',
+            acciones: Array.isArray(sop.acciones) ? sop.acciones : [],
+            esc     : sop.esc     || '',
+            crit    : sop.criticidad || 'MEDIO',
+            tiempo  : sop.tiempo  || '—',
+            href    : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
+            custom  : true
           });
         }
       });
