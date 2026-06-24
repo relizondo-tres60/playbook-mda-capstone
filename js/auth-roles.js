@@ -448,9 +448,7 @@ function buildSOPToolbar() {
       (isHidden ? '&#128584; Oculto &mdash; publicar' : '&#128065; Visible &mdash; ocultar') +
     '</button>',
     '<span class="sab-badge" id="sab-edit-badge" style="display:none">&#9998; Editado</span>',
-    isViewerPage
-      ? '<button class="sab-btn" id="sab-del-btn" style="background:#fde8e8;color:#c0392b;border:1.5px solid #fca5a5;margin-left:8px;">&#128465; Eliminar</button>'
-      : '',
+    '<button class="sab-btn" id="sab-del-btn" style="background:#fde8e8;color:#c0392b;border:1.5px solid #fca5a5;margin-left:8px;">&#128465; Eliminar</button>',
   ].join('');
 
   // Insertar después del nav
@@ -463,12 +461,10 @@ function buildSOPToolbar() {
 
   document.getElementById('sab-edit-btn').addEventListener('click', openContentEditor);
   document.getElementById('sab-vis-btn').addEventListener('click', toggleCurrentSOP);
-  if (isViewerPage) {
-    var delBtn = document.getElementById('sab-del-btn');
-    if (delBtn) delBtn.addEventListener('click', function() {
-      deleteCustomSOP(A.sopId, A.sopTitle || A.sopId);
-    });
-  }
+  var delBtn = document.getElementById('sab-del-btn');
+  if (delBtn) delBtn.addEventListener('click', function() {
+    deleteSOP(A.sopId, A.sopTitle || A.sopId);
+  });
 
   // Verificar si este SOP tiene contenido editado
   if (A.workerUrl && A.sopId) {
@@ -512,12 +508,12 @@ function loadVisibility() {
   authFetch(A.workerUrl + '/admin/visibility')
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      A.hiddenProcs = d.hidden || [];
+      A.hiddenProcs  = d.hidden  || [];
+      A.deletedProcs = d.deleted || [];
       applyVisibility();
       if (A.isSOP) refreshSOPToolbar();
       loadProcKeywords();
-      // Disparar evento para que el catálogo actualice sus contadores
-      window.dispatchEvent(new CustomEvent('mda:visibility-loaded', {detail:{hidden:A.hiddenProcs}}));
+      window.dispatchEvent(new CustomEvent('mda:visibility-loaded', {detail:{hidden:A.hiddenProcs,deleted:A.deletedProcs}}));
     })
     .catch(function() {});
 }
@@ -872,9 +868,12 @@ function loadVisibilityAdmin() {
 
   // Buscar PROCS en window o en window._mdaProcs (alias global)
   var rawProcs = window.PROCS || window._mdaProcs || [];
-  var procs = rawProcs.map(function(p) {
-    return { sop: p.sop || p.cs_id, titulo: p.titulo, dom: p.dom };
-  });
+  var deletedSet = new Set(A.deletedProcs || []);
+  var procs = rawProcs
+    .filter(function(p){ return !deletedSet.has(p.sop||p.cs_id); })
+    .map(function(p) {
+      return { sop: p.sop || p.cs_id, titulo: p.titulo, dom: p.dom };
+    });
   if (!procs.length) {
     c.innerHTML = '<p style="color:#aaa;font-size:13px">Este panel est\u00e1 disponible en el Cat\u00e1logo principal.</p>';
     return;
@@ -922,9 +921,7 @@ function loadVisibilityAdmin() {
         '<div style="font-size:12px;color:#555">' + esc(p.titulo) + '</div></div>' +
         '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">' +
           '<button class="vis-toggle" data-sop="' + esc(p.sop) + '">' + (h?'&#128584;':'&#128065;') + '</button>' +
-          (isCustom
-            ? '<button class="vis-del-btn" data-sop="' + esc(p.sop) + '" data-titulo="' + esc(p.titulo) + '" title="Eliminar procedimiento" style="background:#fde8e8;color:#c0392b;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">&#128465;</button>'
-            : '') +
+          '<button class="vis-del-btn" data-sop="' + esc(p.sop) + '" data-titulo="' + esc(p.titulo) + '" title="Eliminar procedimiento" style="background:#fde8e8;color:#c0392b;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">&#128465;</button>' +
         '</div></div>';
     });
     html += '</div></div>';
@@ -944,7 +941,7 @@ function loadVisibilityAdmin() {
   });
   c.querySelectorAll('.vis-del-btn').forEach(function(b) {
     b.addEventListener('click', function() {
-      deleteCustomSOP(b.dataset.sop, b.dataset.titulo);
+      deleteSOP(b.dataset.sop, b.dataset.titulo);
     });
   });
 }
@@ -1159,6 +1156,11 @@ function openUploadModal() {
                       });
                     }
                   });
+                  // Filtrar eliminados antes de renderizar
+                  if(window._mdaProcs){
+                    var delSet=new Set(_A.deletedProcs||[]);
+                    window._mdaProcs=window._mdaProcs.filter(function(p){return !delSet.has(p.sop);});
+                  }
                   if(typeof buildOpsGrid==='function') buildOpsGrid();
                   if(typeof renderIndex==='function'&&typeof currentOp!=='undefined'&&currentOp) renderIndex();
                   // Agregar botón eliminar a filas de SOPs custom (solo admin)
@@ -1170,7 +1172,7 @@ function openUploadModal() {
                         db.className='edit-btn-inline del-custom-btn';
                         db.textContent='\uD83D\uDDD1 eliminar';
                         db.style.cssText='background:#fde8e8;color:#c0392b;border:1px solid #fca5a5;margin-left:4px;cursor:pointer;border-radius:4px;padding:2px 8px;font-size:11px;';
-                        db.onclick=function(e){e.preventDefault();e.stopPropagation();deleteCustomSOP(sop.sopId,sop.titulo);};
+                        db.onclick=function(e){e.preventDefault();e.stopPropagation();deleteSOP(sop.sopId,sop.titulo);};
                         var editBtn=row.querySelector('.edit-btn-inline');
                         if(editBtn) editBtn.after(db);
                         else{ var tc=row.querySelector('.proc-titulo'); if(tc) tc.parentNode.appendChild(db); }
@@ -1369,7 +1371,7 @@ A.buildSOPToolbar  = buildSOPToolbar;
 A.refreshSOPToolbar= refreshSOPToolbar;
 
     // Eliminar SOP custom (admin only)
-    function deleteCustomSOP(sopId, titulo) {
+    function deleteSOP(sopId, titulo) {
       if(!confirm('\u00bfEliminar el procedimiento ' + sopId + '?\n\n\"' + titulo + '\"\n\nEsta acci\u00f3n no se puede deshacer.')) return;
       authFetch(A.workerUrl + '/sop/' + encodeURIComponent(sopId), { method: 'DELETE' })
         .then(function(r){ return r.json(); })
@@ -1391,7 +1393,7 @@ A.refreshSOPToolbar= refreshSOPToolbar;
         })
         .catch(function(){ showToast('\u274c Error de conexi\u00f3n'); });
     }
-    A.deleteCustomSOP = deleteCustomSOP;
+    A.deleteSOP = deleteCustomSOP;
 A.loadProcKeywords = loadProcKeywords;
 A.openKeywordModal = openKeywordModal;
 A.applyVisibility  = applyVisibility;
