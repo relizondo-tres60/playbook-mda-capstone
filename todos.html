@@ -197,7 +197,11 @@ function fmtDate(iso){
   var p=iso.split('-');
   return p[2]+'/'+p[1]+'/'+p[0];
 }
-function isVencida(iso){ return iso && new Date(iso+'T23:59:59')<new Date(); }
+function isVencida(iso){
+  if(!iso) return false;
+  var today = new Date().toISOString().slice(0,10);
+  return iso <= today; // roja si es hoy o antes
+}
 function estKey(e){ return (e||'').replace(' ',''); }
 
 // Boot
@@ -272,11 +276,11 @@ function renderTable(){
       '<td><button class="pri pri-'+(t.prioridad||'Media')+'" onclick="cyclePri(\''+ t.id +'\')">'+esc(t.prioridad||'Media')+'</button></td>'+
       '<td><button class="est est-'+estKey(t.estado)+'" onclick="'+(!arch?'cycleEst(\''+ t.id +'\')':'') +'" style="'+( arch?'cursor:default;':'' )+'">'+esc(t.estado)+'</button></td>'+
       '<td style="font-size:12px">'+esc(t.responsable||'&#8212;')+'</td>'+
-      '<td class="fecha-wrap">'+fmtDate(t.fechaLimite)+(venc?'<span class="vencida">VENCIDA</span>':'')+'</td>'+
+      '<td class="fecha-wrap" style="'+(venc?'color:#ef4444;font-weight:700;':'')+'">'+fmtDate(t.fechaLimite)+(venc?'<span class="vencida">VENCIDA</span>':'')+'</td>'+
       '<td class="td-notes">'+esc(t.notas||'')+'</td>'+
       '<td><div class="act-btns">'+
         '<button class="ab ab-edit" title="Editar" onclick="openEdit(\''+ t.id +'\')")>&#9998;</button>'+
-        (isAdmin && !arch ? '<button class="ab ab-arch" title="Archivar" onclick="archiveTodo(\''+ t.id +'\')">&#128230; Archivar</button>' : '')+
+        (isAdmin && !arch ? '<button class="ab ab-arch" title="Archivar" onclick="archiveTodo(\''+ t.id +'\')">&#128230;</button>' : '')+
         (isAdmin && arch  ? '<button class="ab ab-edit" title="Restaurar" onclick="restaurarTodo(\''+ t.id +'\')">&#8617; Restaurar</button>' : '')+
       '</div></td>'+
     '</tr>';
