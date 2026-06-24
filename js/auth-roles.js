@@ -470,6 +470,20 @@ function buildSOPToolbar() {
         }
       }).catch(function() {});
   }
+
+  // Bot\u00f3n eliminar: solo en viewer.html (SOPs custom subidos)
+  if (window.location.pathname.indexOf('viewer.html') >= 0) {
+    var delSopBtn = document.createElement('button');
+    delSopBtn.className = 'sab-btn';
+    delSopBtn.innerHTML = '\uD83D\uDDD1\uFE0F Eliminar';
+    delSopBtn.title = 'Eliminar este procedimiento (solo admins)';
+    delSopBtn.style.cssText = 'background:#fde8e8;color:#c0392b;border:1.5px solid #fca5a5;margin-left:8px;';
+    delSopBtn.addEventListener('click', function() {
+      deleteCustomSOP(A.sopId, A.sopTitle || A.sopId);
+    });
+    var sab = document.getElementById('sop-admin-bar');
+    if (sab) sab.appendChild(delSopBtn);
+  }
 }
 
 function refreshSOPToolbar() {
@@ -1132,6 +1146,22 @@ function openUploadModal() {
                   });
                   if(typeof buildOpsGrid==='function') buildOpsGrid();
                   if(typeof renderIndex==='function'&&typeof currentOp!=='undefined'&&currentOp) renderIndex();
+                  // Agregar botón eliminar a filas de SOPs custom (solo admin)
+                  if(_A.user&&_A.user.role==='admin'){
+                    data.sops.forEach(function(sop){
+                      var row=document.querySelector('[data-sop="'+sop.sopId+'"]');
+                      if(row&&!row.querySelector('.del-custom-btn')){
+                        var db=document.createElement('button');
+                        db.className='edit-btn-inline del-custom-btn';
+                        db.textContent='\uD83D\uDDD1 eliminar';
+                        db.style.cssText='background:#fde8e8;color:#c0392b;border:1px solid #fca5a5;margin-left:4px;cursor:pointer;border-radius:4px;padding:2px 8px;font-size:11px;';
+                        db.onclick=function(e){e.preventDefault();e.stopPropagation();deleteCustomSOP(sop.sopId,sop.titulo);};
+                        var editBtn=row.querySelector('.edit-btn-inline');
+                        if(editBtn) editBtn.after(db);
+                        else{ var tc=row.querySelector('.proc-titulo'); if(tc) tc.parentNode.appendChild(db); }
+                      }
+                    });
+                  }
                 }).catch(function(){});
             };
             window.loadCustomSOPs();
@@ -1322,6 +1352,31 @@ A.openUploadModal  = openUploadModal;
 A.showToast        = showToast;
 A.buildSOPToolbar  = buildSOPToolbar;
 A.refreshSOPToolbar= refreshSOPToolbar;
+
+    // Eliminar SOP custom (admin only)
+    function deleteCustomSOP(sopId, titulo) {
+      if(!confirm('\u00bfEliminar el procedimiento ' + sopId + '?\n\n\"' + titulo + '\"\n\nEsta acci\u00f3n no se puede deshacer.')) return;
+      authFetch(A.workerUrl + '/sop/' + encodeURIComponent(sopId), { method: 'DELETE' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d.error){ showToast('\u274c Error: ' + d.error); return; }
+          showToast('\u2705 Procedimiento eliminado');
+          // Redirigir al cat\u00e1logo si estamos en el viewer
+          if(window.location.pathname.includes('viewer.html')){
+            window.location.href = 'Catalogo_Servicios_MDA_Capstone.html';
+            return;
+          }
+          // En el cat\u00e1logo: quitar de _mdaProcs y re-renderizar
+          var procs = window._mdaProcs || [];
+          for(var i=procs.length-1;i>=0;i--){
+            if(procs[i].sop===sopId) procs.splice(i,1);
+          }
+          if(typeof buildOpsGrid==='function') buildOpsGrid();
+          if(typeof renderIndex==='function' && typeof currentOp!=='undefined' && currentOp) renderIndex();
+        })
+        .catch(function(){ showToast('\u274c Error de conexi\u00f3n'); });
+    }
+    A.deleteCustomSOP = deleteCustomSOP;
 A.loadProcKeywords = loadProcKeywords;
 A.openKeywordModal = openKeywordModal;
 A.applyVisibility  = applyVisibility;
