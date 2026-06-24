@@ -192,6 +192,9 @@ function injectSOP(html, editedContent) {
   }
 }
 
+// Marcar que estamos en modo viewer (para que auth-roles.js lo detecte)
+window._mdaViewerMode = true;
+
 // ── Configurar el hook ANTES de que auth-roles.js cargue ─────────────────────
 // Si auth-roles.js ya completó su auth, llamar directamente.
 // Si no, registrar el callback para cuando termine.
