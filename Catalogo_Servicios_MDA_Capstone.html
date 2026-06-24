@@ -660,8 +660,10 @@ window.loadCustomSOPs = function() {
           });
         }
       });
-      // Re-renderizar si hay una vista activa
-      if (typeof renderIndex === 'function') renderIndex(currentFaena);
+      // Actualizar contadores de faena con los nuevos SOPs
+      if (typeof buildOpsGrid === 'function') buildOpsGrid();
+      // Re-renderizar índice si hay una vista activa
+      if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
     })
     .catch(function(){});
 };
