@@ -1096,7 +1096,43 @@ function openUploadModal() {
           o.remove();
           showToast('&#9989; Procedimiento ' + sopId + ' publicado. Aparecer\u00e1 en el cat\u00e1logo.');
           // Recargar cat\u00e1logo si estamos en él
-          if(!A.isSOP && typeof loadCustomSOPs === 'function') loadCustomSOPs();
+          if(!A.isSOP){
+            // Definir/sobreescribir loadCustomSOPs con implementación correcta
+            // Esto funciona sin importar qué versión del catálogo esté desplegada
+            window.loadCustomSOPs = function(){
+              var _A = window.PlaybookAuth;
+              if(!_A||!_A.workerUrl) return;
+              _A.authFetch(_A.workerUrl+'/sop/list')
+                .then(function(r){return r.json();})
+                .then(function(data){
+                  if(!data.sops||!data.sops.length) return;
+                  var _PROCS = window._mdaProcs||[];
+                  data.sops.forEach(function(sop){
+                    var exists=_PROCS.some(function(p){return p.sop===sop.sopId;});
+                    if(!exists){
+                      _PROCS.push({
+                        sop     : sop.sopId,
+                        titulo  : sop.titulo,
+                        dom     : sop.dom,
+                        ops     : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
+                        desc    : sop.titulo,
+                        nivel   : sop.nivel  || 'N1',
+                        grupos  : sop.grupo  || sop.grupos || '',
+                        acciones: Array.isArray(sop.acciones)?sop.acciones:[],
+                        esc     : sop.esc    || '',
+                        crit    : sop.criticidad||'MEDIO',
+                        tiempo  : sop.tiempo || '—',
+                        href    : 'viewer.html?sop='+encodeURIComponent(sop.sopId),
+                        custom  : true
+                      });
+                    }
+                  });
+                  if(typeof buildOpsGrid==='function') buildOpsGrid();
+                  if(typeof renderIndex==='function'&&typeof currentOp!=='undefined'&&currentOp) renderIndex();
+                }).catch(function(){});
+            };
+            window.loadCustomSOPs();
+          }
         } else {
           errEl.textContent=d.error||'Error al publicar.';errEl.style.display='block';
         }
