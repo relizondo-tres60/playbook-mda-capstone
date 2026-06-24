@@ -501,10 +501,10 @@ function loadVisibility() {
     .then(function(d) {
       A.hiddenProcs = d.hidden || [];
       applyVisibility();
-      if (typeof buildOpsGrid === 'function') buildOpsGrid();
       if (A.isSOP) refreshSOPToolbar();
-      // Cargar keywords personalizadas para el buscador
       loadProcKeywords();
+      // Disparar evento para que el catálogo actualice sus contadores
+      window.dispatchEvent(new CustomEvent('mda:visibility-loaded', {detail:{hidden:A.hiddenProcs}}));
     })
     .catch(function() {});
 }
@@ -1257,6 +1257,8 @@ A.setAllVisibility = setAllVisibility;
 A.openInviteModal  = openInviteModal;
 A.openUploadModal  = openUploadModal;
 A.showToast        = showToast;
+A.buildSOPToolbar  = buildSOPToolbar;
+A.refreshSOPToolbar= refreshSOPToolbar;
 A.loadProcKeywords = loadProcKeywords;
 A.openKeywordModal = openKeywordModal;
 A.applyVisibility  = applyVisibility;
