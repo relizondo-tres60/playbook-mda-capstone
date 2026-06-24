@@ -980,8 +980,13 @@ function openUploadModal() {
     '</div>',
     '<div><div class="pc-label">T\u00edtulo del procedimiento</div><input class="pc-input" id="upl-titulo" placeholder="Ej: Reseteo de contrase\u00f1a SAP"></div>',
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">',
-    '<div><div class="pc-label">Faenas aplicables</div><input class="pc-input" id="upl-faenas" placeholder="MVE, MBL, STG, VAN"></div>',
+    '<div><div class="pc-label">Nivel de resoluci\u00f3n</div><input class="pc-input" id="upl-nivel" placeholder="N1"></div>',
     '<div><div class="pc-label">Criticidad</div><select class="pc-select" id="upl-crit"><option>MEDIO</option><option>ALTO</option><option>CR\u00cdTICO</option></select></div>',
+    '</div>',
+    '<div><div class="pc-label">Grupo Responsable</div><input class="pc-input" id="upl-grupo" placeholder="Help_Desk_Support_Chile_Tech"></div>',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">',
+    '<div><div class="pc-label">Faenas aplicables</div><input class="pc-input" id="upl-faenas" placeholder="MVE, MBL, STG, VAN"></div>',
+    '<div></div>',
     '</div>',
     '</div>',
     '<div class="pc-error" id="upl-err"></div>',
@@ -1024,10 +1029,15 @@ function openUploadModal() {
       uploadedHtml = e.target.result;
       document.getElementById('upl-fname').textContent = file.name + ' (' + Math.round(file.size/1024) + ' KB)';
 
-      // Auto-detectar datos del SOP
-      var sopMatch   = uploadedHtml.match(/class="sop-id"[^>]*>([^<]+)</);
-      var titleMatch = uploadedHtml.match(/<title>([^<]+)<\/title>/);
-      var domMatch   = uploadedHtml.match(/SOP-([A-Z]+)-/);
+      // Auto-detectar datos del SOP desde el HTML
+      var sopMatch    = uploadedHtml.match(/class="sop-id"[^>]*>([^<]+)</);
+      var titleMatch  = uploadedHtml.match(/<title>([^<]+)<\/title>/);
+      var domMatch    = uploadedHtml.match(/SOP-([A-Z]+)-/);
+      var nivelMatch  = uploadedHtml.match(/<strong>Nivel<\/strong>([^<]+)<\/div>/) ||
+                        uploadedHtml.match(/info-label[^>]*>Nivel<\/span>[^<]*<span[^>]*>([^<]+)/);
+      var grupoMatch  = uploadedHtml.match(/<strong>Grupo<\/strong>([^<]+)<\/div>/) ||
+                        uploadedHtml.match(/Grupo Responsable<\/span>[^<]*<span[^>]*>([^<]+)/);
+      var faenasMatch = uploadedHtml.match(/class="meta-chip"><strong>Faena<\/strong>([^<]+)<\/div>/);
 
       if(sopMatch) {
         var detectedId = sopMatch[1].trim().replace(/[^\w-]/g,'');
@@ -1042,6 +1052,18 @@ function openUploadModal() {
       if(titleMatch) {
         var t=titleMatch[1].replace(/SOP-[A-Z]+-\d+\s*[^\w]*/,'').trim();
         document.getElementById('upl-titulo').value=t;
+      }
+      // Nivel detectado del HTML
+      if(nivelMatch) {
+        document.getElementById('upl-nivel').value = nivelMatch[1].trim();
+      }
+      // Grupo responsable detectado del HTML
+      if(grupoMatch) {
+        document.getElementById('upl-grupo').value = grupoMatch[1].trim();
+      }
+      // Faenas detectadas
+      if(faenasMatch) {
+        document.getElementById('upl-faenas').value = faenasMatch[1].trim();
       }
 
       previewDiv.classList.add('show');
@@ -1061,7 +1083,9 @@ function openUploadModal() {
     if(!sopId||!titulo||!uploadedHtml){errEl.textContent='Completa todos los campos.';errEl.style.display='block';return;}
     if(!A.workerUrl){errEl.textContent='Worker no configurado.';errEl.style.display='block';return;}
 
-    var meta = { sopId:sopId, titulo:titulo, dom:dom, faenas:faenas, criticidad:crit };
+    var nivel  = (document.getElementById('upl-nivel') ? document.getElementById('upl-nivel').value : '').trim() || 'N1';
+    var grupo  = (document.getElementById('upl-grupo') ? document.getElementById('upl-grupo').value : '').trim();
+    var meta = { sopId: sopId, titulo: titulo, dom: dom, faenas: faenas, criticidad: crit, nivel: nivel, grupo: grupo };
 
     authFetch(A.workerUrl + '/sop/upload', {
       method:'POST', headers:{'Content-Type':'application/json'},
