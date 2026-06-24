@@ -647,9 +647,14 @@ window.loadCustomSOPs = function() {
             sop   : sop.sopId,
             titulo: sop.titulo,
             dom   : sop.dom,
-            faenas: (sop.faenas||'').split(',').map(function(f){return f.trim();}),
+            ops   : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
+            desc  : sop.titulo,
+            nivel : 'N1',
+            grupos: sop.dom || 'APP',
+            acciones: [],
+            esc   : '',
             crit  : sop.criticidad || 'MEDIO',
-            tiempo: '—',
+            tiempo: sop.tiempo || '—',
             href  : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
             custom: true
           });
