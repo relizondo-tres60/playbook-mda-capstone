@@ -149,9 +149,25 @@ function injectSOP(html) {
     A.isSOP   = !!sopEl;
     A.sopId   = match ? match[0] : TARGET_SOP;
     A.sopTitle = document.title.replace(/SOP-[A-Z]+-\d+\s*[^\w]*/,'').trim();
-    // Construir toolbar de admin si corresponde
-    if (A.isSOP && A.user && A.user.role === 'admin' && typeof buildSOPToolbar === 'function') {
-      if (!document.getElementById('sop-admin-bar')) buildSOPToolbar();
+    // Construir toolbar de admin usando la API pública (buildSOPToolbar está dentro del IIFE)
+    if (A.isSOP && A.user && A.user.role === 'admin') {
+      // Esperar un ciclo para que el DOM esté completamente listo
+      setTimeout(function() {
+        if (!document.getElementById('sop-admin-bar') && A.buildSOPToolbar) {
+          A.buildSOPToolbar();
+        }
+        // También verificar si el contenido editado en KV existe
+        if (A.sopId && A.workerUrl && A.authFetch) {
+          A.authFetch(A.workerUrl + '/content/' + A.sopId)
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              if (d.hasEdit) {
+                var badge = document.getElementById('sab-edit-badge');
+                if (badge) badge.style.display = 'inline-block';
+              }
+            }).catch(function(){});
+        }
+      }, 150);
     }
   }
 
