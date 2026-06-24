@@ -175,13 +175,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
       <!-- Generado por JS -->
     </div>
 
-    <button class="op-card-all" onclick="selectOp('ALL')" style="width:100%;text-align:left;border:none">
-      <span class="op-icon">🌐</span>
-      <div class="texts">
-        <div class="op-name">Ver todos los procedimientos</div>
-        <div class="op-desc">Mostrar el catálogo completo sin filtrar por faena</div>
-      </div>
-    </button>
+    
     <button class="bitacora-main-btn" onclick="window.location.href='bitacora.html'" style="margin-top:14px">
       <span style="font-size:26px">&#128211;</span>
       <div style="flex:1">
@@ -308,7 +302,15 @@ function buildOpsGrid(){
     </button>`;
   }).join('');
 }
-buildOpsGrid();
+buildOpsGrid(); // Render inicial (sin ocultos aún — se actualiza tras cargar visibilidad)
+
+// Actualizar contadores cuando la visibilidad cargue desde el Worker
+window.addEventListener('mda:visibility-loaded', function() {
+  buildOpsGrid();
+  if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) {
+    renderIndex();
+  }
+});
 
 /* ── NAVIGATION ── */
 function selectOp(op){
