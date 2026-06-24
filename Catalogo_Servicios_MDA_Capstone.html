@@ -401,7 +401,7 @@ function renderProcRow(proc){
   const accs = proc.acciones.map(a => `<li>${a}</li>`).join('');
   return `<tr class="proc-row" data-ops="${proc.ops.join(',')}" data-sop="${proc.sop}" data-search="${(proc.sop+' '+proc.titulo+' '+proc.desc+' '+proc.nivel+' '+proc.grupos+' '+proc.acciones.join(' ')+' '+proc.esc+' '+(window._procKeywords[proc.sop]||'')).toLowerCase()}">
     <td>
-      <a class="cs-link" href="procedimientos/${proc.sop}.html" target="_blank">
+      <a class="cs-link" href="${proc.href || 'procedimientos/' + proc.sop + '.html'}" target="_blank">
         <span class="cs-id-badge">${proc.sop}</span>
       </a>
     </td>
