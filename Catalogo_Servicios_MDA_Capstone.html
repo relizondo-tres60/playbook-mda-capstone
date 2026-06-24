@@ -330,7 +330,9 @@ setInterval(updateGreeting, 60000);
 /* ── BUILD WELCOME OPS CARDS ── */
 function buildOpsGrid(){
   const grid = document.getElementById('ops-grid');
-  const _hiddenSet = new Set(window.PlaybookAuth ? (window.PlaybookAuth.hiddenProcs || []) : []);
+  var _auth = window.PlaybookAuth;
+  var _allExcluded = new Set((_auth ? (_auth.hiddenProcs||[]) : []).concat(_auth ? (_auth.deletedProcs||[]) : []));
+  const _hiddenSet = _allExcluded;
   grid.innerHTML = OPS_DEF.map(op => {
     const count = PROCS.filter(p => p.ops.includes(op.id) && !_hiddenSet.has(p.sop)).length;
     return `<button class="op-card" style="background:${op.bg}" onclick="selectOp('${op.id}')">
@@ -420,7 +422,9 @@ function renderProcRow(proc){
 
 function renderIndex(){
   const op = currentOp;
-  const hiddenSet = new Set(window.PlaybookAuth ? (window.PlaybookAuth.hiddenProcs || []) : []);
+  var _rAuth = window.PlaybookAuth;
+  var _allEx = new Set((_rAuth ? (_rAuth.hiddenProcs||[]) : []).concat(_rAuth ? (_rAuth.deletedProcs||[]) : []));
+  const hiddenSet = _allEx;
   const container = document.getElementById('procedures-container');
   let html = '';
   DOMS.forEach(dom => {
