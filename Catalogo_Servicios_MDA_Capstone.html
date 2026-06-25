@@ -141,28 +141,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
 .bita-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;margin-bottom:2px}
 .bita-sub{font-size:12px;opacity:.75}
 
-/* ── Carrusel de Novedades ── */
-.news-panel{background:linear-gradient(135deg,#1a1a2e 0%,#0d2d5a 100%);border-radius:14px;padding:0;overflow:hidden;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
-.news-header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 8px;border-bottom:1px solid rgba(255,255,255,.1)}
-.news-header-left{display:flex;align-items:center;gap:8px;color:#fff}
-.news-header-left span{font-size:13px;font-weight:700;letter-spacing:.3px}
-.news-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite}
-@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
-.news-counter{color:rgba(255,255,255,.5);font-size:11px}
-.news-track-wrap{position:relative;overflow:hidden;height:88px}
-.news-track{display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1)}
-.news-slide{min-width:100%;padding:10px 18px 12px;display:flex;flex-direction:column;justify-content:center;gap:5px}
-.news-slide-hdr{display:flex;align-items:center;gap:8px}
-.news-type-pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;flex-shrink:0;letter-spacing:.3px}
-.ntp-highlight{background:#f59e0b;color:#1a1a2e}
-.ntp-escalation{background:#ef4444;color:#fff}
-.news-agent{font-size:10px;color:rgba(255,255,255,.5);margin-left:auto;flex-shrink:0}
-.news-text{font-size:13px;color:rgba(255,255,255,.92);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.news-meta{font-size:10px;color:rgba(255,255,255,.4)}
-.news-dots-row{display:flex;justify-content:center;gap:5px;padding:6px 0}
-.news-dot-btn{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);border:none;cursor:pointer;padding:0;transition:all .2s}
-.news-dot-btn.active{background:#fff;width:18px;border-radius:3px}
-.news-empty{display:flex;align-items:center;justify-content:center;height:88px;color:rgba(255,255,255,.4);font-size:12px;font-style:italic;padding:0 18px;text-align:center}
+
 </style>
 </head>
 <body>
@@ -197,25 +176,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
     <div class="ops-grid" id="ops-grid">
       <!-- Generado por JS -->
     </div>
-
-    
-    <!-- Carrusel Novedades -->
-    <div class="news-panel" id="news-panel" style="display:none">
-      <div class="news-header">
-        <div class="news-header-left">
-          <span class="news-dot"></span>
-          <span>&#128226; Novedades del Equipo</span>
-        </div>
-        <span class="news-counter" id="news-counter"></span>
-      </div>
-      <div class="news-track-wrap">
-        <div class="news-track" id="news-track"></div>
-        <div class="news-empty" id="news-empty" style="display:none">Sin novedades destacadas en los &uacute;ltimos 3 d&iacute;as.</div>
-      </div>
-      <div class="news-dots-row" id="news-dots"></div>
-    </div>
-
-        <button class="bitacora-main-btn" onclick="window.location.href='bitacora.html'" style="margin-top:14px">
+    <button class="bitacora-main-btn" onclick="window.location.href='bitacora.html'" style="margin-top:14px">
       <span style="font-size:26px">&#128211;</span>
       <div style="flex:1">
         <div class="bita-title">Bit&#225;cora de Turno</div>
@@ -560,153 +521,11 @@ document.addEventListener('keydown', e => {
 
 // Cargar SOPs custom subidos por el admin desde el Worker
 
-// ── Carrusel de Novedades Destacadas ─────────────────────────────────────────
-var _newsData = [];
-var _newsIdx  = 0;
-var _newsTimer = null;
 
-function loadNewsHighlights() {
-  var wUrl = localStorage.getItem('mda_worker_url') || '';
-  var sess = localStorage.getItem('mda_session') || '';
-  if (!wUrl || !sess) return;
-
-  fetch(wUrl + '/bitacora/highlights', {
-    headers: { 'Authorization': 'Bearer ' + sess }
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    var panel = document.getElementById('news-panel');
-    if (!panel) return;
-    _newsData = d.highlights || [];
-    panel.style.display = 'block';
-    if (!_newsData.length) {
-      document.getElementById('news-track').style.display = 'none';
-      document.getElementById('news-dots').style.display  = 'none';
-      document.getElementById('news-empty').style.display = 'flex';
-      return;
-    }
-    document.getElementById('news-counter').textContent = _newsData.length + ' novedad' + (_newsData.length > 1 ? 'es' : '');
-    buildNewsSlides();
-    startNewsRotation();
-  }).catch(function() {});
-}
-
-function buildNewsSlides() {
-  var track = document.getElementById('news-track');
-  var dots  = document.getElementById('news-dots');
-  track.innerHTML = '';
-  dots.innerHTML  = '';
-  _newsData.forEach(function(e, i) {
-    var isEsc  = e.type === 'escalation';
-    var pill   = isEsc ? '<span class="news-type-pill ntp-escalation">&#128308; ESCALAMIENTO</span>' : '<span class="news-type-pill ntp-highlight">&#11088; DESTACADA</span>';
-    var agent  = (e.agentName || e.agentEmail || '').split(' ')[0];
-    var dt     = e.timestamp ? new Date(e.timestamp).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    var shift  = e.periodShift === 'dia' ? 'Turno Día' : 'Turno Noche';
-    var slide  = document.createElement('div');
-    slide.className = 'news-slide';
-    slide.innerHTML =
-      '<div class="news-slide-hdr">' + pill +
-      '<span class="news-agent">&#128100; ' + agent + '</span></div>' +
-      '<div class="news-text">' + (e.text || '') + '</div>' +
-      '<div class="news-meta">' + dt + ' &nbsp;·  ' + shift + ' &nbsp;·&nbsp; ' + (e.periodDate || '') + '</div>';
-    track.appendChild(slide);
-
-    var dot = document.createElement('button');
-    dot.className = 'news-dot-btn' + (i === 0 ? ' active' : '');
-    dot.dataset.i = i;
-    dot.onclick = function() { goNewsSlide(parseInt(this.dataset.i)); };
-    dots.appendChild(dot);
-  });
-  goNewsSlide(0);
-}
-
-function goNewsSlide(idx) {
-  _newsIdx = idx;
-  var n = _newsData.length;
-  document.getElementById('news-track').style.transform = 'translateX(-' + (idx * 100) + '%)';
-  document.querySelectorAll('.news-dot-btn').forEach(function(d, i) {
-    d.classList.toggle('active', i === idx);
-  });
-}
-
-function startNewsRotation() {
-  clearInterval(_newsTimer);
-  if (_newsData.length <= 1) return;
-  _newsTimer = setInterval(function() {
-    goNewsSlide((_newsIdx + 1) % _newsData.length);
-  }, 6000);
-}
-
-window.loadCustomSOPs = function() {
-  var A = window.PlaybookAuth;
-  if (!A || !A.workerUrl) return;
-  A.authFetch(A.workerUrl + '/sop/list')
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if (!data.sops || !data.sops.length) return;
-      // Agregar a PROCS si no están ya
-      data.sops.forEach(function(sop){
-        var exists = PROCS.some(function(p){ return p.sop === sop.sopId; });
-        if (!exists) {
-          PROCS.push({
-            sop     : sop.sopId,
-            titulo  : sop.titulo,
-            dom     : sop.dom,
-            ops     : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
-            desc    : sop.titulo,
-            nivel   : sop.nivel   || 'N1',
-            grupos  : sop.grupo   || sop.grupos || '',
-            acciones: Array.isArray(sop.acciones) ? sop.acciones : [],
-            esc     : sop.esc     || '',
-            crit    : sop.criticidad || 'MEDIO',
-            tiempo  : sop.tiempo  || '—',
-            href    : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
-            custom  : true
-          });
-        }
-      });
-      // Actualizar contadores de faena con los nuevos SOPs
-      if (typeof buildOpsGrid === 'function') buildOpsGrid();
-      // Re-renderizar índice si hay una vista activa
-      if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
-    })
-    .catch(function(){});
+// _renderIndexIfActive: re-renderizar el índice si hay faena activa
+window._renderIndexIfActive = function() {
+  if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
 };
-
-// Disparar carga de SOPs custom cuando PlaybookAuth esté listo
-// Cuando PlaybookAuth carga la visibilidad, re-renderizar las cards de bienvenida
-var _origApply = null;
-(function patchApplyVisibility() {
-  if (window.PlaybookAuth && window.PlaybookAuth.applyVisibility) {
-    var orig = window.PlaybookAuth.applyVisibility;
-    window.PlaybookAuth.applyVisibility = function() {
-      orig.apply(this, arguments);
-      if (typeof buildOpsGrid === 'function') buildOpsGrid();
-      if (typeof renderIndex  === 'function' && typeof currentOp !== 'undefined') renderIndex();
-    };
-    // También exponer función para que auth-roles pueda re-renderizar al cargar keywords
-    window._renderIndexIfActive = function() {
-      if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
-    };
-  } else {
-    setTimeout(patchApplyVisibility, 150);
-  }
-})();
-
-// Cargar highlights cuando la auth esté lista
-(function waitForNewsAuth() {
-  if (window.PlaybookAuth && window.PlaybookAuth.ready) {
-    loadNewsHighlights();
-  } else if (window.PlaybookAuth) {
-    var prevOnReady = window.PlaybookAuth.onReady;
-    window.PlaybookAuth.onReady = function(u) {
-      if (prevOnReady) prevOnReady(u);
-      loadNewsHighlights();
-    };
-  } else {
-    setTimeout(waitForNewsAuth, 200);
-  }
-})();
 
 (function waitForAuth() {
   if (window.PlaybookAuth && window.PlaybookAuth.ready) {
