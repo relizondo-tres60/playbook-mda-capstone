@@ -275,7 +275,7 @@ const DOMS = [{"cod": "GIA", "name": "Gestión de Identidad y Accesos", "color":
 const OPS_DEF = [{"id": "MVE", "nombre": "Mantoverde", "color": "#a04010", "bg": "linear-gradient(135deg,#b5450a,#7a2e05)", "icon": "⛏️", "desc": "Faena MVE — Región de Atacama"}, {"id": "MBL", "nombre": "Mantos Blancos", "color": "#1e5a96", "bg": "linear-gradient(135deg,#2e6da4,#1a3f6b)", "icon": "🏔️", "desc": "Faena MBL — Región de Antofagasta"}, {"id": "STG", "nombre": "Santiago", "color": "#1a3a5c", "bg": "linear-gradient(135deg,#253d5f,#0d1f35)", "icon": "🏢", "desc": "Oficinas corporativas Santiago"}, {"id": "VAN", "nombre": "Vancouver", "color": "#1a6b3a", "bg": "linear-gradient(135deg,#236b42,#0d3d20)", "icon": "🍁", "desc": "Operaciones Capstone Mining Corp"}];
 const FEEDBACK_KEY = 'mda_capstone_feedback';
 /* ── ESTADO ── */
-let currentOp = null;
+var currentOp = null;
 let currentProcForComment = null;
 
 /* ── GREETING ── */
@@ -529,13 +529,13 @@ window._renderIndexIfActive = function() {
 
 (function waitForAuth() {
   if (window.PlaybookAuth && window.PlaybookAuth.ready) {
-    window.loadCustomSOPs();
+    if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
   } else {
     var prev = window.PlaybookAuth ? window.PlaybookAuth.onReady : null;
     if (window.PlaybookAuth) {
       window.PlaybookAuth.onReady = function(user) {
         if (prev) prev(user);
-        window.loadCustomSOPs();
+        if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
       };
     } else {
       setTimeout(waitForAuth, 100);
