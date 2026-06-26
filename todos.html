@@ -53,6 +53,10 @@ td.td-notes{max-width:260px;font-size:12px;color:#555;line-height:1.45}
 .est-Completada{background:#d1fae5;color:#065f46}
 .est-Archivada{background:#e2e8f0;color:#94a3b8;cursor:default}
 .arch-badge{font-size:10px;font-weight:700;color:#94a3b8;margin-left:5px}
+.resp-group{margin-bottom:22px}
+.resp-group-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.resp-group-name{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:#1a1a2e;letter-spacing:.2px}
+.resp-group-count{background:#e8f0fb;color:#0057a8;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px}
 /* Fecha */
 .vencida{color:#ef4444;font-weight:700;font-size:10px;margin-left:4px}
 .fecha-wrap{white-space:nowrap;font-size:12px}
@@ -116,26 +120,11 @@ textarea.fi{resize:vertical;min-height:80px}
     </label>
   </div>
 
-  <!-- Tabla -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:26%">Actividad</th>
-          <th>Prioridad</th>
-          <th>Estado</th>
-          <th>Responsable</th>
-          <th>F. L&#237;mite</th>
-          <th style="width:22%">Notas</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div class="empty-state" id="empty-state" style="display:none">
-      <div class="ei">&#9989;</div>
-      <p>Sin actividades. &#161;Agrega la primera!</p>
-    </div>
+  <!-- Tablas agrupadas por responsable -->
+  <div id="tables-container"></div>
+  <div class="empty-state" id="empty-state" style="display:none">
+    <div class="ei">&#9989;</div>
+    <p>Sin actividades. &#161;Agrega la primera!</p>
   </div>
 </div>
 
@@ -236,7 +225,7 @@ function updateKPIs(){
   document.getElementById('kpi-done').textContent  = act.filter(function(t){return t.estado==='Completada';}).length;
 }
 
-// Render tabla
+// Render tablas agrupadas por responsable
 function renderTable(){
   var q       = (document.getElementById('s-text').value||'').toLowerCase();
   var fe      = document.getElementById('f-estado').value;
@@ -255,35 +244,63 @@ function renderTable(){
 
   var order = {'Bloqueada':0,'Pendiente':1,'En Progreso':2,'Completada':3,'Archivada':4};
   filtered.sort(function(a,b){
+    var ra=(a.responsable||'Sin asignar').toLowerCase();
+    var rb=(b.responsable||'Sin asignar').toLowerCase();
+    if(ra!==rb) return ra<rb?-1:1;
     var od=(order[a.estado]||0)-(order[b.estado]||0);
     return od!==0?od:(a.fechaLimite||'9999')<(b.fechaLimite||'9999')?-1:1;
   });
 
-  var emEl  = document.getElementById('empty-state');
-  var tbody = document.getElementById('tbody');
-  if(!filtered.length){ tbody.innerHTML=''; emEl.style.display='block'; return; }
+  var emEl = document.getElementById('empty-state');
+  var cont = document.getElementById('tables-container');
+  if(!filtered.length){ cont.innerHTML=''; emEl.style.display='block'; return; }
   emEl.style.display='none';
 
-  var isAdmin = userRole==='admin';
-  tbody.innerHTML = filtered.map(function(t){
-    var venc = t.fechaLimite && isVencida(t.fechaLimite) && t.estado!=='Completada' && t.estado!=='Archivada';
-    var arch = t.estado==='Archivada';
-    var done = t.estado==='Completada';
-    var rowCls = arch?'arch-row':done?'done-row':'';
+  // Agrupar por responsable
+  var groups = {}, order2 = [];
+  filtered.forEach(function(t){
+    var r = t.responsable || 'Sin asignar';
+    if(!groups[r]){ groups[r]=[]; order2.push(r); }
+    groups[r].push(t);
+  });
 
-    return '<tr class="'+rowCls+'" data-id="'+esc(t.id)+'">'+
-      '<td class="td-act">'+esc(t.actividad)+(arch?'<span class="arch-badge">&#128230; archivada</span>':'')+'</td>'+
-      '<td><button class="pri pri-'+(t.prioridad||'Media')+'" onclick="cyclePri(\''+ t.id +'\')">'+esc(t.prioridad||'Media')+'</button></td>'+
-      '<td><button class="est est-'+estKey(t.estado)+'" onclick="'+(!arch?'cycleEst(\''+ t.id +'\')':'') +'" style="'+( arch?'cursor:default;':'' )+'">'+esc(t.estado)+'</button></td>'+
-      '<td style="font-size:12px">'+esc(t.responsable||'&#8212;')+'</td>'+
-      '<td class="fecha-wrap" style="'+(venc?'color:#ef4444;font-weight:700;':'')+'">'+fmtDate(t.fechaLimite)+(venc?'<span class="vencida">VENCIDA</span>':'')+'</td>'+
-      '<td class="td-notes">'+esc(t.notas||'')+'</td>'+
-      '<td><div class="act-btns">'+
-        '<button class="ab ab-edit" title="Editar" onclick="openEdit(\''+ t.id +'\')")>&#9998;</button>'+
-        (isAdmin && !arch ? '<button class="ab ab-arch" title="Archivar" onclick="archiveTodo(\''+ t.id +'\')">&#128230;</button>' : '')+
-        (isAdmin && arch  ? '<button class="ab ab-edit" title="Restaurar" onclick="restaurarTodo(\''+ t.id +'\')">&#8617; Restaurar</button>' : '')+
-      '</div></td>'+
-    '</tr>';
+  var isAdmin = userRole==='admin';
+  var THEAD = '<thead><tr>' +
+    '<th style="width:28%">Actividad</th>' +
+    '<th>Prioridad</th><th>Estado</th>' +
+    '<th>F. Límite</th>' +
+    '<th style="width:24%">Notas</th>' +
+    '<th>Acciones</th>' +
+    '</tr></thead>';
+
+  cont.innerHTML = order2.map(function(resp){
+    var items = groups[resp];
+    var rows  = items.map(function(t){
+      var venc = t.fechaLimite && isVencida(t.fechaLimite) && t.estado!=='Completada' && t.estado!=='Archivada';
+      var arch = t.estado==='Archivada';
+      var done = t.estado==='Completada';
+      var rc   = arch?'arch-row':done?'done-row':'';
+      return '<tr class="'+rc+'" data-id="'+esc(t.id)+'">' +
+        '<td class="td-act">'+esc(t.actividad)+(arch?'<span class="arch-badge">&#128230; archivada</span>':'')+'</td>' +
+        '<td><button class="pri pri-'+(t.prioridad||'Media')+'" onclick="cyclePri(''+t.id+'')">'+esc(t.prioridad||'Media')+'</button></td>' +
+        '<td><button class="est est-'+estKey(t.estado)+'" onclick="'+(arch?'':'cycleEst(''+t.id+'')')+'" style="'+(arch?'cursor:default;':'')+'">'+esc(t.estado)+'</button></td>' +
+        '<td class="fecha-wrap" style="'+(venc?'color:#ef4444;font-weight:700;':'')+'">'+fmtDate(t.fechaLimite)+(venc?' &#9888;':'')+'</td>' +
+        '<td class="td-notes">'+esc(t.notas||'')+'</td>' +
+        '<td><div class="act-btns">' +
+          '<button class="ab ab-edit" title="Editar" onclick="openEdit(''+t.id+'')">&#9998;</button>' +
+          (isAdmin&&!arch?'<button class="ab ab-arch" title="Archivar" onclick="archiveTodo(''+t.id+'')">&#128230;</button>':'') +
+          (isAdmin&&arch ?'<button class="ab ab-edit" title="Restaurar" onclick="restaurarTodo(''+t.id+'')">&#8617; Restaurar</button>':'') +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="resp-group">' +
+      '<div class="resp-group-hdr">' +
+        '<span class="resp-group-name">&#128100; '+esc(resp)+'</span>' +
+        '<span class="resp-group-count">'+items.length+' tarea'+(items.length!==1?'s':'')+'</span>' +
+      '</div>' +
+      '<div class="table-wrap"><table>'+THEAD+'<tbody>'+rows+'</tbody></table></div>' +
+    '</div>';
   }).join('');
 }
 
