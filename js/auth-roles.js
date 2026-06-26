@@ -660,49 +660,94 @@ function openInviteModal() {
 function loadVisibilityAdmin(container) {
   var c = container || document.getElementById('adm-body');
   if (!c) return;
-  var rawProcs = window.PROCS || window._mdaProcs || [];
-  var deletedSet = new Set(A.deletedProcs || []);
-  var procs = rawProcs
-    .filter(function(p){ return !deletedSet.has(p.sop || p.cs_id); })
-    .map(function(p){ return { sop: p.sop || p.cs_id, titulo: p.titulo, dom: p.dom, custom: !!p.custom }; });
-  var hiddenSet = new Set(A.hiddenProcs);
-  var visible = procs.filter(function(p){ return !hiddenSet.has(p.sop); }).length;
-  var total   = procs.length;
-  var pct     = total ? Math.round(visible/total*100) : 0;
-  var html = '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>' + visible + '/' + total + ' visibles</span><span>' + pct + '%</span></div><div class="vis-bar"><div class="vis-bar-fill" style="width:' + pct + '%"></div></div>' +
-    '<div style="display:flex;gap:8px;margin-top:8px">' +
-    '<button class="pc-btn-sec" onclick="window.PlaybookAuth.setAllVisibility(true)">&#128584; Ocultar todos</button>' +
-    '<button class="pc-btn-sec" onclick="window.PlaybookAuth.setAllVisibility(false)">&#128065; Mostrar todos</button>' +
-    '</div></div>';
-  var grouped = {};
-  procs.forEach(function(p){ var d=p.dom||'?'; if(!grouped[d]) grouped[d]=[]; grouped[d].push(p); });
-  Object.keys(grouped).sort().forEach(function(dom){
-    html += '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px">' + esc(dom) + '</div>';
-    grouped[dom].forEach(function(p){
-      var h = hiddenSet.has(p.sop);
-      var isCustom = !!p.custom;
-      html += '<div class="vis-item' + (h?' is-hidden':'') + '">' +
-        '<div><div style="font-family:monospace;font-size:11px;font-weight:700;color:#0057a8">' + esc(p.sop) +
-          (h ? '<span class="hidden-badge">OCULTO</span>' : '') +
-          (isCustom ? '<span style="background:#e8f0fb;color:#0057a8;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px">CUSTOM</span>' : '') +
-        '</div>' +
-        '<div style="font-size:12px;color:#555">' + esc(p.titulo) + '</div></div>' +
-        '<div style="display:flex;gap:6px;align-items:center">' +
-          '<button class="vis-toggle" data-sop="' + esc(p.sop) + '">' + (h ? '&#128584;' : '&#128065;') + '</button>' +
-          '<button class="vis-down-btn" data-sop="' + esc(p.sop) + '" data-custom="' + (isCustom?'1':'0') + '" title="Descargar HTML">&#11015;&#65039;</button>' +
-          '<button class="vis-del-btn" data-sop="' + esc(p.sop) + '" data-titulo="' + esc(p.titulo) + '" title="Eliminar">&#128465;</button>' +
-        '</div></div>';
+  c.innerHTML = '<p style="color:#888;text-align:center;padding:20px">Cargando...</p>';
+
+  // Obtener SOPs desde el Worker (custom) + locales (estáticos si estamos en el catálogo)
+  var localProcs = (window.PROCS || window._mdaProcs || []).slice();
+
+  var fetchCustom = A.workerUrl
+    ? authFetch(A.workerUrl + '/sop/list').then(function(r){ return r.json(); }).catch(function(){ return {sops:[]}; })
+    : Promise.resolve({sops:[]});
+
+  fetchCustom.then(function(data){
+    var customSops = data.sops || [];
+    var deletedSet = new Set(A.deletedProcs || []);
+
+    // Agregar SOPs custom a la lista local si no están ya
+    customSops.forEach(function(sop){
+      var exists = localProcs.some(function(p){ return (p.sop||p.cs_id) === sop.sopId; });
+      if (!exists && !deletedSet.has(sop.sopId)) {
+        localProcs.push({
+          sop   : sop.sopId,
+          titulo: sop.titulo,
+          dom   : sop.dom,
+          custom: true,
+        });
+      }
     });
-  });
-  c.innerHTML = html;
-  c.querySelectorAll('.vis-toggle').forEach(function(b){
-    b.addEventListener('click', function(){ toggleVisibility(b.dataset.sop); });
-  });
-  c.querySelectorAll('.vis-del-btn').forEach(function(b){
-    b.addEventListener('click', function(){ deleteSOP(b.dataset.sop, b.dataset.titulo); });
-  });
-  c.querySelectorAll('.vis-down-btn').forEach(function(b){
-    b.addEventListener('click', function(){ downloadSOP(b.dataset.sop, b.dataset.custom === '1'); });
+
+    var procs = localProcs.filter(function(p){
+      return !deletedSet.has(p.sop || p.cs_id);
+    }).map(function(p){
+      return { sop: p.sop || p.cs_id, titulo: p.titulo, dom: p.dom || 'APP', custom: !!p.custom };
+    });
+
+    if (!procs.length) {
+      c.innerHTML = '<p style="color:#888;text-align:center;padding:20px">Sin procedimientos disponibles.<br><small>Abre el panel desde la página principal del catálogo.</small></p>';
+      return;
+    }
+
+    var hiddenSet = new Set(A.hiddenProcs);
+    var visible   = procs.filter(function(p){ return !hiddenSet.has(p.sop); }).length;
+    var total     = procs.length;
+    var pct       = total ? Math.round(visible / total * 100) : 0;
+
+    var html = '<div style="margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
+        '<span>' + visible + '/' + total + ' visibles</span><span>' + pct + '%</span>' +
+      '</div>' +
+      '<div class="vis-bar"><div class="vis-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px">' +
+        '<button class="pc-btn-sec" onclick="window.PlaybookAuth.setAllVisibility(true)">&#128584; Ocultar todos</button>' +
+        '<button class="pc-btn-sec" onclick="window.PlaybookAuth.setAllVisibility(false)">&#128065; Mostrar todos</button>' +
+      '</div></div>';
+
+    // Agrupar por dominio
+    var grouped = {};
+    procs.forEach(function(p){ var d = p.dom || '?'; if(!grouped[d]) grouped[d]=[]; grouped[d].push(p); });
+
+    Object.keys(grouped).sort().forEach(function(dom){
+      html += '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px">' + esc(dom) + '</div>';
+      grouped[dom].forEach(function(p){
+        var h = hiddenSet.has(p.sop);
+        html += '<div class="vis-item' + (h ? ' is-hidden' : '') + '">' +
+          '<div>' +
+            '<div style="font-family:monospace;font-size:11px;font-weight:700;color:#0057a8">' + esc(p.sop) +
+              (h ? '<span class="hidden-badge">OCULTO</span>' : '') +
+              (p.custom ? '<span style="background:#e8f0fb;color:#0057a8;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px">CUSTOM</span>' : '') +
+            '</div>' +
+            '<div style="font-size:12px;color:#555">' + esc(p.titulo || p.sop) + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center">' +
+            '<button class="vis-toggle" data-sop="' + esc(p.sop) + '">' + (h ? '&#128584;' : '&#128065;') + '</button>' +
+            '<button class="vis-down-btn" data-sop="' + esc(p.sop) + '" data-custom="' + (p.custom ? '1' : '0') + '" title="Descargar HTML">&#11015;&#65039;</button>' +
+            '<button class="vis-del-btn" data-sop="' + esc(p.sop) + '" data-titulo="' + esc(p.titulo || p.sop) + '" title="Eliminar">&#128465;</button>' +
+          '</div>' +
+        '</div>';
+      });
+    });
+
+    c.innerHTML = html;
+
+    c.querySelectorAll('.vis-toggle').forEach(function(b){
+      b.addEventListener('click', function(){ toggleVisibility(b.dataset.sop); });
+    });
+    c.querySelectorAll('.vis-del-btn').forEach(function(b){
+      b.addEventListener('click', function(){ deleteSOP(b.dataset.sop, b.dataset.titulo); });
+    });
+    c.querySelectorAll('.vis-down-btn').forEach(function(b){
+      b.addEventListener('click', function(){ downloadSOP(b.dataset.sop, b.dataset.custom === '1'); });
+    });
   });
 }
 
