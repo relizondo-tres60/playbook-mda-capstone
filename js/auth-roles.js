@@ -209,7 +209,7 @@ function finishBoot() {
             }
           });
           if (typeof buildOpsGrid === 'function') buildOpsGrid();
-          if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
+          if (typeof renderIndex === 'function' && window.currentOp) renderIndex();
           // Botones eliminar en filas (solo admin)
           if (A.user && A.user.role === 'admin') {
             data.sops.forEach(function(sop){
@@ -411,7 +411,7 @@ function deleteSOP(sopId, titulo) {
       // Si estamos en el viewer, volver al catalogo
       if (window._mdaViewerMode) { window.location.href = base() + 'Catalogo_Servicios_MDA_Capstone.html'; return; }
       if (typeof buildOpsGrid === 'function') buildOpsGrid();
-      if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
+      if (typeof renderIndex === 'function' && window.currentOp) renderIndex();
     }).catch(function(){ showToast('Error de conexi\u00f3n'); });
 }
 
@@ -913,13 +913,40 @@ function submitUpload() {
   }).then(function(r){ return r.json(); })
     .then(function(d){
       if (d.error) { errEl.textContent=d.error; errEl.style.display='block'; return; }
-      showToast('\u2705 Procedimiento ' + sopId + ' publicado. Aparecer\u00e1 en el cat\u00e1logo.');
-      // Recargar custom SOPs
-      if (!A.isSOP) {
-        if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
-      }
+      showToast('\u2705 Procedimiento ' + sopId + ' publicado.');
       var ov = document.getElementById('upl-overlay');
       if (ov) ov.remove();
+
+      if (!A.isSOP) {
+        // 1. Inyectar inmediatamente en PROCS (sin esperar KV)
+        var _P = window._mdaProcs || [];
+        var alreadyIn = _P.some(function(p){ return p.sop === sopId; });
+        if (!alreadyIn) {
+          _P.push({
+            sop     : sopId,
+            titulo  : titulo,
+            dom     : dom,
+            ops     : faenas.split(',').map(function(f){ return f.trim(); }),
+            desc    : titulo,
+            nivel   : nivel,
+            grupos  : grupo,
+            acciones: [],
+            esc     : '',
+            crit    : crit,
+            tiempo  : '\u2014',
+            href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
+            custom  : true
+          });
+          if (!window._mdaProcs) window._mdaProcs = _P;
+        }
+        // 2. Refrescar vista inmediatamente
+        if (typeof buildOpsGrid === 'function') buildOpsGrid();
+        if (typeof renderIndex === 'function' && window.currentOp) renderIndex();
+        // 3. Sync completo desde Worker (por si hay más SOPs pendientes)
+        if (typeof window.loadCustomSOPs === 'function') {
+          setTimeout(function(){ window.loadCustomSOPs(); }, 800);
+        }
+      }
     }).catch(function(){ errEl.textContent='Error de red.'; errEl.style.display='block'; });
 }
 
