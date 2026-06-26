@@ -212,7 +212,9 @@ function loadTodos(){
       userRole = d.role  || '';
       renderTable();
       updateKPIs();
-    }).catch(function(){});
+    }).catch(function(err){
+      console.error('Error cargando todos:', err);
+    });
 }
 
 // KPIs (solo activas, excluye archivadas)
@@ -275,21 +277,22 @@ function renderTable(){
 
   cont.innerHTML = order2.map(function(resp){
     var items = groups[resp];
-    var rows  = items.map(function(t){
+    var rows = items.map(function(t){
       var venc = t.fechaLimite && isVencida(t.fechaLimite) && t.estado!=='Completada' && t.estado!=='Archivada';
       var arch = t.estado==='Archivada';
       var done = t.estado==='Completada';
       var rc   = arch?'arch-row':done?'done-row':'';
-      return '<tr class="'+rc+'" data-id="'+esc(t.id)+'">' +
-        '<td class="td-act">'+esc(t.actividad)+(arch?'<span class="arch-badge">&#128230; archivada</span>':'')+'</td>' +
-        '<td><button class="pri pri-'+(t.prioridad||'Media')+'" onclick="cyclePri(''+t.id+'')">'+esc(t.prioridad||'Media')+'</button></td>' +
-        '<td><button class="est est-'+estKey(t.estado)+'" onclick="'+(arch?'':'cycleEst(''+t.id+'')')+'" style="'+(arch?'cursor:default;':'')+'">'+esc(t.estado)+'</button></td>' +
-        '<td class="fecha-wrap" style="'+(venc?'color:#ef4444;font-weight:700;':'')+'">'+fmtDate(t.fechaLimite)+(venc?' &#9888;':'')+'</td>' +
-        '<td class="td-notes">'+esc(t.notas||'')+'</td>' +
+      var tid  = esc(t.id);
+      return '<tr class="'+rc+'" data-id="'+tid+'">' +
+        '<td class="td-act">'+esc(t.actividad)+(arch?'<span class="arch-badge">&#128230; archivada</span>':'')+' </td>' +
+        '<td><button class="pri pri-'+(t.prioridad||'Media')+'" data-action="cyclePri" data-id="'+tid+'">'+esc(t.prioridad||'Media')+'</button></td>' +
+        '<td><button class="est est-'+estKey(t.estado)+'" '+(arch?'style="cursor:default"':'data-action="cycleEst" data-id="'+tid+'"')+'>'+esc(t.estado)+'</button></td>' +
+        '<td class="fecha-wrap" style="'+(venc?'color:#ef4444;font-weight:700;':'')+'">'+fmtDate(t.fechaLimite)+(venc?' &#9888;':'')+' </td>' +
+        '<td class="td-notes">'+esc(t.notas||'')+' </td>' +
         '<td><div class="act-btns">' +
-          '<button class="ab ab-edit" title="Editar" onclick="openEdit(''+t.id+'')">&#9998;</button>' +
-          (isAdmin&&!arch?'<button class="ab ab-arch" title="Archivar" onclick="archiveTodo(''+t.id+'')">&#128230;</button>':'') +
-          (isAdmin&&arch ?'<button class="ab ab-edit" title="Restaurar" onclick="restaurarTodo(''+t.id+'')">&#8617; Restaurar</button>':'') +
+          '<button class="ab ab-edit" data-action="openEdit" data-id="'+tid+'" title="Editar">&#9998;</button>' +
+          (isAdmin&&!arch?'<button class="ab ab-arch" data-action="archiveTodo" data-id="'+tid+'" title="Archivar">&#128230;</button>':'') +
+          (isAdmin&&arch ?'<button class="ab ab-edit" data-action="restaurarTodo" data-id="'+tid+'" title="Restaurar">&#8617; Restaurar</button>':'') +
         '</div></td>' +
       '</tr>';
     }).join('');
@@ -302,6 +305,21 @@ function renderTable(){
       '<div class="table-wrap"><table>'+THEAD+'<tbody>'+rows+'</tbody></table></div>' +
     '</div>';
   }).join('');
+
+  // Delegación de eventos — funciona con data-id correctamente
+  cont.removeEventListener('click', cont._clickHandler);
+  cont._clickHandler = function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    var action = btn.dataset.action;
+    var id     = btn.dataset.id;
+    if (action === 'cyclePri')     cyclePri(id);
+    if (action === 'cycleEst')     cycleEst(id);
+    if (action === 'openEdit')     openEdit(id);
+    if (action === 'archiveTodo')  archiveTodo(id);
+    if (action === 'restaurarTodo')restaurarTodo(id);
+  };
+  cont.addEventListener('click', cont._clickHandler);
 }
 
 // Ciclo rapido estado/prioridad
