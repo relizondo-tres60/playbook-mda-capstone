@@ -116,6 +116,7 @@ function injectCSS(){
     '.vis-item.is-hidden{opacity:.6;background:#f0f0f0}',
     '.vis-toggle{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:13px}',
     '.vis-del-btn{background:#fde8e8;color:#c0392b;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}',
+    '.vis-down-btn{background:#e8f0fb;color:#0057a8;border:1px solid #c7d9f5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}',
     '.hidden-badge{background:#fee2e2;color:#c0392b;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px}',
     '.vis-bar{height:6px;border-radius:3px;background:#e8f0fb;margin:10px 0}',
     '.vis-bar-fill{height:100%;border-radius:3px;background:#0057a8;transition:width .3s}',
@@ -688,6 +689,7 @@ function loadVisibilityAdmin(container) {
         '<div style="font-size:12px;color:#555">' + esc(p.titulo) + '</div></div>' +
         '<div style="display:flex;gap:6px;align-items:center">' +
           '<button class="vis-toggle" data-sop="' + esc(p.sop) + '">' + (h ? '&#128584;' : '&#128065;') + '</button>' +
+          '<button class="vis-down-btn" data-sop="' + esc(p.sop) + '" data-custom="' + (isCustom?'1':'0') + '" title="Descargar HTML">&#11015;&#65039;</button>' +
           '<button class="vis-del-btn" data-sop="' + esc(p.sop) + '" data-titulo="' + esc(p.titulo) + '" title="Eliminar">&#128465;</button>' +
         '</div></div>';
     });
@@ -698,6 +700,9 @@ function loadVisibilityAdmin(container) {
   });
   c.querySelectorAll('.vis-del-btn').forEach(function(b){
     b.addEventListener('click', function(){ deleteSOP(b.dataset.sop, b.dataset.titulo); });
+  });
+  c.querySelectorAll('.vis-down-btn').forEach(function(b){
+    b.addEventListener('click', function(){ downloadSOP(b.dataset.sop, b.dataset.custom === '1'); });
   });
 }
 
@@ -929,6 +934,55 @@ function openCatalogChat() {
   input.addEventListener('keydown', function(e){ if(e.key==='Enter') sendMsg(); });
 }
 
+// ═══ DESCARGA DE PROCEDIMIENTOS (admin) ═════════════════════════════════════
+function downloadSOP(sopId, isCustom) {
+  if (isCustom) {
+    // SOPs custom: obtener HTML desde el Worker y disparar descarga
+    if (!A.workerUrl) return;
+    showToast('\u23f3 Preparando descarga...');
+    authFetch(A.workerUrl + '/sop/' + encodeURIComponent(sopId))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d.html) { showToast('\u274c No se pudo obtener el HTML'); return; }
+        // Aplicar contenido editado si existe
+        var html = d.html;
+        if (d.editedContent) {
+          var parser = new DOMParser();
+          var doc    = parser.parseFromString(html, 'text/html');
+          var cont   = doc.querySelector('.container');
+          if (cont) cont.innerHTML = d.editedContent;
+          html = doc.documentElement.outerHTML;
+        }
+        triggerDownload(sopId + '.html', html);
+      }).catch(function(){ showToast('\u274c Error al descargar'); });
+  } else {
+    // SOPs estáticos: están en /procedimientos/SOP-XXX.html en Pages
+    var base2 = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    var url    = base2 + 'procedimientos/' + sopId + '.html';
+    // Fetch para asegurar que existe y generar descarga
+    fetch(url)
+      .then(function(r){
+        if (!r.ok) throw new Error('No encontrado');
+        return r.text();
+      })
+      .then(function(html){ triggerDownload(sopId + '.html', html); })
+      .catch(function(){ showToast('\u274c No se pudo descargar ' + sopId); });
+  }
+}
+
+function triggerDownload(filename, content) {
+  var blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+  showToast('\u2705 Descargando ' + filename);
+}
+
 // ═══ API PUBLICA ══════════════════════════════════════════════════════════════
 A.openAdminPanel   = openAdminPanel;
 A.closeAdminPanel  = closeAdminPanel;
@@ -946,6 +1000,7 @@ A.openKeywordModal = openKeywordModal;
 A.buildSOPToolbar  = buildSOPToolbar;
 A.refreshSOPToolbar= refreshSOPToolbar;
 A.deleteSOP        = deleteSOP;
+A.downloadSOP      = downloadSOP;
 A.changeRole       = changeRole;
 A.deleteUser       = deleteUser;
 
