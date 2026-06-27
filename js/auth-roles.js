@@ -195,28 +195,36 @@ function finishBoot() {
           data.sops.forEach(function(sop){
             if (delSet.has(sop.sopId)) return;
             var exists = _PROCS.some(function(p){ return p.sop === sop.sopId; });
-            if (!exists) {
-              var sopOps = (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}).filter(Boolean);
-              var sopNivel = (sop.nivel||'Nivel 1')
-                .replace(/^N1$/i,'Nivel 1').replace(/^N2$/i,'Nivel 2').replace(/^N3$/i,'Nivel 3')
-                .replace(/^Nivel\s*1$/i,'Nivel 1').replace(/^Nivel\s*2$/i,'Nivel 2').replace(/^Nivel\s*3$/i,'Nivel 3');
-              _PROCS.push({
-                sop     : sop.sopId,
-                titulo  : sop.titulo  || sop.sopId,
-                dom     : sop.dom     || 'APP',
-                ops     : sopOps.length ? sopOps : ['MVE','MBL','STG','VAN'],
-                desc    : sop.titulo  || sop.sopId,
-                nivel   : sopNivel,
-                grupos  : sop.grupo   || sop.grupos || '',
-                acciones: Array.isArray(sop.acciones) ? sop.acciones : [],
-                esc     : sop.esc     || '',
-                crit    : sop.criticidad || 'MEDIO',
-                tiempo  : sop.tiempo  || '\u2014',
-                href    : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
-                custom  : true
-              });
+            // Siempre procesar: reemplaza el estático si existe,
+            // o agrega si es nuevo
+            var sopOps = (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}).filter(Boolean);
+            var sopNivel = (sop.nivel||'Nivel 1')
+              .replace(/^N1$/i,'Nivel 1').replace(/^N2$/i,'Nivel 2').replace(/^N3$/i,'Nivel 3')
+              .replace(/^Nivel\s*1$/i,'Nivel 1').replace(/^Nivel\s*2$/i,'Nivel 2').replace(/^Nivel\s*3$/i,'Nivel 3');
+            var customEntry = {
+              sop     : sop.sopId,
+              titulo  : sop.titulo  || sop.sopId,
+              dom     : sop.dom     || 'APP',
+              ops     : sopOps.length ? sopOps : ['MVE','MBL','STG','VAN'],
+              desc    : sop.titulo  || sop.sopId,
+              nivel   : sopNivel,
+              grupos  : sop.grupo   || sop.grupos || '',
+              acciones: Array.isArray(sop.acciones) ? sop.acciones : [],
+              esc     : sop.esc     || '',
+              crit    : sop.criticidad || 'MEDIO',
+              tiempo  : sop.tiempo  || '\u2014',
+              href    : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
+              custom  : true
+            };
+            if (exists) {
+              // Reemplazar el estático con la versión custom
+              var replIdx = _PROCS.findIndex(function(p){ return p.sop === sop.sopId; });
+              if (replIdx >= 0) _PROCS.splice(replIdx, 1, customEntry);
+            } else {
+              _PROCS.push(customEntry);
             }
           });
+          console.log('[MDA] loadCustomSOPs: ' + data.sops.length + ' custom SOPs cargados, PROCS total=' + _PROCS.length);
           if (typeof buildOpsGrid === 'function') buildOpsGrid();
           if (typeof renderIndex === 'function' && window.currentOp) renderIndex();
           // Botones eliminar en filas (solo admin)
@@ -953,16 +961,12 @@ function submitUpload() {
     setStep('\u2705 Publicado. Recargando cat\u00e1logo...');
     showToast('\u2705 ' + sopId + ' publicado. Recargando...');
 
-    // Recarga completa: garantiza que el SOP aparece en la lista
+    // Navegar al viewer del SOP recién publicado (confirma que existe)
+    // Y al volver al catálogo, ya estará en la lista
     setTimeout(function() {
-      var cat = window.location.pathname;
-      // Si ya estamos en el cat\u00e1logo, reload. Si no, navegar al cat\u00e1logo.
-      if (cat.indexOf('Catalogo') >= 0 || cat.endsWith('/') || cat.endsWith('/index.html')) {
-        window.location.reload();
-      } else {
-        window.location.href = (typeof base === 'function' ? base() : '') + 'Catalogo_Servicios_MDA_Capstone.html';
-      }
-    }, 1500);
+      window.location.href = (typeof base === 'function' ? base() : '') +
+        'viewer.html?sop=' + encodeURIComponent(sopId);
+    }, 1200);
   })
   .catch(function(err) {
     showErr('Error de red: ' + (err && err.message ? err.message : 'Sin conexi\u00f3n'));
