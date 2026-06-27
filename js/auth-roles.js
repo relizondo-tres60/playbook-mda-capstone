@@ -895,78 +895,112 @@ function handleUplFile(file) {
 
 function submitUpload() {
   var errEl  = document.getElementById('upl-error');
-  var sopId  = document.getElementById('upl-sopid').value.trim().toUpperCase();
-  var titulo = document.getElementById('upl-titulo').value.trim();
+  var btnSub = document.getElementById('upl-submit');
+
+  var sopId  = (document.getElementById('upl-sopid').value  ||'').trim().toUpperCase();
+  var titulo = (document.getElementById('upl-titulo').value ||'').trim();
   var dom    = document.getElementById('upl-dom').value;
-  var faenas = document.getElementById('upl-faenas').value.trim() || 'MVE,MBL,STG,VAN';
+  var faenas = (document.getElementById('upl-faenas').value ||'').trim() || 'MVE,MBL,STG,VAN';
   var crit   = document.getElementById('upl-crit').value;
   var nivel  = (document.getElementById('upl-nivel') ? document.getElementById('upl-nivel').value : '').trim() || 'Nivel 1';
   var grupo  = (document.getElementById('upl-grupo') ? document.getElementById('upl-grupo').value : '').trim();
-  if (!uploadedHtml) { errEl.textContent='Selecciona un archivo HTML.'; errEl.style.display='block'; return; }
-  if (!sopId)        { errEl.textContent='ID del SOP requerido.';        errEl.style.display='block'; return; }
-  if (!titulo)       { errEl.textContent='T\u00edtulo requerido.';       errEl.style.display='block'; return; }
-  errEl.style.display='none';
-  var meta = { sopId, titulo, dom, faenas, criticidad:crit, nivel, grupo };
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    if (btnSub) btnSub.disabled = false;
+  }
+
+  // Validaciones client-side
+  if (!uploadedHtml || uploadedHtml.length < 10) { showErr('Selecciona un archivo HTML válido.'); return; }
+  if (!sopId)                                     { showErr('ID del SOP requerido (ej: APP-007).'); return; }
+  if (!titulo)                                    { showErr('Título requerido.'); return; }
+
+  errEl.style.display = 'none';
+  if (btnSub) { btnSub.disabled = true; btnSub.textContent = 'Subiendo...'; }
+
+  var meta = { sopId:sopId, titulo:titulo, dom:dom, faenas:faenas, criticidad:crit, nivel:nivel, grupo:grupo };
+
   authFetch(A.workerUrl + '/sop/upload', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ html: uploadedHtml, meta }),
-  }).then(function(r){ return r.json(); })
-    .then(function(d){
-      if (d.error) { errEl.textContent=d.error; errEl.style.display='block'; return; }
-      showToast('\u2705 Procedimiento ' + sopId + ' publicado.');
-      var ov = document.getElementById('upl-overlay');
-      if (ov) ov.remove();
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify({ html: uploadedHtml, meta: meta }),
+  })
+  .then(function(r) {
+    if (!r.ok) {
+      return r.json().then(function(d){ throw new Error(d.error || 'HTTP ' + r.status); });
+    }
+    return r.json();
+  })
+  .then(function(d) {
+    if (d.error) { showErr('Error del servidor: ' + d.error); return; }
 
-      if (!A.isSOP) {
-        // 1. Inyectar inmediatamente en PROCS (sin esperar KV)
-        var newOps = (faenas || 'MVE,MBL,STG,VAN')
-          .split(',').map(function(f){ return f.trim(); }).filter(Boolean);
-        if (!newOps.length) newOps = ['MVE','MBL','STG','VAN'];
+    // ── Upload confirmado por el Worker ──────────────────────────────────────
+    var ov = document.getElementById('upl-overlay');
+    if (ov) ov.remove();
+    uploadedHtml = '';
+    uploadedFile = '';
 
-        var _P = window._mdaProcs || window.PROCS;
-        if (!_P) { _P = []; window._mdaProcs = _P; }
+    showToast('\u2705 ' + sopId + ' publicado en ' + dom + ' (' + faenas + ')');
 
-        // Remover entrada previa (re-upload del mismo SOP)
-        for (var xi = _P.length - 1; xi >= 0; xi--) {
-          if (_P[xi].sop === sopId) { _P.splice(xi, 1); break; }
-        }
-        _P.push({
-          sop     : sopId,
-          titulo  : titulo || sopId,
-          dom     : dom,
-          ops     : newOps,
-          desc    : titulo || sopId,
-          nivel   : nivel  || 'Nivel 1',
-          grupos  : grupo  || '',
-          acciones: [],
-          esc     : '',
-          crit    : crit   || 'MEDIO',
-          tiempo  : '\u2014',
-          href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
-          custom  : true
-        });
+    if (!A.isSOP) {
+      // Inyectar en PROCS inmediatamente
+      var newOps = faenas.split(',').map(function(f){ return f.trim(); }).filter(Boolean);
+      if (!newOps.length) newOps = ['MVE','MBL','STG','VAN'];
 
-        // 2. Actualizar contadores de faenas
-        if (typeof buildOpsGrid === 'function') buildOpsGrid();
+      var _P = window._mdaProcs;
+      if (!_P) { _P = []; window._mdaProcs = _P; }
 
-        // 3. Mostrar el SOP inmediatamente:
-        //    Si hay una faena activa → re-renderizar
-        //    Si no → navegar a la primera faena del SOP
-        if (typeof selectOp === 'function') {
-          var targetOp = window.currentOp || newOps[0] || 'ALL';
-          selectOp(targetOp);
-        } else if (typeof renderIndex === 'function') {
-          renderIndex();
-        }
+      // Reemplazar si ya existe (re-upload)
+      var xi = _P.length - 1;
+      while (xi >= 0) { if (_P[xi].sop === sopId) { _P.splice(xi, 1); break; } xi--; }
 
-        // 4. Sync desde Worker en segundo plano
+      _P.push({
+        sop     : sopId,
+        titulo  : titulo,
+        dom     : dom,
+        ops     : newOps,
+        desc    : titulo,
+        nivel   : nivel   || 'Nivel 1',
+        grupos  : grupo   || '',
+        acciones: [],
+        esc     : '',
+        crit    : crit    || 'MEDIO',
+        tiempo  : '\u2014',
+        href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
+        custom  : true
+      });
+
+      // Actualizar contadores
+      if (typeof buildOpsGrid === 'function') buildOpsGrid();
+
+      // Navegar directamente a la faena del SOP
+      var targetOp = window.currentOp || newOps[0] || 'MVE';
+      if (typeof selectOp === 'function') {
+        selectOp(targetOp);
+        // Hacer scroll al SOP recién agregado
         setTimeout(function(){
-          if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
-        }, 1500);
+          var row = document.querySelector('[data-sop="' + sopId + '"]');
+          if (row) {
+            row.style.background = '#fffbe6';
+            row.scrollIntoView({ behavior:'smooth', block:'center' });
+            setTimeout(function(){ row.style.background = ''; }, 3000);
+          }
+        }, 200);
       }
-    }).catch(function(){ errEl.textContent='Error de red.'; errEl.style.display='block'; });
+
+      // Sync desde Worker en segundo plano
+      setTimeout(function(){
+        if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
+      }, 2000);
+    }
+  })
+  .catch(function(err) {
+    showErr('Error al publicar: ' + (err && err.message ? err.message : 'Error de red. Verifica tu conexión.'));
+  });
 }
+
+
 
 // ═══ CHAT IA CATALOGO ════════════════════════════════════════════════════════
 function buildCatalogAIChat() {
