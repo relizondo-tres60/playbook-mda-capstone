@@ -961,11 +961,15 @@ function submitUpload() {
     setStep('\u2705 Publicado. Recargando cat\u00e1logo...');
     showToast('\u2705 ' + sopId + ' publicado. Recargando...');
 
-    // Navegar al viewer del SOP recién publicado (confirma que existe)
-    // Y al volver al catálogo, ya estará en la lista
+    // Recargar el catálogo para mostrar el SOP recién publicado
     setTimeout(function() {
-      window.location.href = (typeof base === 'function' ? base() : '') +
-        'viewer.html?sop=' + encodeURIComponent(sopId);
+      var b = typeof base === 'function' ? base() : '';
+      var p = window.location.pathname;
+      if (p.indexOf('Catalogo') >= 0 || p === '/' || p.endsWith('/')) {
+        window.location.reload();
+      } else {
+        window.location.href = b + 'Catalogo_Servicios_MDA_Capstone.html';
+      }
     }, 1200);
   })
   .catch(function(err) {
