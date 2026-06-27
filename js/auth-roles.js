@@ -920,34 +920,50 @@ function submitUpload() {
 
       if (!A.isSOP) {
         // 1. Inyectar inmediatamente en PROCS (sin esperar KV)
-        var _P = window._mdaProcs || [];
-        var alreadyIn = _P.some(function(p){ return p.sop === sopId; });
-        if (!alreadyIn) {
-          var newOps = faenas.split(',').map(function(f){ return f.trim(); }).filter(Boolean);
-          _P.push({
-            sop     : sopId,
-            titulo  : titulo || sopId,
-            dom     : dom,
-            ops     : newOps.length ? newOps : ['MVE','MBL','STG','VAN'],
-            desc    : titulo || sopId,
-            nivel   : nivel || 'Nivel 1',
-            grupos  : grupo || '',
-            acciones: [],
-            esc     : '',
-            crit    : crit || 'MEDIO',
-            tiempo  : '\u2014',
-            href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
-            custom  : true
-          });
-          if (!window._mdaProcs) window._mdaProcs = _P;
+        var newOps = (faenas || 'MVE,MBL,STG,VAN')
+          .split(',').map(function(f){ return f.trim(); }).filter(Boolean);
+        if (!newOps.length) newOps = ['MVE','MBL','STG','VAN'];
+
+        var _P = window._mdaProcs || window.PROCS;
+        if (!_P) { _P = []; window._mdaProcs = _P; }
+
+        // Remover entrada previa (re-upload del mismo SOP)
+        for (var xi = _P.length - 1; xi >= 0; xi--) {
+          if (_P[xi].sop === sopId) { _P.splice(xi, 1); break; }
         }
-        // 2. Refrescar vista inmediatamente
+        _P.push({
+          sop     : sopId,
+          titulo  : titulo || sopId,
+          dom     : dom,
+          ops     : newOps,
+          desc    : titulo || sopId,
+          nivel   : nivel  || 'Nivel 1',
+          grupos  : grupo  || '',
+          acciones: [],
+          esc     : '',
+          crit    : crit   || 'MEDIO',
+          tiempo  : '\u2014',
+          href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
+          custom  : true
+        });
+
+        // 2. Actualizar contadores de faenas
         if (typeof buildOpsGrid === 'function') buildOpsGrid();
-        if (typeof renderIndex === 'function' && window.currentOp) renderIndex();
-        // 3. Sync completo desde Worker (por si hay más SOPs pendientes)
-        if (typeof window.loadCustomSOPs === 'function') {
-          setTimeout(function(){ window.loadCustomSOPs(); }, 800);
+
+        // 3. Mostrar el SOP inmediatamente:
+        //    Si hay una faena activa → re-renderizar
+        //    Si no → navegar a la primera faena del SOP
+        if (typeof selectOp === 'function') {
+          var targetOp = window.currentOp || newOps[0] || 'ALL';
+          selectOp(targetOp);
+        } else if (typeof renderIndex === 'function') {
+          renderIndex();
         }
+
+        // 4. Sync desde Worker en segundo plano
+        setTimeout(function(){
+          if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
+        }, 1500);
       }
     }).catch(function(){ errEl.textContent='Error de red.'; errEl.style.display='block'; });
 }
