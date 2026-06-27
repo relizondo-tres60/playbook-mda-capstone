@@ -149,8 +149,16 @@ function injectCSS(){
 
 // ═══ SESION Y ARRANQUE ════════════════════════════════════════════════════════
 function verifySession() {
-  if (!A.workerUrl) {
-    A.user = { email: 'demo@capstonecopper.com', name: 'Demo', role: 'admin' };
+  // Si no hay Worker URL ni session → sesión expirada o no iniciada → login
+  if (!A.workerUrl || !A.session) {
+    // Pequeña excepción: si estamos en login.html o index.html no redirigir
+    var p = window.location.pathname;
+    if (p.indexOf('login') < 0 && p.indexOf('index') < 0) {
+      window.location.href = base() + 'login.html?msg=session_required';
+      return;
+    }
+    // En login/index: modo demo solo para previsualización
+    A.user = { email: 'demo@capstonecopper.com', name: 'Demo Usuario', role: 'agent' };
     finishBoot();
     return;
   }
@@ -276,6 +284,7 @@ function buildNav() {
     adminDropdown +
     '<div class="nav-user">' + avatar +
     '<span class="nav-username">' + esc(((A.user && A.user.name) || '').split(' ')[0]) + '</span>' +
+    ((!A.workerUrl || !A.session) ? '<span style="background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:4px;">SIN SESIÓN</span>' : '') +
     '<button class="nav-logout" id="nav-logout-btn">Salir</button>' +
     '</div>';
 
@@ -845,9 +854,10 @@ function openUploadModal() {
         '</select></div>' +
         '<div id="upl-error" style="color:#c0392b;font-size:12px;display:none"></div>' +
       '</div>' +
+      '<div id="upl-progress" style="display:none;padding:8px 20px;font-size:12px;color:#555;border-top:1px solid #eef1f7"></div>' +
       '<div style="padding:14px 20px;border-top:1px solid #eef1f7;display:flex;gap:8px;justify-content:flex-end">' +
         '<button class="pc-btn-sec" id="upl-cancel">Cancelar</button>' +
-        '<button class="pc-btn" style="width:auto" id="upl-submit">&#11014;&#65039; Subir</button>' +
+        '<button class="pc-btn" style="width:auto;min-width:120px" id="upl-submit">&#11014;&#65039; Subir</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
@@ -896,28 +906,43 @@ function handleUplFile(file) {
 function submitUpload() {
   var errEl  = document.getElementById('upl-error');
   var btnSub = document.getElementById('upl-submit');
+  var progEl = document.getElementById('upl-progress');
 
-  var sopId  = (document.getElementById('upl-sopid').value  ||'').trim().toUpperCase();
-  var titulo = (document.getElementById('upl-titulo').value ||'').trim();
+  var sopId  = (document.getElementById('upl-sopid').value  || '').trim().toUpperCase();
+  var titulo = (document.getElementById('upl-titulo').value || '').trim();
   var dom    = document.getElementById('upl-dom').value;
-  var faenas = (document.getElementById('upl-faenas').value ||'').trim() || 'MVE,MBL,STG,VAN';
+  var faenas = (document.getElementById('upl-faenas').value || '').trim() || 'MVE,MBL,STG,VAN';
   var crit   = document.getElementById('upl-crit').value;
   var nivel  = (document.getElementById('upl-nivel') ? document.getElementById('upl-nivel').value : '').trim() || 'Nivel 1';
   var grupo  = (document.getElementById('upl-grupo') ? document.getElementById('upl-grupo').value : '').trim();
 
+  function setStep(msg, isErr) {
+    if (progEl) {
+      progEl.style.display = 'block';
+      progEl.innerHTML = (isErr ? '\u274c ' : '\u23f3 ') + msg;
+      progEl.style.color = isErr ? '#c0392b' : '#555';
+    }
+  }
   function showErr(msg) {
-    errEl.textContent = msg;
-    errEl.style.display = 'block';
-    if (btnSub) btnSub.disabled = false;
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+    if (progEl) progEl.style.display = 'none';
+    if (btnSub) { btnSub.disabled = false; btnSub.innerHTML = '&#11014;&#65039; Subir'; }
   }
 
-  // Validaciones client-side
-  if (!uploadedHtml || uploadedHtml.length < 10) { showErr('Selecciona un archivo HTML válido.'); return; }
-  if (!sopId)                                     { showErr('ID del SOP requerido (ej: APP-007).'); return; }
-  if (!titulo)                                    { showErr('Título requerido.'); return; }
+  // Validaciones
+    // Verificar sesión activa
+  if (!A.workerUrl || !A.session) {
+    showErr('Sin sesión activa. Haz clic en "Salir" en la barra superior y vuelve a ingresar con tu cuenta Google.');
+    return;
+  }
+  if (!uploadedHtml || uploadedHtml.length < 10) { showErr('Selecciona un archivo HTML v\u00e1lido.'); return; }
+  if (!sopId)   { showErr('ID del SOP requerido.'); return; }
+  if (!titulo)  { showErr('T\u00edtulo requerido.'); return; }
+  if (!A.workerUrl) { showErr('Worker URL no configurada. Cierra sesi\u00f3n e ingresa de nuevo.'); return; }
 
-  errEl.style.display = 'none';
-  if (btnSub) { btnSub.disabled = true; btnSub.textContent = 'Subiendo...'; }
+  if (errEl) errEl.style.display = 'none';
+  if (btnSub) { btnSub.disabled = true; btnSub.innerHTML = '\u23f3 Subiendo...'; }
+  setStep('Enviando al servidor (' + (uploadedHtml.length / 1024).toFixed(1) + ' KB)...');
 
   var meta = { sopId:sopId, titulo:titulo, dom:dom, faenas:faenas, criticidad:crit, nivel:nivel, grupo:grupo };
 
@@ -927,79 +952,64 @@ function submitUpload() {
     body   : JSON.stringify({ html: uploadedHtml, meta: meta }),
   })
   .then(function(r) {
-    if (!r.ok) {
-      return r.json().then(function(d){ throw new Error(d.error || 'HTTP ' + r.status); });
-    }
-    return r.json();
+    setStep('Respuesta recibida (HTTP ' + r.status + ')...');
+    return r.json().then(function(d) {
+      if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status);
+      return d;
+    });
   })
   .then(function(d) {
-    if (d.error) { showErr('Error del servidor: ' + d.error); return; }
-
-    // ── Upload confirmado por el Worker ──────────────────────────────────────
-    var ov = document.getElementById('upl-overlay');
-    if (ov) ov.remove();
+    // \u00c9xito confirmado
     uploadedHtml = '';
     uploadedFile = '';
+    var ov = document.getElementById('upl-overlay');
+    if (ov) ov.remove();
 
-    showToast('\u2705 ' + sopId + ' publicado en ' + dom + ' (' + faenas + ')');
+    showToast('\u2705 ' + sopId + ' publicado correctamente');
 
     if (!A.isSOP) {
-      // Inyectar en PROCS inmediatamente
       var newOps = faenas.split(',').map(function(f){ return f.trim(); }).filter(Boolean);
       if (!newOps.length) newOps = ['MVE','MBL','STG','VAN'];
 
       var _P = window._mdaProcs;
+      if (!_P && typeof PROCS !== 'undefined') _P = window._mdaProcs = PROCS;
       if (!_P) { _P = []; window._mdaProcs = _P; }
 
-      // Reemplazar si ya existe (re-upload)
-      var xi = _P.length - 1;
-      while (xi >= 0) { if (_P[xi].sop === sopId) { _P.splice(xi, 1); break; } xi--; }
-
+      // Reemplazar si ya existe
+      for (var xi = _P.length - 1; xi >= 0; xi--) {
+        if (_P[xi].sop === sopId) { _P.splice(xi, 1); break; }
+      }
       _P.push({
-        sop     : sopId,
-        titulo  : titulo,
-        dom     : dom,
-        ops     : newOps,
-        desc    : titulo,
-        nivel   : nivel   || 'Nivel 1',
-        grupos  : grupo   || '',
-        acciones: [],
-        esc     : '',
-        crit    : crit    || 'MEDIO',
-        tiempo  : '\u2014',
-        href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
-        custom  : true
+        sop:sopId, titulo:titulo, dom:dom, ops:newOps, desc:titulo,
+        nivel:nivel||'Nivel 1', grupos:grupo||'', acciones:[], esc:'',
+        crit:crit||'MEDIO', tiempo:'\u2014',
+        href:'viewer.html?sop='+encodeURIComponent(sopId), custom:true
       });
 
-      // Actualizar contadores
       if (typeof buildOpsGrid === 'function') buildOpsGrid();
 
-      // Navegar directamente a la faena del SOP
-      var targetOp = window.currentOp || newOps[0] || 'MVE';
+      var targetOp = (window.currentOp && window.currentOp !== null) ? window.currentOp : (newOps[0] || 'MVE');
       if (typeof selectOp === 'function') {
         selectOp(targetOp);
-        // Hacer scroll al SOP recién agregado
         setTimeout(function(){
-          var row = document.querySelector('[data-sop="' + sopId + '"]');
-          if (row) {
-            row.style.background = '#fffbe6';
-            row.scrollIntoView({ behavior:'smooth', block:'center' });
-            setTimeout(function(){ row.style.background = ''; }, 3000);
-          }
-        }, 200);
+          var row = document.querySelector('[data-sop="'+sopId+'"]');
+          if (row) { row.style.outline='3px solid #ff6b00'; row.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(function(){ row.style.outline=''; }, 4000); }
+        }, 300);
+      } else if (typeof renderIndex === 'function') {
+        renderIndex();
       }
 
-      // Sync desde Worker en segundo plano
       setTimeout(function(){
         if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
       }, 2000);
     }
   })
   .catch(function(err) {
-    showErr('Error al publicar: ' + (err && err.message ? err.message : 'Error de red. Verifica tu conexión.'));
+    var msg = err && err.message ? err.message : 'Error de red o conexi\u00f3n rechazada.';
+    showErr('Error al publicar: ' + msg);
+    console.error('Upload error:', err);
   });
 }
-
 
 
 // ═══ CHAT IA CATALOGO ════════════════════════════════════════════════════════
