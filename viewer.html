@@ -91,13 +91,28 @@ function onAuthReady(user) {
   // Intentar desde KV (custom SOP) y si no existe, cargar el archivo estático
   function loadFromStatic() {
     var staticUrl = 'procedimientos/' + TARGET_SOP + '.html';
-    setLoadingMsg('Cargando procedimiento estático...');
+    setLoadingMsg('Cargando procedimiento...');
     fetch(staticUrl)
       .then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.text();
       })
-      .then(function(html) { injectSOP(html, null); })
+      .then(function(html) {
+        // Consultar KV por si hay una edición guardada del SOP estático
+        var A = window.PlaybookAuth;
+        if (A && A.workerUrl && A.session) {
+          fetch(A.workerUrl + '/content/' + encodeURIComponent(TARGET_SOP), {
+            headers: { 'Authorization': 'Bearer ' + A.session }
+          })
+          .then(function(r2) { return r2.json(); })
+          .then(function(d) {
+            injectSOP(html, d.hasEdit ? d.content : null);
+          })
+          .catch(function() { injectSOP(html, null); });
+        } else {
+          injectSOP(html, null);
+        }
+      })
       .catch(function() {
         showError('Procedimiento no encontrado',
           'El procedimiento <strong>' + TARGET_SOP + '</strong> no existe.<br><br>' +
