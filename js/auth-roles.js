@@ -188,21 +188,22 @@ function finishBoot() {
             if (delSet.has(sop.sopId)) return;
             var exists = _PROCS.some(function(p){ return p.sop === sop.sopId; });
             if (!exists) {
+              var sopOps = (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}).filter(Boolean);
+              var sopNivel = (sop.nivel||'Nivel 1')
+                .replace(/^N1$/i,'Nivel 1').replace(/^N2$/i,'Nivel 2').replace(/^N3$/i,'Nivel 3')
+                .replace(/^Nivel\s*1$/i,'Nivel 1').replace(/^Nivel\s*2$/i,'Nivel 2').replace(/^Nivel\s*3$/i,'Nivel 3');
               _PROCS.push({
                 sop     : sop.sopId,
-                titulo  : sop.titulo,
-                dom     : sop.dom,
-                ops     : (sop.faenas||'MVE,MBL,STG,VAN').split(',').map(function(f){return f.trim();}),
-                desc    : sop.titulo,
-                nivel   : (function(n){
-                  n = n || 'N1';
-                  return n.replace(/^N1$/i,'Nivel 1').replace(/^N2$/i,'Nivel 2').replace(/^N3$/i,'Nivel 3');
-                })(sop.nivel),
-                grupos  : sop.grupo || sop.grupos || '',
-                acciones: [],
-                esc     : '',
+                titulo  : sop.titulo  || sop.sopId,
+                dom     : sop.dom     || 'APP',
+                ops     : sopOps.length ? sopOps : ['MVE','MBL','STG','VAN'],
+                desc    : sop.titulo  || sop.sopId,
+                nivel   : sopNivel,
+                grupos  : sop.grupo   || sop.grupos || '',
+                acciones: Array.isArray(sop.acciones) ? sop.acciones : [],
+                esc     : sop.esc     || '',
                 crit    : sop.criticidad || 'MEDIO',
-                tiempo  : sop.tiempo || '\u2014',
+                tiempo  : sop.tiempo  || '\u2014',
                 href    : 'viewer.html?sop=' + encodeURIComponent(sop.sopId),
                 custom  : true
               });
@@ -840,7 +841,7 @@ function openUploadModal() {
         '<div><div class="pc-label">Grupo Responsable</div><input class="pc-input" id="upl-grupo" placeholder="Help_Desk_Support_Chile_Tech"></div>' +
         '<div><div class="pc-label">Faenas aplicables</div><input class="pc-input" id="upl-faenas" placeholder="MVE, MBL, STG, VAN"></div>' +
         '<div><div class="pc-label">Dom\u00ednio</div><select class="pc-select" id="upl-dom">' +
-          ['GIA','APP','SAP','NET','SRV','INF','PRY'].map(function(d){return '<option value="'+d+'">'+d+'</option>';}).join('') +
+          (window.DOMS||[{"cod": "GIA"}, {"cod": "SAP"}, {"cod": "APP"}, {"cod": "EQU"}, {"cod": "NET"}, {"cod": "MIN"}, {"cod": "VHF"}, {"cod": "COL"}, {"cod": "CYB"}, {"cod": "SOT"}]).map(function(d){return '<option value="'+d.cod+'">'+d.cod+'</option>';}).join('') +
         '</select></div>' +
         '<div id="upl-error" style="color:#c0392b;font-size:12px;display:none"></div>' +
       '</div>' +
@@ -922,17 +923,18 @@ function submitUpload() {
         var _P = window._mdaProcs || [];
         var alreadyIn = _P.some(function(p){ return p.sop === sopId; });
         if (!alreadyIn) {
+          var newOps = faenas.split(',').map(function(f){ return f.trim(); }).filter(Boolean);
           _P.push({
             sop     : sopId,
-            titulo  : titulo,
+            titulo  : titulo || sopId,
             dom     : dom,
-            ops     : faenas.split(',').map(function(f){ return f.trim(); }),
-            desc    : titulo,
-            nivel   : nivel,
-            grupos  : grupo,
+            ops     : newOps.length ? newOps : ['MVE','MBL','STG','VAN'],
+            desc    : titulo || sopId,
+            nivel   : nivel || 'Nivel 1',
+            grupos  : grupo || '',
             acciones: [],
             esc     : '',
-            crit    : crit,
+            crit    : crit || 'MEDIO',
             tiempo  : '\u2014',
             href    : 'viewer.html?sop=' + encodeURIComponent(sopId),
             custom  : true
