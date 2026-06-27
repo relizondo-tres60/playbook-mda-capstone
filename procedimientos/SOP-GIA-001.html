@@ -34,6 +34,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;fo
 .paso-titulo{font-weight:700;color:#1a6b3a;font-size:14px;margin-bottom:4px}
 .paso-body p{font-size:13px;color:#333}
 .nota{background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;margin-top:8px;border-radius:0 6px 6px 0;font-size:12px;color:#555}
+.nota-roja{background:#fde8e8;border-left:3px solid #c0392b;padding:8px 12px;margin-top:8px;border-radius:0 6px 6px 0;font-size:12px;color:#555}
+.nota-azul{background:#e8f4fd;border-left:3px solid #0057a8;padding:8px 12px;margin-top:8px;border-radius:0 6px 6px 0;font-size:12px;color:#555}
+.pendiente{background:#f3e8ff;border-left:3px solid #7c3aed;padding:6px 10px;margin-top:6px;border-radius:0 6px 6px 0;font-size:11px;color:#5b21b6;font-style:italic}
 .escalamiento li{color:#c0392b;font-size:13px;margin-bottom:5px}
 .cierre li{color:#1a6b3a;font-size:13px;margin-bottom:5px;list-style:none;padding-left:0}
 .notas-box{background:#e8f4fd;border-left:4px solid #1a6b3a;padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;margin-top:8px}
@@ -43,70 +46,85 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;fo
 .info-label{color:#666;font-size:12px}
 .icon-big{font-size:28px;text-align:center;padding:10px 0;display:block}
 .footer{text-align:center;padding:20px;font-size:11px;color:#999;margin-top:10px}
+.tag-modif{display:inline-block;background:#0057a8;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;letter-spacing:.3px}
+.campo-tabla{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+.campo-tabla th{background:#f0f2f5;padding:6px 10px;text-align:left;font-size:11px;color:#555;font-weight:700;border-bottom:2px solid #e0e4ea}
+.campo-tabla td{padding:6px 10px;border-bottom:1px solid #f0f2f5;vertical-align:top}
+.campo-tabla tr:last-child td{border-bottom:none}
+.req{color:#c0392b;font-weight:700}
+
+/* Flujo 4 etapas */
+.flujo-wrap{display:flex;gap:0;margin-top:16px;position:relative}
+.flujo-wrap::before{content:'';position:absolute;top:28px;left:calc(12.5% + 4px);right:calc(12.5% + 4px);height:3px;background:linear-gradient(to right,#1a6b3a,#0057a8);z-index:0}
+.etapa{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;z-index:1}
+.etapa-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:8px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.etapa-num{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:2px}
+.etapa-titulo{font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:3px}
+.etapa-desc{font-size:10px;color:#666;line-height:1.4;padding:0 4px}
+
+/* Link formulario */
+.link-form{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1a6b3a,#0057a8);color:#fff;padding:12px 16px;border-radius:8px;text-decoration:none;margin-top:10px;font-weight:700;font-size:13px;transition:opacity .15s}
+.link-form:hover{opacity:.88}
+.link-form span{font-size:18px}
+
+/* Contacto */
+.contacto-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:12px}
+.contacto-row:last-child{border-bottom:none}
+.contacto-icon{font-size:16px;width:24px;text-align:center;flex-shrink:0}
+.contacto-val a{color:#0057a8;text-decoration:none;font-weight:600}
+.contacto-val a:hover{text-decoration:underline}
 
 .fb-section{max-width:1100px;margin:0 auto 20px;padding:0 20px}
-.fb-section>div{background:#fff;border-radius:10px;padding:18px 24px;box-shadow:0 1px 5px rgba(0,0,0,.07);
-  border-top:3px solid #ff6b00;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.fb-section>div{background:#fff;border-radius:10px;padding:18px 24px;box-shadow:0 1px 5px rgba(0,0,0,.07);border-top:3px solid #ff6b00;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .fb-invite{color:#555;font-size:13px;margin:0}
-.fb-open-btn{background:#ff6b00;color:#fff;border:none;cursor:pointer;border-radius:8px;
-  padding:9px 22px;font-size:13px;font-weight:700;letter-spacing:.2px;transition:background .15s}
+.fb-open-btn{background:#ff6b00;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700;letter-spacing:.2px;transition:background .15s}
 .fb-open-btn:hover{background:#cc5500}
-.fb-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,30,.55);z-index:999;
-  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
-.fb-box{background:#fff;border-radius:14px;max-width:480px;width:100%;
-  box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
-.fb-box-header{background:#0057a8;color:#fff;padding:15px 20px;
-  display:flex;justify-content:space-between;align-items:center}
+.fb-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,30,.55);z-index:999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.fb-box{background:#fff;border-radius:14px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.fb-box-header{background:#0057a8;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
 .fb-box-header strong{font-size:15px}
 .fb-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
 .fb-close:hover{opacity:.75}
 .fb-box-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
-.fb-proc-ref{background:#f7f9fc;border-radius:8px;padding:8px 12px;
-  font-size:12px;font-weight:700;color:#0057a8;font-family:monospace}
-.fb-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;
-  letter-spacing:.4px;margin-bottom:4px}
-.fb-input,.fb-textarea{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;
-  padding:9px 12px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;transition:border-color .15s}
+.fb-proc-ref{background:#f7f9fc;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;color:#0057a8;font-family:monospace}
+.fb-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.fb-input,.fb-textarea{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;transition:border-color .15s}
 .fb-input:focus,.fb-textarea:focus{border-color:#0057a8;box-shadow:0 0 0 3px rgba(0,87,168,.1)}
 .fb-textarea{resize:vertical;min-height:90px}
-.fb-error{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;
-  font-size:12px;font-weight:600}
-.fb-box-footer{padding:14px 20px;border-top:1px solid #eef1f7;
-  display:flex;gap:10px;justify-content:flex-end}
-.fb-btn-cancel{background:#f0f3f8;color:#555;border:1.5px solid #d0d8e8;cursor:pointer;
-  border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;transition:all .15s}
+.fb-error{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600}
+.fb-box-footer{padding:14px 20px;border-top:1px solid #eef1f7;display:flex;gap:10px;justify-content:flex-end}
+.fb-btn-cancel{background:#f0f3f8;color:#555;border:1.5px solid #d0d8e8;cursor:pointer;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;transition:all .15s}
 .fb-btn-cancel:hover{background:#e8ecf3}
-.fb-btn-send{background:#0057a8;color:#fff;border:none;cursor:pointer;
-  border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700;transition:background .15s}
+.fb-btn-send{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700;transition:background .15s}
 .fb-btn-send:hover{background:#003d7a}
-.fb-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;
-  font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none}
+.fb-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none}
 </style>
 </head>
 <body>
+
 <div class="header">
   <div class="header-top">
     <div>
-      <div class="sop-id">🔑 SOP-GIA-001 </div>
+      <div class="sop-id">🔑 SOP-GIA-001</div>
       <div class="sop-titulo">Creación de Cuenta AD — Empleado</div>
       <div class="sop-dominio">Gestión de Identidad y Accesos</div>
     </div>
     <div style="text-align:right;font-size:12px;opacity:.8">
       <strong>Capstone Copper Chile</strong><br>
       Tres60 IT Services — MDA<br>
-      v1.0
+      v2.1
     </div>
   </div>
   <div class="meta-strip">
     <div class="meta-chip"><strong>Nivel</strong>N1</div>
     <div class="meta-chip"><strong>Grupo</strong>Help_Desk_Support_Chile_Tech</div>
     <div class="meta-chip"><strong>Prioridad</strong><span style="color:#ffd700">Low / Normal</span></div>
+    <div class="meta-chip"><strong>Actualizado</strong>Junio 2026</div>
   </div>
 </div>
 
 <div class="breadcrumb">
-  <a href="../Catalogo_Servicios_MDA_Capstone.html">&#8592; Cat&aacute;logo de Servicios MDA</a>
+  <a href="../Catalogo_Servicios_MDA_Capstone.html">&#8592; Catálogo de Servicios MDA</a>
   &nbsp;/&nbsp; Gestión de Identidad y Accesos &nbsp;/&nbsp; <strong>SOP-GIA-001</strong>
 </div>
 
@@ -115,131 +133,321 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;fo
 
     <!-- PROPÓSITO -->
     <div class="card">
-      <div class="card-header">&#127919; Prop&oacute;sito del Procedimiento</div>
-      <div class="card-body"><p style="font-size:14px">Crear la cuenta corporativa en Active Directory para personal de planta o staff Capstone que ingresa por primera vez al sistema, garantizando el acceso a los recursos según su rol y departamento.</p></div>
+      <div class="card-header">🎯 Propósito del Procedimiento</div>
+      <div class="card-body">
+        <p style="font-size:14px">Crear la cuenta corporativa en Active Directory para personal interno Capstone que ingresa por primera vez, garantizando el acceso a los recursos según su rol, departamento y operación, siguiendo el proceso de solicitud vigente a través del formulario oficial en SharePoint / Power Apps.</p>
+      </div>
     </div>
 
-    <!-- ALCANCE -->
+    <!-- FLUJO DEL PROCESO -->
     <div class="card">
-      <div class="card-header">&#128203; Alcance</div>
+      <div class="card-header">🔄 Flujo del Proceso — Visión General</div>
       <div class="card-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div>
-            <p style="font-weight:700;color:#1a6b3a;margin-bottom:8px;font-size:12px;text-transform:uppercase">&#10003; Incluye</p>
-            <ul><li>Alta de empleados directos Capstone con contrato indefinido o a plazo fijo</li><li>Alta de personal de confianza con correo corporativo @capstonecopper.com</li></ul>
+        <p style="font-size:12px;color:#666;margin-bottom:4px">La solicitud sigue un flujo automático con notificaciones en cada etapa. La MDA actúa a partir de la <strong>Etapa 02</strong>.</p>
+        <div class="flujo-wrap">
+          <div class="etapa">
+            <div class="etapa-icon" style="background:#e8f5e9;border-color:#1a6b3a">✅</div>
+            <div class="etapa-num">Etapa 01</div>
+            <div class="etapa-titulo">Aprobación</div>
+            <div class="etapa-desc">Gerente dueño del proceso y Supervisor Senior TI aprueban desde correo o Teams</div>
           </div>
-          <div>
-            <p style="font-weight:700;color:#c0392b;margin-bottom:8px;font-size:12px;text-transform:uppercase">&#10007; No incluye</p>
-            <ul><li>Contratistas y personal externo (ver SOP-GIA-002)</li><li>Cuentas con privilegios administrativos (requieren aprobación ADC)</li><li>Cuentas en Vancouver (coordinación con Vancouver_Tech)</li></ul>
+          <div class="etapa">
+            <div class="etapa-icon" style="background:#e8f4fd;border-color:#0057a8">📋</div>
+            <div class="etapa-num">Etapa 02</div>
+            <div class="etapa-titulo">Recepción</div>
+            <div class="etapa-desc">MDA recibe y valida la solicitud, generando el ticket de alta</div>
+          </div>
+          <div class="etapa">
+            <div class="etapa-icon" style="background:#fff3e0;border-color:#f59e0b">⚙️</div>
+            <div class="etapa-num">Etapa 03</div>
+            <div class="etapa-titulo">Ejecución</div>
+            <div class="etapa-desc">MDA ejecuta el alta en AD Manager Plus e informa la gestión</div>
+          </div>
+          <div class="etapa">
+            <div class="etapa-icon" style="background:#fde8e8;border-color:#c0392b">🔔</div>
+            <div class="etapa-num">Etapa 04</div>
+            <div class="etapa-titulo">Notificación</div>
+            <div class="etapa-desc">El usuario recibe sus credenciales y se cierra el ticket</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- REQUISITOS -->
+    <!-- ALCANCE -->
     <div class="card">
-      <div class="card-header">&#9989; Requisitos Previos</div>
-      <div class="card-body"><ul><li>Formulario SRC aprobado por gerencia y RRHH</li><li>Correo personal del responsable o manager del nuevo usuario</li><li>Fecha de inicio confirmada</li><li>Departamento y cargo definidos</li></ul></div>
+      <div class="card-header">📋 Alcance</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <p style="font-weight:700;color:#1a6b3a;margin-bottom:8px;font-size:12px;text-transform:uppercase">✓ Incluye</p>
+            <ul>
+              <li>Alta de empleados internos Capstone (contrato indefinido o a plazo fijo)</li>
+              <li>Personal con correo corporativo @capstonecopper.com</li>
+              <li>Operaciones: Mantos Blancos, Mantoverde, Santo Domingo, Santiago</li>
+            </ul>
+          </div>
+          <div>
+            <p style="font-weight:700;color:#c0392b;margin-bottom:8px;font-size:12px;text-transform:uppercase">✗ No incluye</p>
+            <ul>
+              <li>Contratistas y personal externo (ver SOP-GIA-002)</li>
+              <li>Accesos SAP — existe formulario específico para SAP</li>
+              <li>Cuentas con privilegios administrativos (requieren aprobación ADC)</li>
+              <li>Reactivación de cuentas deshabilitadas (ver SOP-GIA-003)</li>
+              <li>Cuentas en Vancouver (coordinación con Vancouver_Tech)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUISITOS PREVIOS -->
+    <div class="card">
+      <div class="card-header">✅ Requisitos Previos</div>
+      <div class="card-body">
+        <p style="font-size:13px;margin-bottom:10px">El ticket debe haber sido generado <strong>automáticamente</strong> por el flujo de aprobación del formulario Power Apps <em>"Solicitud de Nuevo Usuario"</em>. Los siguientes campos deben llegar completos y con ambas aprobaciones:</p>
+        <table class="campo-tabla">
+          <thead>
+            <tr><th>Campo</th><th>Descripción</th><th>Oblig.</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Nombres del Beneficiario</td><td>Nombres completos</td><td class="req">*</td></tr>
+            <tr><td>Apellidos del Beneficiario</td><td>Ambos apellidos</td><td class="req">*</td></tr>
+            <tr><td>Correo personal del Beneficiario</td><td>Correo personal (no corporativo) — destino de las credenciales</td><td class="req">*</td></tr>
+            <tr><td>RUT</td><td>Sin puntos, con guion (ej: 12345678-9). Verificar que no tenga errores tipográficos</td><td class="req">*</td></tr>
+            <tr><td>Cargo / Posición</td><td>Cargo que desempeñará</td><td class="req">*</td></tr>
+            <tr><td>Jefe Directo</td><td>Seleccionado desde directorio corporativo</td><td class="req">*</td></tr>
+            <tr><td>Gerencia</td><td>Gerencia correspondiente</td><td class="req">*</td></tr>
+            <tr><td>Tipo de Colaborador</td><td>Interno / Externo / Contratista</td><td class="req">*</td></tr>
+            <tr><td>Operación</td><td>Mantos Blancos / Mantoverde / Santo Domingo / Santiago</td><td class="req">*</td></tr>
+            <tr><td>Fecha de Ingreso</td><td>Fecha de inicio del colaborador</td><td class="req">*</td></tr>
+            <tr><td>Vigencia Indefinida</td><td>Sí/No. Si es No, debe venir Fecha de Término</td><td class="req">*</td></tr>
+            <tr><td>Centro de Costo</td><td>Centro de costo del área del usuario</td><td class="req">*</td></tr>
+            <tr><td>Lista de distribución</td><td>Indicada si aplica (ver Paso 04)</td><td>—</td></tr>
+            <tr><td>Aprobador: Gerente Dueño del Proceso</td><td>Debe constar aprobación en el formulario</td><td class="req">*</td></tr>
+            <tr><td>Aprobador: Supervisor Senior TI</td><td>Varía según sitio o compañía. Debe constar aprobación</td><td class="req">*</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- PASOS -->
     <div class="card">
-      <div class="card-header">&#128196; Procedimiento Paso a Paso</div>
+      <div class="card-header">📄 Procedimiento Paso a Paso</div>
       <div class="card-body">
+
+        <!-- PASO 01 -->
         <div class="paso">
           <div class="paso-num">Paso 01</div>
           <div class="paso-body">
-            <div class="paso-titulo">Recibir y validar la solicitud</div>
-            <p>Verificar que el ticket incluya el formulario SRC aprobado con firmas. Confirmar que los campos obligatorios estén completos: nombre completo, RUT, cargo, departamento, fecha de inicio y correo personal del responsable. Si falta algún campo, cambiar estado a 'Waiting Reply' y notificar al solicitante.</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> No crear la cuenta si el SRC no tiene aprobación de gerencia. Devolver el ticket con el campo faltante claramente indicado.</div>
+            <div class="paso-titulo">Recibir y validar la solicitud <span class="tag-modif">MODIFICADO</span></div>
+            <p>El ticket llega automáticamente desde el flujo de aprobación del formulario Power Apps con asunto <strong>"Alta de usuario"</strong>. Verificar que todos los campos obligatorios estén completos (ver Requisitos Previos) y que consten las aprobaciones de <strong>Gerente Dueño del Proceso</strong> y <strong>Supervisor Senior TI</strong>. Si falta algún campo obligatorio, cambiar estado a <em>Waiting Reply</em> e indicar explícitamente al solicitante qué falta.</p>
+            <div class="nota-roja" style="margin-top:10px">
+              <strong>⚠ IMPORTANTE — Canal oficial único:</strong> El formulario SRC no está vigente desde el 10/06/2026. Si llega una solicitud por correo o llamada sin haber pasado por Power Apps, <strong>no crear la cuenta</strong>. Responder al solicitante indicando el proceso correcto y adjuntando el link oficial:<br><br>
+              <a href="https://capstonecopper.sharepoint.com/sites/AltadeUsuarios" target="_blank" class="link-form">
+                <span>🚀</span> Formulario: Solicitud de nuevos usuarios de sistemas Capstone Chile
+              </a>
+              <div class="pendiente" style="margin-top:8px">⏳ Confirmar URL exacta del formulario SharePoint con el equipo TI Capstone e insertar en el link anterior.</div>
+            </div>
+            <div class="nota" style="margin-top:8px">
+              <strong>⚠ Excepción SAP:</strong> Este formulario <strong>no aplica para accesos SAP</strong>. Si la solicitud involucra SAP, informar al solicitante que existe un formulario específico para ese sistema y derivar según corresponda.
+            </div>
           </div>
         </div>
+
+        <!-- PASO 02 -->
         <div class="paso">
           <div class="paso-num">Paso 02</div>
           <div class="paso-body">
-            <div class="paso-titulo">Verificar que no existe cuenta previa</div>
-            <p>Buscar en Active Directory (ADUC o ADManager Plus) por nombre y RUT del usuario. Si existe una cuenta deshabilitada, derivar a SOP-GIA-003 (Reactivación) en lugar de crear una nueva. Documentar el hallazgo en el ticket.</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> Usar búsqueda por Description o EmployeeID si la búsqueda por nombre da múltiples resultados.</div>
+            <div class="paso-titulo">Verificar que no existe cuenta previa <span class="tag-modif">MODIFICADO</span></div>
+            <p>Buscar en AD Manager Plus por nombre completo y RUT del usuario. Si existe una cuenta deshabilitada, derivar a <strong>SOP-GIA-003</strong> (Reactivación) en lugar de crear una nueva. Documentar el hallazgo en el ticket.</p>
+            <div class="nota-roja"><strong>⚠ Prevalidación de homónimos:</strong> Verificar si existe otro usuario activo con el mismo nombre y apellido. Si se detecta un caso de alcance de nombre, <strong>escalar al supervisor de la mesa antes de proceder</strong>. No crear la cuenta sin coordinación previa. Estos casos son puntuales pero pueden generar conflictos graves en el directorio.</div>
+            <div class="nota"><strong>⚠ Nota:</strong> AD Manager Plus alertará si existe una cuenta con el mismo formato de nombre al momento de crear. Sin embargo, realizar siempre la búsqueda manual antes para anticipar el problema.</div>
           </div>
         </div>
+
+        <!-- PASO 03 -->
         <div class="paso">
           <div class="paso-num">Paso 03</div>
           <div class="paso-body">
-            <div class="paso-titulo">Crear la cuenta en Active Directory</div>
-            <p>Crear el usuario en la OU correspondiente según sitio y tipo: Mantoverde > Users, Mantos Blancos > Users o Santiago > Users. Nomenclatura estándar: nombre.apellido@capstonecopper.com. Configurar los atributos: Display Name, First Name, Last Name, Department, Title, Office, Manager, EmployeeID (RUT sin puntos ni guión). Para empleados permanentes NO configurar fecha de caducidad (Never).</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> Si hay homónimos, usar inicial del segundo nombre: nombre.i.apellido@capstonecopper.com.</div>
+            <div class="paso-titulo">Crear la cuenta en AD Manager Plus <span class="tag-modif">MODIFICADO</span></div>
+            <p>Crear el usuario en AD Manager Plus en la OU correspondiente según operación: <strong>Mantoverde &gt; Users</strong>, <strong>Mantos Blancos &gt; Users</strong>, <strong>Santo Domingo &gt; Users</strong> o <strong>Santiago &gt; Users</strong>. Configurar todos los atributos según el formulario recibido:</p>
+            <table class="campo-tabla" style="margin-top:10px">
+              <thead><tr><th>Atributo AD</th><th>Valor / Fuente</th></tr></thead>
+              <tbody>
+                <tr><td>Display Name</td><td>Nombre completo tal como viene en el formulario</td></tr>
+                <tr><td>First Name</td><td>Nombres del Beneficiario (formulario)</td></tr>
+                <tr><td>Last Name</td><td>Apellidos del Beneficiario (formulario)</td></tr>
+                <tr><td>Correo / UPN</td><td><strong>nombre.apellido@capstonecopper.com</strong></td></tr>
+                <tr><td>Department</td><td>Gerencia indicada en el formulario</td></tr>
+                <tr><td>Title (Cargo)</td><td>Cargo / Posición del formulario. Si el cargo <strong>no existe</strong> en AD Manager Plus, ver nota de escalamiento más abajo</td></tr>
+                <tr><td>Manager</td><td>Jefe Directo del formulario</td></tr>
+                <tr><td>Office / Operación</td><td>Según campo Operación del formulario</td></tr>
+                <tr><td>EmployeeID</td><td>RUT sin puntos, con guion (ej: 12345678-9)</td></tr>
+                <tr><td>Tipo / Perfil</td><td>La plataforma asigna el perfil automáticamente según Tipo de Colaborador (Interno = Profile 2). <strong>No modificar manualmente</strong></td></tr>
+                <tr><td>Account Expires</td><td><strong>Vigencia indefinida:</strong> Never &nbsp;|&nbsp; <strong>Vigencia definida:</strong> fecha de término del formulario</td></tr>
+                <tr><td><strong>Logon Hours</strong></td><td><strong style="color:#c0392b">CONFIGURAR 24/7 (todos los días, todas las horas).</strong> AD Manager Plus viene mal parametrizado con restricción lunes–viernes. Corregir manualmente en cada cuenta creada</td></tr>
+                <tr><td><strong>Log On To (Computers)</strong></td><td><strong style="color:#c0392b">SELECCIONAR "All Computers".</strong> Si no se configura, el usuario solo podrá iniciar sesión en un equipo específico, afectando turnos 7x7 y trabajo remoto</td></tr>
+              </tbody>
+            </table>
+            <div class="nota-roja" style="margin-top:10px"><strong>⚠ Cargo no disponible en AD Manager Plus:</strong> Si el cargo indicado en el formulario no existe en el directorio, generar un ticket asignado a <strong>Vancouver_Tech</strong> solicitando la creación del cargo. <strong>No usar un cargo sustituto</strong> (genera reclamos formales del cliente). Mantener el ticket principal en espera hasta recibir respuesta. Si el retraso afecta el SLA, escalar al supervisor de la mesa con evidencia.</div>
+            <div class="nota"><strong>⚠ Nota homónimos:</strong> Si existe otro usuario con el mismo nombre y apellido (caso ya coordinado con el supervisor en Paso 02), aplicar el criterio acordado antes de proceder.</div>
           </div>
         </div>
+
+        <!-- PASO 04 -->
         <div class="paso">
           <div class="paso-num">Paso 04</div>
           <div class="paso-body">
-            <div class="paso-titulo">Asignar grupos de seguridad base</div>
-            <p>Agregar el usuario a los grupos de seguridad base según su departamento: grupo de dominio (Domain Users), grupo de sitio (ej.: GRP-MVE-Users), grupo de correo (GRP-ALL-Capstone-Chile). Agregar a listas de distribución del departamento según indicación del solicitante.</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> No agregar grupos con privilegios elevados sin autorización explícita del ADC.</div>
+            <div class="paso-titulo">Asignar grupos de seguridad base y listas de distribución <span class="tag-modif">MODIFICADO</span></div>
+            <p>Agregar el usuario a los grupos de seguridad base obligatorios:</p>
+            <ul style="margin:8px 0 8px 18px;font-size:13px">
+              <li><strong>Grupo Radio Wi-Fi</strong> — acceso a red Wi-Fi corporativa <span class="pendiente" style="display:inline-block;margin-left:4px">⏳ Confirmar nombre exacto — Jorge Palma</span></li>
+              <li><strong>Grupo general de sitio</strong> (según operación del formulario) <span class="pendiente" style="display:inline-block;margin-left:4px">⏳ Confirmar nombres exactos por sitio — Jorge Palma</span></li>
+            </ul>
+            <p style="margin-top:6px"><strong>Listas de distribución</strong> — agregar solo las indicadas en el formulario:</p>
+            <table class="campo-tabla" style="margin-top:8px">
+              <thead><tr><th>Lista</th><th>Aplica a</th></tr></thead>
+              <tbody>
+                <tr><td>MB-DL-AllUsers</td><td>Usuarios internos Mantos Blancos</td></tr>
+                <tr><td>MB-DL-AllUsers-EXT</td><td>Externos y contratistas en Mantos Blancos</td></tr>
+                <tr><td>MV-DL-AllUsers</td><td>Usuarios internos Mantoverde</td></tr>
+                <tr><td>MV-DL-AllUsers-EXT</td><td>Externos y contratistas en Mantoverde</td></tr>
+                <tr><td>MSD-DL-AllUsers</td><td>Usuarios Proyecto Santo Domingo</td></tr>
+                <tr><td>CC-DL-Allusers</td><td>Oficina Santiago</td></tr>
+              </tbody>
+            </table>
+            <div class="nota-azul" style="margin-top:10px"><strong>📌 Gestión de listas de distribución:</strong> Las listas generales corporativas (ej: All Capstone Supervisors, All Capstone Employees) son administradas por el equipo N2 (Alexis). Si el formulario solicita listas adicionales, <strong>crear un ticket hijo / subtarea</strong> asignado al grupo correspondiente (Mantos Verdes Tech o Mantos Blancos Tech). El ticket principal <strong>no puede cerrarse</strong> hasta que todas las subtareas estén resueltas.</div>
+            <div class="nota"><strong>⚠ Nota:</strong> No agregar grupos con privilegios elevados sin autorización explícita del ADC.</div>
           </div>
         </div>
+
+        <!-- PASO 05 -->
         <div class="paso">
           <div class="paso-num">Paso 05</div>
           <div class="paso-body">
-            <div class="paso-titulo">Configurar licencia Microsoft 365</div>
-            <p>Asignar la licencia M365 correspondiente desde el portal de Administración M365 (admin.microsoft.com). Licencia estándar: Microsoft 365 E3 o la definida para el perfil. Verificar que el buzón de Exchange se crea correctamente (puede tardar hasta 10 minutos).</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> Si el usuario requiere licencias adicionales (Power BI Pro, Adobe Pro), crear ticket hijo derivado al área correspondiente.</div>
+            <div class="paso-titulo">Esperar sincronización de la plataforma <span class="tag-modif">MODIFICADO</span></div>
+            <p>Una vez que AD Manager Plus confirme la creación de la cuenta, esperar entre <strong>20 y 25 minutos</strong> para que la plataforma sincronice y todos los servicios asociados queden habilitados. La licencia M365 se asigna <strong>automáticamente</strong> por AD Manager Plus según el tipo de colaborador (Interno = Profile 2). No se requiere gestión manual de licencia para usuarios nuevos.</p>
+            <div class="nota"><strong>⚠ Nota:</strong> No se cuenta con acceso a los portales de nube (M365 Admin, Exchange) para verificar el buzón. Si pasados 30 minutos el usuario no aparece en M365 → escalar a N3 (ver Criterios de Escalamiento).</div>
           </div>
         </div>
+
+        <!-- PASO 06 -->
         <div class="paso">
           <div class="paso-num">Paso 06</div>
           <div class="paso-body">
-            <div class="paso-titulo">Comunicar credenciales al responsable</div>
-            <p>Enviar las credenciales de acceso inicial (usuario y contraseña temporal) al correo PERSONAL del manager o responsable indicado en el SRC. NUNCA enviar al correo corporativo del nuevo usuario ni como nota interna del ticket. Formato de contraseña temporal: #[Ini3Nom][Ini3Ape].[DDMMYYYY] (ej: #CarGon.01012026). El usuario debe cambiarla en el primer inicio de sesión.</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> Adjuntar al correo instrucciones básicas de primer acceso, cambio de contraseña y configuración de MFA.</div>
+            <div class="paso-titulo">Comunicar credenciales al usuario <span class="tag-modif">MODIFICADO</span></div>
+            <p>Enviar las credenciales de acceso inicial (usuario y contraseña temporal <strong>encriptada mediante link</strong>) al <strong>correo personal del propio usuario</strong>, indicado en el campo "Correo personal del Beneficiario" del formulario. El correo debe incluir instrucciones sobre configuración de MFA y cursos de onboarding obligatorios.</p>
+            <div class="nota-roja"><strong>⚠ CRÍTICO:</strong> Las credenciales se envían <strong>única y exclusivamente</strong> al correo personal del usuario beneficiario. Está <strong>prohibido</strong> enviarlas a otra persona (manager, jefe, coordinador) o dejarlas como nota interna del ticket.</div>
+            <div class="pendiente">⏳ PENDIENTE — Incorporar texto base estandarizado de comunicación de credenciales (incluye instrucciones MFA y onboarding). Pendiente recepción de plantilla de Jorge Palma.</div>
           </div>
         </div>
+
+        <!-- PASO 07 -->
         <div class="paso">
           <div class="paso-num">Paso 07</div>
           <div class="paso-body">
-            <div class="paso-titulo">Verificar acceso y cerrar el ticket</div>
-            <p>Confirmar que el usuario puede iniciar sesión (verificar con el manager o técnico de sitio si es posible). Registrar en el ticket: nombre de usuario creado, OU asignada, grupos base y fecha de creación. Cerrar el ticket con código 'Resolved'. Adjuntar captura de la cuenta creada en AD como evidencia.</p>
-            <div class="nota"><strong>&#9888; Nota:</strong> Si el usuario no puede ingresar el primer día, verificar que el manager comunicó las credenciales correctamente antes de abrir un ticket de reset.</div>
+            <div class="paso-titulo">Documentar y cerrar el ticket</div>
+            <p>Registrar en el ticket antes de cerrar: nombre de usuario creado (UPN), OU asignada, grupos base configurados y fecha de creación. Si se generaron tickets hijos (listas de distribución, cargo Vancouver), verificar que todos estén resueltos antes de cerrar el ticket principal. Cerrar con código <strong>'Resolved'</strong> usando el texto de cierre estandarizado.</p>
+            <div class="pendiente">⏳ PENDIENTE — Incorporar texto de cierre estandarizado. Pendiente recepción de plantilla de Jorge Palma.</div>
+            <div class="nota"><strong>⚠ Nota:</strong> No se requiere adjuntar captura de pantalla de la cuenta como evidencia. La documentación textual en el ticket es suficiente.</div>
           </div>
-        </div></div>
+        </div>
+
+      </div>
     </div>
 
     <!-- ESCALAMIENTO -->
     <div class="card">
-      <div class="card-header">&#128225; Criterios de Escalamiento</div>
-      <div class="card-body"><ul class="escalamiento"><li>Si la cuenta requiere OU especial o acceso a recursos críticos → N3 Server_Support_Chile_Tech</li><li>Si el usuario reporta que MFA bloquea el acceso en el primer login → SOP-GIA-007</li><li>Si la cuenta fue creada y el usuario no aparece en M365 después de 30 minutos → N3 (problema de sincronización AAD)</li></ul></div>
+      <div class="card-header">📡 Criterios de Escalamiento</div>
+      <div class="card-body">
+        <ul class="escalamiento">
+          <li><strong>Caso de homónimos (alcance de nombre):</strong> Escalar al supervisor de la mesa (Óscar Blanco) antes de crear la cuenta.</li>
+          <li><strong>Cargo no existe en AD Manager Plus:</strong> Generar ticket a Vancouver_Tech. Si no responden en plazo que afecte el SLA, escalar al supervisor con evidencia.</li>
+          <li><strong>Cuenta requiere OU especial o acceso a recursos críticos:</strong> Escalar a N3 → Server_Support_Chile_Tech.</li>
+          <li><strong>MFA bloquea el acceso en el primer login:</strong> Derivar a SOP-GIA-007.</li>
+          <li><strong>Usuario no aparece en M365 después de 30 minutos:</strong> Escalar a N3 (problema de sincronización AAD).</li>
+        </ul>
+      </div>
     </div>
 
-  </div>
+  </div><!-- /main-col -->
 
   <div class="side-col">
 
     <!-- INFO -->
     <div class="card">
-      <div class="card-header">&#128196; Informaci&oacute;n del Servicio</div>
+      <div class="card-header">📄 Información del Servicio</div>
       <div class="card-body">
         <span class="icon-big">🔑</span>
         <div class="info-row"><span class="info-label">Dominio</span><span>Gestión de Identidad y Accesos</span></div>
         <div class="info-row"><span class="info-label">Nivel</span><span>N1</span></div>
         <div class="info-row"><span class="info-label">Grupo Responsable</span><span style="font-size:11px">Help_Desk_Support_Chile_Tech</span></div>
-        <div class="info-row"><span class="info-label">Prioridad</span>
-          <span class="badge" style="background:#0057a8">Low / Normal</span></div>
+        <div class="info-row"><span class="info-label">Prioridad</span><span class="badge" style="background:#0057a8">Low / Normal</span></div>
+        <div class="info-row"><span class="info-label">Versión</span><span>v2.1 — Junio 2026</span></div>
       </div>
     </div>
 
-    <!-- CHECKLIST CIERRE -->
+    <!-- ACCESO FORMULARIO -->
     <div class="card">
-      <div class="card-header">&#9989; Checklist de Cierre</div>
-      <div class="card-body"><ul class="cierre"><li>&#10003; Cuenta creada en AD con todos los atributos completos</li><li>&#10003; Licencia M365 asignada y buzón visible</li><li>&#10003; Credenciales enviadas al correo personal del manager</li><li>&#10003; Captura de pantalla de la cuenta en AD adjunta al ticket</li><li>&#10003; Ticket cerrado con código 'Resolved'</li></ul></div>
+      <div class="card-header">🚀 Acceso al Formulario Oficial</div>
+      <div class="card-body">
+        <p style="font-size:12px;color:#555;margin-bottom:6px">Canal único para solicitud de alta de usuarios. El solicitante completa el formulario en ~10 minutos siguiendo 5 pasos.</p>
+        <a href="https://capstonecopper.sharepoint.com/sites/AltadeUsuarios" target="_blank" class="link-form">
+          <span>📋</span> Solicitud de nuevos usuarios — Capstone Chile
+        </a>
+        <div class="pendiente" style="margin-top:8px">⏳ Confirmar URL exacta con TI Capstone.</div>
+        <p style="font-size:11px;color:#888;margin-top:10px">SharePoint → Formularios TI → Solicitud de Nuevo Usuario → Botón <strong>+</strong></p>
+        <div class="nota" style="margin-top:8px"><strong>⚠ SAP:</strong> Este formulario NO aplica para accesos SAP. Existe un formulario específico para ese sistema.</div>
+      </div>
+    </div>
+
+    <!-- CHECKLIST -->
+    <div class="card">
+      <div class="card-header">✅ Checklist de Cierre</div>
+      <div class="card-body">
+        <ul class="cierre">
+          <li>✓ Ticket generado por Power Apps con ambas aprobaciones</li>
+          <li>✓ Búsqueda de cuenta previa realizada (incluyendo homónimos)</li>
+          <li>✓ Cuenta creada en AD Manager Plus con todos los atributos</li>
+          <li>✓ <strong>Logon Hours: 24/7 configurado</strong></li>
+          <li>✓ <strong>Log On To: All Computers configurado</strong></li>
+          <li>✓ Grupos base asignados (Wi-Fi + sitio)</li>
+          <li>✓ Listas de distribución gestionadas (subtareas si aplica)</li>
+          <li>✓ Credenciales enviadas al correo personal del usuario</li>
+          <li>✓ Subtareas hijas resueltas (si aplica)</li>
+          <li>✓ Ticket documentado y cerrado con 'Resolved'</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CONTACTO -->
+    <div class="card">
+      <div class="card-header">📞 Contacto Soporte</div>
+      <div class="card-body">
+        <div class="contacto-row">
+          <div class="contacto-icon">✉️</div>
+          <div class="contacto-val"><a href="mailto:CapstoneChile-Soporte@capstonecopper.com">CapstoneChile-Soporte@capstonecopper.com</a></div>
+        </div>
+        <div class="contacto-row">
+          <div class="contacto-icon">📱</div>
+          <div class="contacto-val"><a href="tel:+56552693333">+56 55 2693333</a></div>
+        </div>
+      </div>
     </div>
 
     <!-- NOTAS -->
-    <div class="notas-box"><strong>&#128221; Notas operacionales:</strong><br>Contraseña temporal estándar: #[Ini3Nom][Ini3Ape].[DDMMYYYY]. Ejemplo: nombre Carlos González, fecha 01/01/2026 → #CarGon.01012026. Forzar cambio en primer inicio de sesión: marcar 'User must change password at next logon' en AD.</div>
+    <div class="notas-box">
+      <strong>📝 Notas operacionales:</strong><br><br>
+      <strong>Proceso vigente desde 10/06/2026:</strong> Únicamente vía Power Apps "Solicitud de Nuevo Usuario" (SharePoint). El SRC físico ya no está vigente.<br><br>
+      <strong>Licencia M365:</strong> Se asigna automáticamente. Profile 2 para internos.<br><br>
+      <strong>Logon Hours y Log On To:</strong> Configurar manualmente en cada creación. AD Manager Plus tiene valores restrictivos por defecto (falla conocida, corrección pendiente en Vancouver).<br><br>
+      <strong>Pendientes:</strong> URL exacta del formulario, texto estándar de credenciales, texto de cierre y nombres exactos de grupos Wi-Fi / sitio.
+    </div>
 
     <!-- VOLVER -->
     <div style="text-align:center;margin-top:4px">
       <a href="../Catalogo_Servicios_MDA_Capstone.html" style="display:inline-block;background:#1a6b3a;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700">
-        &#8592; Volver al Cat&aacute;logo
+        &#8592; Volver al Catálogo
       </a>
     </div>
 
@@ -250,14 +458,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;fo
 <div class="fb-section"><div>
   <p class="fb-invite">&#191;Encontraste algo que mejorar en este procedimiento?</p>
   <button class="fb-open-btn" onclick="document.getElementById('fb-overlay').style.display='flex'">
-    &#128172; Enviar Feedback de Mejora
+    💬 Enviar Feedback de Mejora
   </button>
 </div></div>
 
 <div id="fb-overlay" class="fb-overlay">
   <div class="fb-box">
     <div class="fb-box-header">
-      <strong>&#128172; Feedback de Mejora</strong>
+      <strong>💬 Feedback de Mejora</strong>
       <button onclick="closeFB()" class="fb-close">&#215;</button>
     </div>
     <div class="fb-box-body">
@@ -269,7 +477,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;fo
       <div>
         <div class="fb-label">Comentario o mejora sugerida</div>
         <textarea id="fb-text" class="fb-textarea" rows="4"
-          placeholder="Describe qu&#233; mejorar&#237;as, qu&#233; falta o qu&#233; est&#225; incorrecto en este procedimiento..."></textarea>
+          placeholder="Describe qué mejorarías, qué falta o qué está incorrecto en este procedimiento..."></textarea>
       </div>
       <div id="fb-error" class="fb-error" style="display:none">
         Por favor escribe un comentario antes de enviar.
@@ -281,54 +489,39 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;fo
     </div>
   </div>
 </div>
-<div id="fb-toast" class="fb-toast">&#10003; Comentario guardado. &#161;Gracias!</div>
+<div id="fb-toast" class="fb-toast">✓ Comentario guardado. ¡Gracias!</div>
+
 <script>
 (function(){
   var el = document.querySelector('.sop-id');
-  var sopId = el ? el.textContent.trim().replace(/[^\w\-]/g,'').replace(/^[^S]*/,'') : document.title.split('\u2014')[0].trim();
+  var sopId = el ? el.textContent.trim().replace(/[^\w\-]/g,'').replace(/^[^S]*/,'') : document.title.split('—')[0].trim();
   document.getElementById('fb-ref-label').textContent = sopId;
-
   window.closeFB = function(){
     document.getElementById('fb-overlay').style.display='none';
     document.getElementById('fb-error').style.display='none';
   };
-
   window.submitFB = function(){
     var comment = document.getElementById('fb-text').value.trim();
     if(!comment){ document.getElementById('fb-error').style.display='block'; return; }
     document.getElementById('fb-error').style.display='none';
     var agent = document.getElementById('fb-agent').value.trim();
-    var titulo = document.title.indexOf('\u2014') > -1
-      ? document.title.split('\u2014').slice(1).join('\u2014').trim()
-      : document.title;
+    var titulo = document.title.indexOf('—') > -1 ? document.title.split('—').slice(1).join('—').trim() : document.title;
     var feedback = JSON.parse(localStorage.getItem('mda_capstone_feedback')||'[]');
-    feedback.push({
-      sop_id: sopId,
-      titulo: titulo,
-      agent: agent || 'Agente an\u00f3nimo',
-      comment: comment,
-      date: new Date().toISOString()
-    });
+    feedback.push({sop_id:sopId,titulo:titulo,agent:agent||'Agente anónimo',comment:comment,date:new Date().toISOString()});
     localStorage.setItem('mda_capstone_feedback', JSON.stringify(feedback));
     closeFB();
     document.getElementById('fb-agent').value='';
     document.getElementById('fb-text').value='';
     var t = document.getElementById('fb-toast');
     t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
-    setTimeout(function(){
-      t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)';
-    }, 3000);
+    setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3000);
   };
-
-  document.addEventListener('keydown', function(e){
-    if(e.key==='Escape') closeFB();
-  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeFB(); });
 })();
 </script>
 
-
 <div class="footer">
-  MDA Capstone Copper Chile &mdash; Tres60 IT Services &mdash; SOP-GIA-001 v1.0
+  MDA Capstone Copper Chile &mdash; Tres60 IT Services &mdash; SOP-GIA-001 v2.1 &mdash; Junio 2026
 </div>
 <script src="../js/auth-roles.js"></script>
 <script src="../js/playbook-core.js"></script>
