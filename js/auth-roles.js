@@ -149,16 +149,8 @@ function injectCSS(){
 
 // ═══ SESION Y ARRANQUE ════════════════════════════════════════════════════════
 function verifySession() {
-  // Si no hay Worker URL ni session → sesión expirada o no iniciada → login
-  if (!A.workerUrl || !A.session) {
-    // Pequeña excepción: si estamos en login.html o index.html no redirigir
-    var p = window.location.pathname;
-    if (p.indexOf('login') < 0 && p.indexOf('index') < 0) {
-      window.location.href = base() + 'login.html?msg=session_required';
-      return;
-    }
-    // En login/index: modo demo solo para previsualización
-    A.user = { email: 'demo@capstonecopper.com', name: 'Demo Usuario', role: 'agent' };
+  if (!A.workerUrl) {
+    A.user = { email: 'demo@capstonecopper.com', name: 'Demo', role: 'admin' };
     finishBoot();
     return;
   }
