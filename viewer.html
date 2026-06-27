@@ -20,6 +20,19 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e}
 /* SOP content container */
 #sop-content{display:none}
 </style>
+<!-- Override: +25% ancho del contenido del SOP -->
+<style>
+  /* Ampliar el contenedor principal del SOP */
+  #sop-content .container {
+    max-width: 1375px !important;
+  }
+  /* Pantallas intermedias: ajustar el breakpoint */
+  @media(max-width:1128px){
+    #sop-content .container {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
 </head>
 <body>
 
