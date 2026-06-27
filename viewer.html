@@ -75,28 +75,39 @@ function onAuthReady(user) {
 
   setLoadingMsg('Cargando procedimiento ' + TARGET_SOP + '...');
 
-  // Fetch del SOP desde KV via Worker
+  // Intentar desde KV (custom SOP) y si no existe, cargar el archivo estático
+  function loadFromStatic() {
+    var staticUrl = 'procedimientos/' + TARGET_SOP + '.html';
+    setLoadingMsg('Cargando procedimiento estático...');
+    fetch(staticUrl)
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function(html) { injectSOP(html, null); })
+      .catch(function() {
+        showError('Procedimiento no encontrado',
+          'El procedimiento <strong>' + TARGET_SOP + '</strong> no existe.<br><br>' +
+          '<a href="Catalogo_Servicios_MDA_Capstone.html">← Ir al Catálogo</a>');
+      });
+  }
+
   fetch(A.workerUrl + '/sop/' + encodeURIComponent(TARGET_SOP), {
     headers: { 'Authorization': 'Bearer ' + (A.session || localStorage.getItem('mda_session') || '') }
   })
   .then(function(r) {
     if (r.status === 401) { window.location.href = 'login.html'; return null; }
+    if (r.status === 404)  { loadFromStatic(); return null; }
     return r.json();
   })
   .then(function(data) {
     if (!data) return;
-    if (data.error) {
-      showError('Procedimiento no encontrado',
-        'El procedimiento <strong>' + TARGET_SOP + '</strong> no existe o fue eliminado.<br><br>' +
-        '<a href="Catalogo_Servicios_MDA_Capstone.html">← Ir al Catálogo</a>');
-      return;
-    }
+    if (data.error) { loadFromStatic(); return; }
     injectSOP(data.html, data.editedContent);
   })
-  .catch(function(e) {
-    showError('Error al cargar',
-      'No se pudo obtener el procedimiento: ' + e.message + '<br><br>' +
-      '<a href="Catalogo_Servicios_MDA_Capstone.html">← Ir al Catálogo</a>');
+  .catch(function() {
+    // Cualquier error de red → intentar el archivo estático
+    loadFromStatic();
   });
 }
 
