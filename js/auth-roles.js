@@ -916,98 +916,56 @@ function submitUpload() {
   var nivel  = (document.getElementById('upl-nivel') ? document.getElementById('upl-nivel').value : '').trim() || 'Nivel 1';
   var grupo  = (document.getElementById('upl-grupo') ? document.getElementById('upl-grupo').value : '').trim();
 
-  function setStep(msg, isErr) {
-    if (progEl) {
-      progEl.style.display = 'block';
-      progEl.innerHTML = (isErr ? '\u274c ' : '\u23f3 ') + msg;
-      progEl.style.color = isErr ? '#c0392b' : '#555';
-    }
-  }
   function showErr(msg) {
     if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
     if (progEl) progEl.style.display = 'none';
     if (btnSub) { btnSub.disabled = false; btnSub.innerHTML = '&#11014;&#65039; Subir'; }
   }
+  function setStep(msg) {
+    if (progEl) { progEl.style.display='block'; progEl.innerHTML = '\u23f3 '+msg; }
+  }
 
   // Validaciones
-    // Verificar sesión activa
-  if (!A.workerUrl || !A.session) {
-    showErr('Sin sesión activa. Haz clic en "Salir" en la barra superior y vuelve a ingresar con tu cuenta Google.');
-    return;
-  }
-  if (!uploadedHtml || uploadedHtml.length < 10) { showErr('Selecciona un archivo HTML v\u00e1lido.'); return; }
+  if (!A.workerUrl || !A.session) { showErr('Sin sesi\u00f3n. Cierra sesi\u00f3n y vuelve a entrar.'); return; }
+  if (!uploadedHtml || uploadedHtml.length < 10) { showErr('Selecciona un archivo HTML.'); return; }
   if (!sopId)   { showErr('ID del SOP requerido.'); return; }
-  if (!titulo)  { showErr('T\u00edtulo requerido.'); return; }
-  if (!A.workerUrl) { showErr('Worker URL no configurada. Cierra sesi\u00f3n e ingresa de nuevo.'); return; }
+  if (!titulo)  { showErr('T\u00edtulo requerido.');  return; }
 
   if (errEl) errEl.style.display = 'none';
   if (btnSub) { btnSub.disabled = true; btnSub.innerHTML = '\u23f3 Subiendo...'; }
-  setStep('Enviando al servidor (' + (uploadedHtml.length / 1024).toFixed(1) + ' KB)...');
-
-  var meta = { sopId:sopId, titulo:titulo, dom:dom, faenas:faenas, criticidad:crit, nivel:nivel, grupo:grupo };
+  setStep('Enviando al servidor...');
 
   authFetch(A.workerUrl + '/sop/upload', {
     method : 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body   : JSON.stringify({ html: uploadedHtml, meta: meta }),
+    body   : JSON.stringify({ html: uploadedHtml, meta: { sopId:sopId, titulo:titulo, dom:dom, faenas:faenas, criticidad:crit, nivel:nivel, grupo:grupo } }),
   })
-  .then(function(r) {
-    setStep('Respuesta recibida (HTTP ' + r.status + ')...');
-    return r.json().then(function(d) {
-      if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status);
-      return d;
-    });
-  })
-  .then(function(d) {
-    // \u00c9xito confirmado
+  .then(function(r) { return r.json().then(function(d){ return {status:r.status, ok:r.ok, d:d}; }); })
+  .then(function(res) {
+    if (!res.ok || res.d.error) { showErr('Error ' + res.status + ': ' + (res.d.error||'Desconocido')); return; }
+
+    // \u00c9xito: limpiar y recargar el cat\u00e1logo
     uploadedHtml = '';
     uploadedFile = '';
     var ov = document.getElementById('upl-overlay');
     if (ov) ov.remove();
 
-    showToast('\u2705 ' + sopId + ' publicado correctamente');
+    setStep('\u2705 Publicado. Recargando cat\u00e1logo...');
+    showToast('\u2705 ' + sopId + ' publicado. Recargando...');
 
-    if (!A.isSOP) {
-      var newOps = faenas.split(',').map(function(f){ return f.trim(); }).filter(Boolean);
-      if (!newOps.length) newOps = ['MVE','MBL','STG','VAN'];
-
-      var _P = window._mdaProcs;
-      if (!_P && typeof PROCS !== 'undefined') _P = window._mdaProcs = PROCS;
-      if (!_P) { _P = []; window._mdaProcs = _P; }
-
-      // Reemplazar si ya existe
-      for (var xi = _P.length - 1; xi >= 0; xi--) {
-        if (_P[xi].sop === sopId) { _P.splice(xi, 1); break; }
+    // Recarga completa: garantiza que el SOP aparece en la lista
+    setTimeout(function() {
+      var cat = window.location.pathname;
+      // Si ya estamos en el cat\u00e1logo, reload. Si no, navegar al cat\u00e1logo.
+      if (cat.indexOf('Catalogo') >= 0 || cat.endsWith('/') || cat.endsWith('/index.html')) {
+        window.location.reload();
+      } else {
+        window.location.href = (typeof base === 'function' ? base() : '') + 'Catalogo_Servicios_MDA_Capstone.html';
       }
-      _P.push({
-        sop:sopId, titulo:titulo, dom:dom, ops:newOps, desc:titulo,
-        nivel:nivel||'Nivel 1', grupos:grupo||'', acciones:[], esc:'',
-        crit:crit||'MEDIO', tiempo:'\u2014',
-        href:'viewer.html?sop='+encodeURIComponent(sopId), custom:true
-      });
-
-      if (typeof buildOpsGrid === 'function') buildOpsGrid();
-
-      var targetOp = (window.currentOp && window.currentOp !== null) ? window.currentOp : (newOps[0] || 'MVE');
-      if (typeof selectOp === 'function') {
-        selectOp(targetOp);
-        setTimeout(function(){
-          var row = document.querySelector('[data-sop="'+sopId+'"]');
-          if (row) { row.style.outline='3px solid #ff6b00'; row.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(function(){ row.style.outline=''; }, 4000); }
-        }, 300);
-      } else if (typeof renderIndex === 'function') {
-        renderIndex();
-      }
-
-      setTimeout(function(){
-        if (typeof window.loadCustomSOPs === 'function') window.loadCustomSOPs();
-      }, 2000);
-    }
+    }, 1500);
   })
   .catch(function(err) {
-    var msg = err && err.message ? err.message : 'Error de red o conexi\u00f3n rechazada.';
-    showErr('Error al publicar: ' + msg);
-    console.error('Upload error:', err);
+    showErr('Error de red: ' + (err && err.message ? err.message : 'Sin conexi\u00f3n'));
   });
 }
 
