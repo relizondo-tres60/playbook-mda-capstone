@@ -67,6 +67,18 @@ var WORKER_URL = 'https://playbook-mda-capstone.relizondo-0d3.workers.dev';
 // Guardar en localStorage para que todas las páginas lo usen automáticamente
 if (WORKER_URL) localStorage.setItem('mda_worker_url', WORKER_URL);
 
+// Detectar mensaje de session_required
+(function(){
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('msg') === 'session_required') {
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:#fff3cd;color:#856404;padding:12px 20px;border-radius:8px;margin-bottom:16px;font-size:13px;text-align:center;';
+    banner.innerHTML = '&#9888;&#65039; Tu sesi&oacute;n expir&oacute; o no est&aacute; iniciada. Por favor ingresa de nuevo.';
+    var form = document.querySelector('.login-card') || document.body;
+    form.insertBefore(banner, form.firstChild);
+  }
+})();
+
 var ERRORS = {
   not_authorized : { title: '&#9940; Tu correo no est&aacute; autorizado', body: 'Tu cuenta Google (<strong id="err-email"></strong>) no tiene acceso. Contacta al administrador para solicitar acceso.' },
   token_failed   : { title: '&#10060; Error de autenticaci&oacute;n', body: 'No se pudo completar el inicio de sesi&oacute;n con Google. Intenta nuevamente.' },
