@@ -999,28 +999,49 @@ function openCatalogChat() {
   document.body.appendChild(panel);
   var input = document.getElementById('cat-ai-input');
   input.focus();
+
+  // Historial de la conversación en formato Anthropic Messages API
+  var chatHistory = [];
+
+  var SYSTEM_PROMPT = 'Eres el asistente del Cat\u00e1logo de Procedimientos de la Mesa de Ayuda (MDA) de Capstone Copper Chile. ' +
+    'Ayudas a los agentes a encontrar el procedimiento correcto, explicas pasos de SOPs, y respondes preguntas operacionales sobre la mesa de ayuda. ' +
+    'S\u00e9 conciso y directo. Si no sabes algo espec\u00edfico del cliente, dilo claramente en vez de inventar.';
+
   function sendMsg() {
-    var q = input.value.trim(); if(!q) return;
+    var q = input.value.trim(); if (!q) return;
     input.value = '';
     var msgs = document.getElementById('cat-ai-msgs');
     msgs.innerHTML += '<div style="background:#0057a8;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;align-self:flex-end;max-width:80%">' + esc(q) + '</div>';
     msgs.innerHTML += '<div id="cat-ai-thinking" style="background:#f0f7ff;border-radius:10px;padding:8px 12px;font-size:13px;color:#888">\u23f3 Pensando...</div>';
     msgs.scrollTop = msgs.scrollHeight;
+
+    chatHistory.push({ role: 'user', content: q });
+
     authFetch(A.workerUrl + '/chat', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ message: q, context: 'catalog' }),
-    }).then(function(r){ return r.json(); })
-      .then(function(d){
-        var th = document.getElementById('cat-ai-thinking');
-        if(th) th.remove();
-        var reply = d.reply || d.message || 'Sin respuesta.';
-        msgs.innerHTML += '<div style="background:#f0f7ff;border-radius:10px;padding:8px 12px;font-size:13px;color:#1a1a2e;max-width:90%">' + esc(reply) + '</div>';
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ system: SYSTEM_PROMPT, messages: chatHistory }),
+    })
+    .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, status:r.status, d:d}; }); })
+    .then(function(res) {
+      var th = document.getElementById('cat-ai-thinking');
+      if (th) th.remove();
+      if (!res.ok || res.d.error) {
+        msgs.innerHTML += '<div style="background:#fde8e8;color:#c0392b;border-radius:10px;padding:8px 12px;font-size:13px;max-width:90%">Error: ' + esc(res.d.error || ('HTTP '+res.status)) + '</div>';
+        chatHistory.pop(); // no guardar el turno fallido
         msgs.scrollTop = msgs.scrollHeight;
-      }).catch(function(){
-        var th = document.getElementById('cat-ai-thinking');
-        if(th) th.textContent = 'Error al conectar.';
-      });
+        return;
+      }
+      var reply = res.d.response || 'Sin respuesta.';
+      chatHistory.push({ role: 'assistant', content: reply });
+      msgs.innerHTML += '<div style="background:#f0f7ff;border-radius:10px;padding:8px 12px;font-size:13px;color:#1a1a2e;max-width:90%;white-space:pre-wrap">' + esc(reply) + '</div>';
+      msgs.scrollTop = msgs.scrollHeight;
+    })
+    .catch(function() {
+      var th = document.getElementById('cat-ai-thinking');
+      if (th) th.textContent = '\u274c Error al conectar.';
+      chatHistory.pop();
+    });
   }
   document.getElementById('cat-ai-send').addEventListener('click', sendMsg);
   input.addEventListener('keydown', function(e){ if(e.key==='Enter') sendMsg(); });
