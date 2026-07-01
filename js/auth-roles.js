@@ -462,6 +462,7 @@ function buildSOPToolbar() {
       (isHidden ? '&#128584; Oculto \u2014 publicar' : '&#128065; Visible \u2014 ocultar') +
     '</button>',
     '<span class="sab-badge" id="sab-edit-badge" style="display:none">&#9998; Editado</span>',
+    '<button class="sab-btn" id="sab-dl-btn" style="background:#e8f0fb;color:#0057a8;border:1.5px solid #c7d9f5;margin-left:8px;">&#11015;&#65039; Descargar HTML</button>',
     '<button class="sab-btn" id="sab-del-btn" style="background:#fde8e8;color:#c0392b;border:1.5px solid #fca5a5;margin-left:8px;">&#128465; Eliminar</button>',
   ].join('');
 
@@ -469,6 +470,7 @@ function buildSOPToolbar() {
 
   document.getElementById('sab-edit-btn').addEventListener('click', openContentEditor);
   document.getElementById('sab-vis-btn').addEventListener('click', toggleCurrentSOP);
+  document.getElementById('sab-dl-btn').addEventListener('click',  downloadCurrentSOP);
   document.getElementById('sab-del-btn').addEventListener('click', function() {
     deleteSOP(A.sopId, A.sopTitle || A.sopId);
   });
@@ -1094,6 +1096,63 @@ function triggerDownload(filename, content) {
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
   showToast('\u2705 Descargando ' + filename);
+}
+
+// ═══ DESCARGA DE SOP ACTUAL (admin) ════════════════════════════════════════
+function downloadCurrentSOP() {
+  var sopId = A.sopId;
+  if (!sopId) return;
+
+  showToast('\u23f3 Preparando descarga...');
+
+  function doDownload(html) {
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = sopId + '.html';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+    showToast('\u2705 Descargando ' + sopId + '.html');
+  }
+
+  // Obtener el HTML actual de la página (incluye ediciones aplicadas)
+  var container = document.querySelector('.container');
+  if (container) {
+    // Reconstruir HTML completo desde el DOM renderizado
+    var clone = document.documentElement.cloneNode(true);
+    // Quitar la barra admin y scripts de auth para obtener HTML limpio
+    var bar   = clone.querySelector('#sop-admin-bar');     if (bar)   bar.remove();
+    var nav   = clone.querySelector('#mda-nav');            if (nav)   nav.remove();
+    var toast = clone.querySelector('#mda-toast');          if (toast) toast.remove();
+    doDownload('<!DOCTYPE html>\n' + clone.outerHTML);
+  } else if (A.workerUrl) {
+    // Fallback: descargar desde KV del Worker
+    authFetch(A.workerUrl + '/sop/' + encodeURIComponent(sopId))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d.html) throw new Error('no html');
+        var html = d.html;
+        // Aplicar edición si existe
+        if (d.editedContent) {
+          var parser = new DOMParser();
+          var doc    = parser.parseFromString(html, 'text/html');
+          var c      = doc.querySelector('.container');
+          if (c) c.innerHTML = d.editedContent;
+          html = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+        }
+        doDownload(html);
+      })
+      .catch(function(){
+        // Último fallback: descargar el archivo estático
+        fetch('procedimientos/' + sopId + '.html')
+          .then(function(r){ if(!r.ok) throw new Error(); return r.text(); })
+          .then(function(html){ doDownload(html); })
+          .catch(function(){ showToast('\u274c No se pudo obtener el archivo'); });
+      });
+  }
 }
 
 // ═══ API PUBLICA ══════════════════════════════════════════════════════════════
