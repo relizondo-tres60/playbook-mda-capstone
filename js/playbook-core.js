@@ -31,22 +31,115 @@ var selText    = '';
 // ARRANQUE
 // ═══════════════════════════════════════════════════════════════════════
 
-// ── Pre-llenar nombre en feedback con usuario logueado ──────────────────────
+// ── Feedback: pre-llenar nombre + enviar al Worker ───────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
+
+  // 1. Pre-llenar el nombre del agente logueado
   var fbBtn = document.querySelector('.fb-open-btn');
-  if (!fbBtn) return;
-  fbBtn.addEventListener('click', function() {
-    setTimeout(function() {
-      var fbAgent = document.getElementById('fb-agent');
-      if (!fbAgent) return;
-      var auth = window.PlaybookAuth;
-      if (auth && auth.user && auth.user.name) {
-        fbAgent.value    = auth.user.name;
-        fbAgent.readOnly = true;
-        fbAgent.setAttribute('readonly', 'readonly');
+  if (fbBtn) {
+    fbBtn.addEventListener('click', function() {
+      setTimeout(function() {
+        var fbAgent = document.getElementById('fb-agent');
+        if (!fbAgent) return;
+        var auth = window.PlaybookAuth;
+        if (auth && auth.user && auth.user.name) {
+          fbAgent.value    = auth.user.name;
+          fbAgent.readOnly = true;
+          fbAgent.setAttribute('readonly', 'readonly');
+        }
+      }, 50);
+    }, true);
+  }
+
+  // 2. Sobrescribir submitFB para enviar al Worker en lugar de solo localStorage
+  function patchSubmitFB() {
+    var auth = window.PlaybookAuth;
+    if (!auth || !auth.workerUrl || !auth.authFetch) return; // sin Worker, usar localStorage
+
+    window.submitFB = function() {
+      var comment = (document.getElementById('fb-text')  || {}).value || '';
+      var agent   = (document.getElementById('fb-agent') || {}).value || '';
+      comment = comment.trim();
+      if (!comment) {
+        var errEl = document.getElementById('fb-error');
+        if (errEl) errEl.style.display = 'block';
+        return;
       }
-    }, 50);
-  }, true); // capture phase para asegurarse de correr antes de mostrar
+      var errEl2 = document.getElementById('fb-error');
+      if (errEl2) errEl2.style.display = 'none';
+
+      var el    = document.querySelector('.sop-id');
+      var sopId = el ? el.textContent.trim().replace(/[^\w\-]/g,'').replace(/^[^S]*/,'') : '';
+      var titulo = document.title.indexOf('\u2014') > -1
+        ? document.title.split('\u2014').slice(1).join('\u2014').trim()
+        : document.title;
+
+      auth.authFetch(auth.workerUrl + '/feedback', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ sop_id:sopId, titulo:titulo, agent:agent||'Ag\u00eante an\u00f3nimo', comment:comment }),
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d.ok) throw new Error(d.error || 'Error');
+        // Cerrar y limpiar
+        if (typeof window.closeFB === 'function') window.closeFB();
+        var ag = document.getElementById('fb-agent'); if(ag) ag.value='';
+        var tx = document.getElementById('fb-text');  if(tx) tx.value='';
+        var t  = document.getElementById('fb-toast');
+        if (t) {
+          t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+          setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3000);
+        }
+      })
+      .catch(function() {
+        // Fallback: guardar en localStorage si el Worker falla
+        var fb = JSON.parse(localStorage.getItem('mda_capstone_feedback')||'[]');
+        fb.push({sop_id:sopId,titulo:titulo,agent:agent,comment:comment,date:new Date().toISOString()});
+        localStorage.setItem('mda_capstone_feedback', JSON.stringify(fb));
+        if (typeof window.closeFB === 'function') window.closeFB();
+        var t2 = document.getElementById('fb-toast');
+        if (t2) { t2.style.opacity='1'; t2.style.transform='translateX(-50%) translateY(0)'; setTimeout(function(){ t2.style.opacity='0'; t2.style.transform='translateX(-50%) translateY(20px)'; },3000); }
+      });
+    };
+
+    // 3. Migrar feedbacks viejos del localStorage al Worker (una sola vez)
+    var OLD_KEY = 'mda_capstone_feedback';
+    var migrated = localStorage.getItem('mda_fb_migrated');
+    if (!migrated) {
+      var old = JSON.parse(localStorage.getItem(OLD_KEY) || '[]');
+      if (old.length > 0) {
+        var pending = old.slice();
+        (function migrateNext() {
+          if (!pending.length) {
+            localStorage.removeItem(OLD_KEY);
+            localStorage.setItem('mda_fb_migrated', '1');
+            return;
+          }
+          var item = pending.shift();
+          auth.authFetch(auth.workerUrl + '/feedback', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(item),
+          }).then(function(){ migrateNext(); }).catch(function(){ migrateNext(); });
+        })();
+      } else {
+        localStorage.setItem('mda_fb_migrated', '1');
+      }
+    }
+  }
+
+  // Esperar a que PlaybookAuth esté listo
+  if (window.PlaybookAuth && window.PlaybookAuth.ready) {
+    patchSubmitFB();
+  } else if (window.PlaybookAuth) {
+    var prev = window.PlaybookAuth.onReady;
+    window.PlaybookAuth.onReady = function(u) { if(prev) prev(u); patchSubmitFB(); };
+  } else {
+    var t2 = setInterval(function(){
+      if (window.PlaybookAuth && window.PlaybookAuth.ready) { clearInterval(t2); patchSubmitFB(); }
+    }, 100);
+  }
 });
 
 document.addEventListener('DOMContentLoaded', function () {
