@@ -32,9 +32,9 @@ var selText    = '';
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── Feedback: pre-llenar nombre + enviar al Worker ───────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+function initFeedbackIntegration() {
 
-  // 1. Pre-llenar el nombre del agente logueado
+  // 1. Pre-llenar nombre del agente en el form de feedback
   var fbBtn = document.querySelector('.fb-open-btn');
   if (fbBtn) {
     fbBtn.addEventListener('click', function() {
@@ -51,15 +51,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }, true);
   }
 
-  // 2. Sobrescribir submitFB para enviar al Worker en lugar de solo localStorage
+  // 2. Sobrescribir submitFB para enviar al Worker
   function patchSubmitFB() {
     var auth = window.PlaybookAuth;
-    if (!auth || !auth.workerUrl || !auth.authFetch) return; // sin Worker, usar localStorage
+    if (!auth || !auth.workerUrl || !auth.authFetch) return;
 
     window.submitFB = function() {
-      var comment = (document.getElementById('fb-text')  || {}).value || '';
-      var agent   = (document.getElementById('fb-agent') || {}).value || '';
-      comment = comment.trim();
+      var comment = ((document.getElementById('fb-text')  || {}).value || '').trim();
+      var agent   = ((document.getElementById('fb-agent') || {}).value || '').trim();
       if (!comment) {
         var errEl = document.getElementById('fb-error');
         if (errEl) errEl.style.display = 'block';
@@ -70,58 +69,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
       var el    = document.querySelector('.sop-id');
       var sopId = el ? el.textContent.trim().replace(/[^\w\-]/g,'').replace(/^[^S]*/,'') : '';
-      var titulo = document.title.indexOf('\u2014') > -1
+      var titulo = (document.title || '').indexOf('\u2014') > -1
         ? document.title.split('\u2014').slice(1).join('\u2014').trim()
-        : document.title;
+        : (document.title || '');
+
+      var submitBtn = document.getElementById('fb-submit-btn');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
 
       auth.authFetch(auth.workerUrl + '/feedback', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ sop_id:sopId, titulo:titulo, agent:agent||'Ag\u00eante an\u00f3nimo', comment:comment }),
+        body   : JSON.stringify({ sop_id:sopId, titulo:titulo, agent:agent||'Agente an\u00f3nimo', comment:comment }),
       })
       .then(function(r){ return r.json(); })
       .then(function(d){
-        if (!d.ok) throw new Error(d.error || 'Error');
-        // Cerrar y limpiar
+        if (!d.ok) throw new Error(d.error || 'Error del servidor');
         if (typeof window.closeFB === 'function') window.closeFB();
-        var ag = document.getElementById('fb-agent'); if(ag) ag.value='';
-        var tx = document.getElementById('fb-text');  if(tx) tx.value='';
+        var tx = document.getElementById('fb-text'); if(tx) tx.value = '';
         var t  = document.getElementById('fb-toast');
         if (t) {
           t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
           setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3000);
         }
       })
-      .catch(function() {
-        // Fallback: guardar en localStorage si el Worker falla
-        var fb = JSON.parse(localStorage.getItem('mda_capstone_feedback')||'[]');
-        fb.push({sop_id:sopId,titulo:titulo,agent:agent,comment:comment,date:new Date().toISOString()});
-        localStorage.setItem('mda_capstone_feedback', JSON.stringify(fb));
+      .catch(function(err) {
+        // Fallback: guardar en localStorage si falla la conexión
+        try {
+          var fb = JSON.parse(localStorage.getItem('mda_capstone_feedback')||'[]');
+          fb.push({sop_id:sopId,titulo:titulo,agent:agent,comment:comment,date:new Date().toISOString()});
+          localStorage.setItem('mda_capstone_feedback', JSON.stringify(fb));
+        } catch(e) {}
         if (typeof window.closeFB === 'function') window.closeFB();
         var t2 = document.getElementById('fb-toast');
         if (t2) { t2.style.opacity='1'; t2.style.transform='translateX(-50%) translateY(0)'; setTimeout(function(){ t2.style.opacity='0'; t2.style.transform='translateX(-50%) translateY(20px)'; },3000); }
+      })
+      .finally(function() {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar'; }
       });
     };
 
     // 3. Migrar feedbacks viejos del localStorage al Worker (una sola vez)
-    var OLD_KEY = 'mda_capstone_feedback';
-    var migrated = localStorage.getItem('mda_fb_migrated');
-    if (!migrated) {
-      var old = JSON.parse(localStorage.getItem(OLD_KEY) || '[]');
+    if (!localStorage.getItem('mda_fb_migrated')) {
+      var old = [];
+      try { old = JSON.parse(localStorage.getItem('mda_capstone_feedback')||'[]'); } catch(e){}
       if (old.length > 0) {
         var pending = old.slice();
         (function migrateNext() {
           if (!pending.length) {
-            localStorage.removeItem(OLD_KEY);
+            localStorage.removeItem('mda_capstone_feedback');
             localStorage.setItem('mda_fb_migrated', '1');
             return;
           }
           var item = pending.shift();
           auth.authFetch(auth.workerUrl + '/feedback', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
+            method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify(item),
-          }).then(function(){ migrateNext(); }).catch(function(){ migrateNext(); });
+          }).then(migrateNext).catch(migrateNext);
         })();
       } else {
         localStorage.setItem('mda_fb_migrated', '1');
@@ -133,14 +136,23 @@ document.addEventListener('DOMContentLoaded', function() {
   if (window.PlaybookAuth && window.PlaybookAuth.ready) {
     patchSubmitFB();
   } else if (window.PlaybookAuth) {
-    var prev = window.PlaybookAuth.onReady;
-    window.PlaybookAuth.onReady = function(u) { if(prev) prev(u); patchSubmitFB(); };
+    var _prev = window.PlaybookAuth.onReady;
+    window.PlaybookAuth.onReady = function(u) { if (_prev) _prev(u); patchSubmitFB(); };
+    if (window.PlaybookAuth.ready) patchSubmitFB();
   } else {
-    var t2 = setInterval(function(){
-      if (window.PlaybookAuth && window.PlaybookAuth.ready) { clearInterval(t2); patchSubmitFB(); }
+    var _t = setInterval(function(){
+      if (window.PlaybookAuth && window.PlaybookAuth.ready) { clearInterval(_t); patchSubmitFB(); }
     }, 100);
   }
-});
+}
+
+// Ejecutar inmediatamente si el DOM ya está listo (carga dinámica desde viewer.html)
+// o esperar DOMContentLoaded si se abre el SOP directamente
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFeedbackIntegration);
+} else {
+  initFeedbackIntegration();
+}
 
 document.addEventListener('DOMContentLoaded', function () {
   sopId    = extractSopId();
