@@ -223,12 +223,62 @@ function injectSOP(html, editedContent) {
     var script   = document.createElement('script');
     script.id    = 'playbook-core-loaded';
     script.src   = 'js/playbook-core.js';
-    // Después de cargar, disparar el boot manualmente
     script.onload = function() {
       if (window.PlaybookCoreInit) window.PlaybookCoreInit();
     };
     document.body.appendChild(script);
   }
+
+  // 10. Sobrescribir submitFB para enviar feedback al Worker (no localStorage)
+  (function patchFeedback() {
+    var auth = window.PlaybookAuth;
+    if (!auth || !auth.workerUrl || !auth.authFetch) return;
+
+    window.submitFB = function() {
+      var commentEl = document.getElementById('fb-text');
+      var agentEl   = document.getElementById('fb-agent');
+      var errorEl   = document.getElementById('fb-error');
+      var comment   = commentEl ? commentEl.value.trim() : '';
+      var agent     = agentEl   ? agentEl.value.trim()   : '';
+
+      if (!comment) {
+        if (errorEl) errorEl.style.display = 'block';
+        return;
+      }
+      if (errorEl) errorEl.style.display = 'none';
+
+      var sopEl = document.querySelector('.sop-id');
+      var sopId = sopEl ? sopEl.textContent.trim().replace(/[^\w\-]/g,'').replace(/^[^S]*/,'') : TARGET_SOP;
+      var titulo = (document.title || '').split('\u2014').slice(1).join('\u2014').trim() || document.title;
+
+      auth.authFetch(auth.workerUrl + '/feedback', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ sop_id: sopId, titulo: titulo, agent: agent || 'Agente an\u00f3nimo', comment: comment }),
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.ok) throw new Error(d.error || 'Error');
+        if (typeof window.closeFB === 'function') window.closeFB();
+        if (commentEl) commentEl.value = '';
+        var toast = document.getElementById('fb-toast');
+        if (toast) {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateX(-50%) translateY(0)';
+          setTimeout(function() {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+          }, 3000);
+        }
+      })
+      .catch(function(err) {
+        if (errorEl) {
+          errorEl.textContent = 'Error al enviar: ' + (err && err.message ? err.message : 'Sin conexi\u00f3n');
+          errorEl.style.display = 'block';
+        }
+      });
+    };
+  })();
 }
 
 // Marcar que estamos en modo viewer (para que auth-roles.js lo detecte)
