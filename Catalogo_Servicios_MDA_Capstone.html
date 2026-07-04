@@ -323,6 +323,24 @@ window.addEventListener('mda:visibility-loaded', function() {
   if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) {
     renderIndex();
   }
+  loadValidationDates();
+});
+
+// Cargar overrides de acciones y fechas después de renderizar el índice
+var _origRenderIndex = null;
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof renderIndex === 'function' && !_origRenderIndex) {
+    _origRenderIndex = renderIndex;
+    renderIndex = function() {
+      _origRenderIndex();
+      // Cargar validaciones y overrides para las filas visibles
+      setTimeout(function() {
+        loadValidationDates();
+        var sops = Array.from(document.querySelectorAll('.proc-row')).map(function(r){ return r.dataset.sop; }).filter(Boolean);
+        if (sops.length) loadAccionesOverrides(sops);
+      }, 100);
+    };
+  }
 });
 
 /* ── NAVIGATION ── */
@@ -389,8 +407,16 @@ function renderProcRow(proc){
     </td>
     <td><span class="nivel-pill ${getNivelClass(proc.nivel)}">${proc.nivel}</span></td>
     <td><div class="grupo-tag">${renderGrupos(proc.grupos)}</div></td>
-    <td><ul class="acciones-list">${accs}</ul></td>
-    <td><span class="esc-text">${proc.esc}</span></td>
+    <td class="accs-cell" data-sop="${proc.sop}">
+      <ul class="acciones-list accs-display">${accs}</ul>
+      <div class="accs-edit-wrap" style="display:none">
+        <textarea class="accs-editor"></textarea>
+        <button class="accs-save-btn" data-sop="${proc.sop}">💾 Guardar</button>
+        <button class="accs-cancel-btn" data-sop="${proc.sop}">Cancelar</button>
+      </div>
+      ${window.PlaybookAuth&&window.PlaybookAuth.user&&window.PlaybookAuth.user.role==='admin' ? '<button class="accs-edit-btn" title="Editar acciones" data-sop="'+proc.sop+'">✏️</button>' : ''}
+    </td>
+    <td class="valid-cell" data-sop="${proc.sop}">${renderValidBadge(proc.sop)}</td>
   </tr>`;
 }
 
@@ -422,7 +448,7 @@ function renderIndex(){
               <th style="min-width:130px">Nivel de Resolución</th>
               <th style="min-width:190px">Grupos Responsable (Asignados)</th>
               <th style="min-width:240px">Acciones Típicas</th>
-              <th style="min-width:180px">Criterios de Escalamiento</th>
+              <th style="min-width:160px">Última Validación</th>
             </tr>
           </thead>
           <tbody>${procs.map(p => renderProcRow(p)).join('')}</tbody>
@@ -539,6 +565,138 @@ document.addEventListener('keydown', e => {
 window._renderIndexIfActive = function() {
   if (typeof renderIndex === 'function' && typeof currentOp !== 'undefined' && currentOp) renderIndex();
 };
+
+// ── Última Validación ─────────────────────────────────────────────────────────
+var _validDates = {};  // {sopId: 'YYYY-MM-DD'}
+
+function renderValidBadge(sopId) {
+  var date = _validDates[sopId];
+  if (!date) return '<button class="valid-badge valid-none" onclick="setValidDate(\'' + sopId + '\')">📅 Registrar</button>';
+  var months = (new Date() - new Date(date)) / (1000*60*60*24*30.44);
+  var label = months < 3
+    ? '<button class="valid-badge valid-ok" onclick="setValidDate(\'' + sopId + '\')">✅ Actualizado<span class="valid-date">' + date + '</span></button>'
+    : '<button class="valid-badge valid-warn" onclick="setValidDate(\'' + sopId + '\')">⚠️ Requiere Revalidar<span class="valid-date">' + date + '</span></button>';
+  return label;
+}
+
+function loadValidationDates() {
+  var auth = window.PlaybookAuth;
+  if (!auth || !auth.workerUrl) return;
+  auth.authFetch(auth.workerUrl + '/proc/validation')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _validDates = d.dates || {};
+      // Actualizar celdas sin re-renderizar la tabla completa
+      document.querySelectorAll('.valid-cell').forEach(function(cell) {
+        var sop = cell.dataset.sop;
+        if (sop) cell.innerHTML = renderValidBadge(sop);
+      });
+    }).catch(function(){});
+}
+
+function setValidDate(sopId) {
+  var auth = window.PlaybookAuth;
+  if (!auth || !auth.user || auth.user.role !== 'admin') return;
+  var today = new Date().toISOString().slice(0,10);
+  var current = _validDates[sopId] || today;
+  var newDate = prompt('Fecha de última validación (YYYY-MM-DD) para ' + sopId + ':', current);
+  if (!newDate || !/^\d{4}-\d{2}-\d{2}$/.test(newDate)) return;
+  auth.authFetch(auth.workerUrl + '/proc/validation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sopId: sopId, date: newDate })
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d.ok) throw new Error(d.error || 'Error');
+      _validDates[sopId] = newDate;
+      document.querySelectorAll('.valid-cell[data-sop="' + sopId + '"]').forEach(function(cell){
+        cell.innerHTML = renderValidBadge(sopId);
+      });
+    }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+// ── Acciones Típicas editable ─────────────────────────────────────────────────
+document.addEventListener('click', function(e) {
+  var auth = window.PlaybookAuth;
+  if (!auth || !auth.user || auth.user.role !== 'admin') return;
+
+  // Clic en botón editar
+  if (e.target.classList.contains('accs-edit-btn')) {
+    var sop  = e.target.dataset.sop;
+    var cell = document.querySelector('.accs-cell[data-sop="' + sop + '"]');
+    if (!cell) return;
+    var list   = cell.querySelector('.accs-display');
+    var wrap   = cell.querySelector('.accs-edit-wrap');
+    var editor = cell.querySelector('.accs-editor');
+    // Obtener texto actual de los li
+    var items  = Array.from(cell.querySelectorAll('.accs-display li')).map(function(li){ return li.textContent.trim(); });
+    editor.value = items.join('\n');
+    list.style.display  = 'none';
+    wrap.style.display  = 'block';
+    e.target.style.display = 'none';
+    editor.focus();
+  }
+
+  // Guardar acciones
+  if (e.target.classList.contains('accs-save-btn')) {
+    var sop    = e.target.dataset.sop;
+    var cell   = document.querySelector('.accs-cell[data-sop="' + sop + '"]');
+    var editor = cell.querySelector('.accs-editor');
+    var acciones = editor.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    var btn    = e.target;
+    btn.disabled = true; btn.textContent = '⏳';
+    auth.authFetch(auth.workerUrl + '/proc/acciones/' + encodeURIComponent(sop), {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ acciones: acciones })
+    }).then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d.ok) throw new Error(d.error || 'Error');
+        // Actualizar visualización
+        var list  = cell.querySelector('.accs-display');
+        var wrap  = cell.querySelector('.accs-edit-wrap');
+        var ebtn  = cell.querySelector('.accs-edit-btn');
+        list.innerHTML = acciones.map(function(a){ return '<li>' + a + '</li>'; }).join('');
+        list.style.display = '';
+        wrap.style.display = 'none';
+        if (ebtn) ebtn.style.display = '';
+        btn.disabled = false; btn.textContent = '💾 Guardar';
+        if (window.PlaybookAuth && window.PlaybookAuth.showToast) window.PlaybookAuth.showToast('✅ Acciones guardadas — ' + sop);
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = '💾 Guardar';
+        alert('Error al guardar: ' + err.message);
+      });
+  }
+
+  // Cancelar edición
+  if (e.target.classList.contains('accs-cancel-btn')) {
+    var sop  = e.target.dataset.sop;
+    var cell = document.querySelector('.accs-cell[data-sop="' + sop + '"]');
+    var list = cell.querySelector('.accs-display');
+    var wrap = cell.querySelector('.accs-edit-wrap');
+    var ebtn = cell.querySelector('.accs-edit-btn');
+    list.style.display = '';
+    wrap.style.display = 'none';
+    if (ebtn) ebtn.style.display = '';
+  }
+});
+
+// Cargar acciones con override de KV al renderizar
+function loadAccionesOverrides(sopIds) {
+  var auth = window.PlaybookAuth;
+  if (!auth || !auth.workerUrl || !auth.user || auth.user.role !== 'admin') return;
+  sopIds.forEach(function(sop) {
+    auth.authFetch(auth.workerUrl + '/proc/acciones/' + encodeURIComponent(sop))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d.hasOverride || !d.acciones) return;
+        var cell = document.querySelector('.accs-cell[data-sop="' + sop + '"]');
+        if (!cell) return;
+        var list = cell.querySelector('.accs-display');
+        if (list) list.innerHTML = d.acciones.map(function(a){ return '<li>' + a + '</li>'; }).join('');
+      }).catch(function(){});
+  });
+}
 
 (function waitForAuth() {
   if (window.PlaybookAuth && window.PlaybookAuth.ready) {
