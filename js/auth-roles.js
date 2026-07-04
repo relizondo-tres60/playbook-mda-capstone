@@ -1087,7 +1087,7 @@ function openCatalogChat() {
     authFetch(A.workerUrl + '/chat', {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ system: SYSTEM_PROMPT, messages: chatHistory }),
+      body   : JSON.stringify({ system: SYSTEM_PROMPT, messages: chatHistory, sopId: A.sopId || '' }),
     })
     .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, status:r.status, d:d}; }); })
     .then(function(res) {
