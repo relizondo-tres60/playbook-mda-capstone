@@ -917,7 +917,7 @@ function openUploadModal() {
         '<div><div class="pc-label">Grupo Responsable</div><input class="pc-input" id="upl-grupo" placeholder="Help_Desk_Support_Chile_Tech"></div>' +
         '<div><div class="pc-label">Faenas aplicables</div><input class="pc-input" id="upl-faenas" placeholder="MVE, MBL, STG, VAN"></div>' +
         '<div><div class="pc-label">Dom\u00ednio</div><select class="pc-select" id="upl-dom">' +
-          (window.DOMS||[{"cod": "GIA"}, {"cod": "SAP"}, {"cod": "APP"}, {"cod": "EQU"}, {"cod": "NET"}, {"cod": "MIN"}, {"cod": "VHF"}, {"cod": "COL"}, {"cod": "CYB"}, {"cod": "SOT"}]).map(function(d){return '<option value="'+d.cod+'">'+d.cod+'</option>';}).join('') +
+          (window.DOMS||[{"cod":"GIA"},{"cod":"SAP"},{"cod":"APP"},{"cod":"EQU"},{"cod":"NET"},{"cod":"MIN"},{"cod":"VHF"},{"cod":"COL"},{"cod":"CYB"},{"cod":"SOT"},{"cod":"INF"},{"cod":"INC"}]).map(function(d){return '<option value="'+d.cod+'">'+d.cod+'</option>';}).join('') +
         '</select></div>' +
         '<div id="upl-error" style="color:#c0392b;font-size:12px;display:none"></div>' +
       '</div>' +
