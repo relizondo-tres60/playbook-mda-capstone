@@ -91,7 +91,8 @@ function injectCSS(){
     '.mda-modal-hdr strong{font-size:16px}',
     '.mda-modal-close{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1;opacity:.8}',
     '.mda-modal-close:hover{opacity:1}',
-    '.mda-tabs{display:flex;gap:0;background:#f7f9fc;border-bottom:1px solid #eef1f7;flex-shrink:0}',
+    '.mda-tabs{display:flex;gap:0;background:#f7f9fc;border-bottom:1px solid #eef1f7;flex-shrink:0;overflow-x:auto;scrollbar-width:none}',
+    '.mda-tabs::-webkit-scrollbar{display:none}',
     '.mda-tab{padding:10px 20px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:2px solid transparent;font-family:\'Barlow\',sans-serif;transition:all .15s}',
     '.mda-tab.active{color:#0057a8;border-bottom-color:#0057a8;background:#fff}',
     '.mda-modal-body{padding:18px 20px;overflow-y:auto;flex:1}',
@@ -573,7 +574,7 @@ function openAdminPanel(tab) {
       '<div class="mda-tabs">' +
         '<button class="mda-tab" data-tab="users">&#128101; Usuarios</button>' +
         '<button class="mda-tab" data-tab="visibility">&#128065; Visibilidad</button>' +
-        '<button class="mda-tab" data-tab="knowledge">&#128218; Base de Conocimiento</button>' +
+        '<button class="mda-tab" data-tab="knowledge">&#128218; Conocimiento</button>' +
       '</div>' +
       '<div class="mda-modal-body" id="adm-body"></div>' +
     '</div>';
@@ -805,27 +806,66 @@ function loadKnowledge(container) {
 }
 
 function renderKnowledge(c, entries) {
-  var html = '<div style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px">' +
-    '<div><div class="pc-label">Nueva entrada</div>' +
-    '<textarea class="pc-input" id="kb-text" rows="3" placeholder="Ingresa conocimiento operacional..." style="resize:vertical;margin-top:4px"></textarea></div>' +
-    '<button class="pc-btn" style="width:auto;align-self:flex-end" id="kb-add-btn">Agregar</button></div>';
-  if (!entries.length) html += '<p style="color:#aaa;text-align:center">Sin entradas aun.</p>';
-  entries.forEach(function(e){
-    html += '<div style="border:1px solid #eef1f7;border-radius:8px;padding:10px 12px;margin-bottom:8px">' +
-      '<div style="font-size:13px">' + esc(e.content) + '</div>' +
-      '<div style="font-size:11px;color:#aaa;margin-top:4px">' + (e.addedAt||'') + '</div></div>';
-  });
+  var html =
+    '<div style="margin-bottom:16px">' +
+      '<div class="pc-label" style="margin-bottom:6px">Nueva entrada</div>' +
+      '<textarea class="pc-input" id="kb-text" rows="4" ' +
+        'placeholder="Pega texto de Excel, resumen de conversación, procedimiento interno, patrón de incidente..." ' +
+        'style="resize:vertical;font-size:13px;margin-bottom:8px"></textarea>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:11px;color:#888">El asistente IA usará este conocimiento al responder preguntas.</span>' +
+        '<button class="pc-btn" style="width:auto" id="kb-add-btn">+ Agregar</button>' +
+      '</div>' +
+    '</div>' +
+    '<hr style="border:none;border-top:1px solid #eef1f7;margin:0 0 12px">';
+
+  if (!entries.length) {
+    html += '<p style="color:#aaa;text-align:center;padding:20px;font-size:13px">Sin entradas. Usa el campo de arriba para agregar conocimiento operacional.</p>';
+  } else {
+    html += '<div class="pc-label" style="margin-bottom:8px">' + entries.length + ' entrada' + (entries.length!==1?'s':'') + ' en la base de conocimiento</div>';
+    entries.forEach(function(e, i) {
+      var txt = e.content || e.situation || '';
+      html +=
+        '<div style="border:1px solid #eef1f7;border-radius:8px;padding:10px 12px;margin-bottom:8px">' +
+          '<div style="font-size:13px;color:#1a1a2e;white-space:pre-wrap;line-height:1.5">' + esc(txt.length > 300 ? txt.slice(0,300)+'...' : txt) + '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">' +
+            '<span style="font-size:11px;color:#aaa">&#128100; ' + esc(e.addedBy||'admin') + ' &nbsp;&bull;&nbsp; ' + (e.addedAt||'').slice(0,10) + '</span>' +
+            '<button class="pc-btn-sec" style="font-size:11px;padding:2px 8px;color:#c0392b;border-color:#fca5a5" data-kb-del="' + esc(e.id||String(i)) + '">&#128465;</button>' +
+          '</div>' +
+        '</div>';
+    });
+  }
   c.innerHTML = html;
+
   var addBtn = document.getElementById('kb-add-btn');
-  if (addBtn) addBtn.addEventListener('click', function(){
-    var text = (document.getElementById('kb-text')||{}).value || '';
-    if (!text.trim()) return;
+  if (addBtn) addBtn.addEventListener('click', function() {
+    var text = ((document.getElementById('kb-text')||{}).value||'').trim();
+    if (!text) return;
+    addBtn.disabled = true; addBtn.textContent = 'Guardando...';
     authFetch(A.workerUrl + '/knowledge', {
-      method: 'POST',
+      method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text.trim() }),
-    }).then(function(){ showToast('Entrada agregada'); loadKnowledge(c); })
-      .catch(function(){ showToast('Error'); });
+      body   : JSON.stringify({ content: text }),
+    }).then(function(r){ return r.json(); })
+      .then(function(d) {
+        if (d.error) throw new Error(d.error);
+        showToast('\u2705 Entrada guardada');
+        loadKnowledge(c);
+      })
+      .catch(function(err) {
+        showToast('Error: ' + (err.message||'desconocido'));
+        addBtn.disabled = false; addBtn.textContent = '+ Agregar';
+      });
+  });
+
+  c.querySelectorAll('[data-kb-del]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.dataset.kbDel;
+      if (!confirm('\u00bfEliminar esta entrada de conocimiento?')) return;
+      authFetch(A.workerUrl + '/knowledge/' + encodeURIComponent(id), { method: 'DELETE' })
+        .then(function() { showToast('Entrada eliminada'); loadKnowledge(c); })
+        .catch(function() { showToast('Error al eliminar'); });
+    });
   });
 }
 
