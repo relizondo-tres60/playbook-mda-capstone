@@ -824,10 +824,18 @@ function renderKnowledge(c, entries) {
   } else {
     html += '<div class="pc-label" style="margin-bottom:8px">' + entries.length + ' entrada' + (entries.length!==1?'s':'') + ' en la base de conocimiento</div>';
     entries.forEach(function(e, i) {
-      var txt = e.content || e.situation || '';
+      var txt     = e.content || e.situation || '';
+      var entryId = 'kb-entry-' + i;
+      var isLong  = txt.length > 300;
       html +=
         '<div style="border:1px solid #eef1f7;border-radius:8px;padding:10px 12px;margin-bottom:8px">' +
-          '<div style="font-size:13px;color:#1a1a2e;white-space:pre-wrap;line-height:1.5">' + esc(txt.length > 300 ? txt.slice(0,300)+'...' : txt) + '</div>' +
+          '<div id="' + entryId + '-body" style="font-size:13px;color:#1a1a2e;white-space:pre-wrap;line-height:1.5">' +
+            esc(isLong ? txt.slice(0, 300) + '…' : txt) +
+          '</div>' +
+          (isLong ?
+            '<button id="' + entryId + '-toggle" data-full="' + esc(txt) + '" data-short="' + esc(txt.slice(0,300)+'…') + '" data-target="' + entryId + '-body"' +
+              ' style="background:none;border:none;color:#0057a8;font-size:12px;cursor:pointer;padding:2px 0;margin-top:4px">Ver más ▼</button>'
+          : '') +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">' +
             '<span style="font-size:11px;color:#aaa">&#128100; ' + esc(e.addedBy||'admin') + ' &nbsp;&bull;&nbsp; ' + (e.addedAt||'').slice(0,10) + '</span>' +
             '<button class="pc-btn-sec" style="font-size:11px;padding:2px 8px;color:#c0392b;border-color:#fca5a5" data-kb-del="' + esc(e.id||String(i)) + '">&#128465;</button>' +
@@ -856,6 +864,23 @@ function renderKnowledge(c, entries) {
         showToast('Error: ' + (err.message||'desconocido'));
         addBtn.disabled = false; addBtn.textContent = '+ Agregar';
       });
+  });
+
+  // Listeners de expandir/colapsar
+  c.querySelectorAll('[data-target]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target  = document.getElementById(btn.dataset.target);
+      var expanded = btn.dataset.expanded === '1';
+      if (expanded) {
+        target.textContent = btn.dataset.short;
+        btn.textContent    = 'Ver más ▼';
+        btn.dataset.expanded = '0';
+      } else {
+        target.textContent = btn.dataset.full;
+        btn.textContent    = 'Ver menos ▲';
+        btn.dataset.expanded = '1';
+      }
+    });
   });
 
   c.querySelectorAll('[data-kb-del]').forEach(function(btn) {
