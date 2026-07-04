@@ -571,12 +571,10 @@ var _validDates = {};  // {sopId: 'YYYY-MM-DD'}
 
 function renderValidBadge(sopId) {
   var date = _validDates[sopId];
-  if (!date) return '<button class="valid-badge valid-none" onclick="setValidDate(\'' + sopId + '\')">📅 Registrar</button>';
+  if (!date) return '<button class="valid-badge valid-none" onclick="setValidDate(\'' + sopId + '\')">— Registrar</button>';
   var months = (new Date() - new Date(date)) / (1000*60*60*24*30.44);
-  var label = months < 3
-    ? '<button class="valid-badge valid-ok" onclick="setValidDate(\'' + sopId + '\')">✅ Actualizado<span class="valid-date">' + date + '</span></button>'
-    : '<button class="valid-badge valid-warn" onclick="setValidDate(\'' + sopId + '\')">⚠️ Requiere Revalidar<span class="valid-date">' + date + '</span></button>';
-  return label;
+  var cls = months < 3 ? 'valid-ok' : 'valid-warn';
+  return '<button class="valid-badge ' + cls + '" onclick="setValidDate(\'' + sopId + '\')">' + date + '</button>';
 }
 
 function loadValidationDates() {
