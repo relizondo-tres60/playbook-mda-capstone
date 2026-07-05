@@ -414,7 +414,10 @@ function renderProcRow(proc){
   const acciones = Array.isArray(proc.acciones) ? proc.acciones : [];
   const ops      = Array.isArray(proc.ops)      ? proc.ops      : [];
   const accs = acciones.map(a => `<li>${a}</li>`).join('');
-  return `<tr class="proc-row" data-ops="${ops.join(',')}" data-sop="${proc.sop}" data-search="${((proc.sop||'')+' '+(proc.titulo||'')+' '+(proc.desc||'')+' '+(proc.nivel||'')+' '+(proc.grupos||'')+' '+acciones.join(' ')+' '+(proc.esc||'')+' '+(window._procKeywords&&window._procKeywords[proc.sop]||'')).toLowerCase()}">
+  return `<tr class="proc-row" data-ops="${ops.join(',')}" data-sop="${proc.sop}" data-search="${(function(){
+    var domName = (window.DOMS||[]).find(function(d){return d.cod===proc.dom;});
+    return ((proc.sop||'')+' '+(proc.titulo||'')+' '+(proc.desc||'')+' '+(proc.dom||'')+' '+(domName?domName.name:'')+' '+(proc.nivel||'')+' '+(proc.grupos||'')+' '+acciones.join(' ')+' '+(proc.esc||'')+' '+(window._procKeywords&&window._procKeywords[proc.sop]||''));
+  })().toLowerCase()}">
     <td>
       <a class="cs-link" href="${proc.href || 'procedimientos/' + proc.sop + '.html'}" target="_blank">
         <span class="cs-id-badge">${proc.sop}</span>
@@ -493,12 +496,18 @@ function toggleDom(header){
 }
 
 /* ── SEARCH ── */
+function normalizeText(str) {
+  return (str||'').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
 function applySearch(){
-  const term = document.getElementById('search-input').value.toLowerCase().trim();
-  const rows = document.querySelectorAll('.proc-row');
+  const raw   = document.getElementById('search-input').value.trim();
+  const words = normalizeText(raw).split(/\s+/).filter(Boolean);
+  const rows  = document.querySelectorAll('.proc-row');
   let anyVisible = false;
   rows.forEach(row => {
-    const match = term === '' || row.dataset.search.includes(term);
+    const haystack = normalizeText(row.dataset.search);
+    const match = words.length === 0 || words.every(w => haystack.includes(w));
     row.classList.toggle('hidden-row', !match);
     if(match) anyVisible = true;
   });
