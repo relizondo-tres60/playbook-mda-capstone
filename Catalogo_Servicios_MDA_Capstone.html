@@ -353,12 +353,15 @@ document.addEventListener('DOMContentLoaded', function() {
     _origRenderIndex = renderIndex;
     renderIndex = function() {
       _origRenderIndex();
-      // Cargar validaciones y overrides para las filas visibles
+      // Cargar validaciones, keywords y overrides para las filas visibles
       setTimeout(function() {
         loadValidationDates();
+        loadProcKeywords();   // actualiza keywords → llama rebuildSearchIndex al terminar
         var sops = Array.from(document.querySelectorAll('.proc-row')).map(function(r){ return r.dataset.sop; }).filter(Boolean);
         if (sops.length) loadAccionesOverrides(sops);
-      }, 100);
+        // Reconstruir índice de búsqueda completo con datos del DOM
+        setTimeout(rebuildSearchIndex, 800);
+      }, 150);
     };
   }
 });
@@ -499,6 +502,33 @@ function toggleDom(header){
 function normalizeText(str) {
   return (str||'').toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Reconstruye data-search de cada fila leyendo directamente del DOM + KV keywords
+function rebuildSearchIndex() {
+  document.querySelectorAll('.proc-row[data-sop]').forEach(function(row) {
+    var sop = row.dataset.sop;
+
+    // Leer columnas directamente del DOM (captura overrides y datos dinámicos)
+    var code   = (row.querySelector('.cs-id-badge')     || {}).textContent || '';
+    var titulo = (row.querySelector('.proc-titulo')      || {}).textContent || '';
+    var desc   = (row.querySelector('.proc-desc')        || {}).textContent || '';
+    var nivel  = (row.querySelector('.nivel-pill')       || {}).textContent || '';
+    var grupos = (row.querySelector('.grupo-tag')        || {}).textContent || '';
+    var accs   = Array.from(row.querySelectorAll('.accs-display li'))
+                  .map(function(li){ return li.textContent; }).join(' ');
+
+    // Keywords del índice de contenido (cargados desde KV)
+    var kw     = (window._procKeywords && window._procKeywords[sop]) || '';
+
+    // Dominio (código + nombre completo)
+    var domEl  = row.closest('[data-dom]');
+    var domCod = row.dataset.dom || '';
+    var domName= (window.DOMS||[]).find(function(d){ return d.cod===domCod; });
+    var dom    = domCod + ' ' + (domName ? domName.name : '');
+
+    row.dataset.search = (code+' '+titulo+' '+desc+' '+dom+' '+nivel+' '+grupos+' '+accs+' '+kw).toLowerCase();
+  });
 }
 function applySearch(){
   const raw   = document.getElementById('search-input').value.trim();
@@ -721,6 +751,14 @@ function loadAccionesOverrides(sopIds) {
         if (!cell) return;
         var list = cell.querySelector('.accs-display');
         if (list) list.innerHTML = d.acciones.map(function(a){ return '<li>' + a + '</li>'; }).join('');
+        // Actualizar data-search con acciones reales
+        var row2 = document.querySelector('.proc-row[data-sop="' + sop + '"]');
+        if (row2) {
+          var newAccs = d.acciones.join(' ').toLowerCase();
+          if (!row2.dataset.search.includes(newAccs.slice(0, 20))) {
+            row2.dataset.search += ' ' + newAccs;
+          }
+        }
       }).catch(function(){});
   });
 }
