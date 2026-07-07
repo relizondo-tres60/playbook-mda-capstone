@@ -777,7 +777,21 @@ function loadProcKeywords() {
   if (!A.workerUrl) return;
   authFetch(A.workerUrl + '/proc/keywords')
     .then(function(r){ return r.json(); })
-    .then(function(d){ window._mdaProcKeywords = d.keywords || {}; })
+    .then(function(d){
+      window._mdaProcKeywords = d.keywords || {};
+      window._procKeywords    = d.keywords || {};
+      // Reconstruir índice de búsqueda con keywords actualizados
+      if (typeof rebuildSearchIndex === 'function') {
+        rebuildSearchIndex();
+      } else {
+        // Fallback: actualizar directamente
+        document.querySelectorAll('.proc-row[data-sop]').forEach(function(row) {
+          var sop = row.dataset.sop;
+          var kw  = (d.keywords || {})[sop] || '';
+          if (kw) row.dataset.search = row.dataset.search + ' ' + kw.toLowerCase();
+        });
+      }
+    })
     .catch(function(){});
 }
 
