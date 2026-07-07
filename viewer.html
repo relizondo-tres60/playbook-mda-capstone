@@ -229,7 +229,26 @@ function injectSOP(html, editedContent) {
     document.body.appendChild(script);
   }
 
-  // 10. Sobrescribir submitFB para enviar feedback al Worker (no localStorage)
+  // 10. Indexar contenido del SOP en KV para búsqueda de texto completo
+  (function indexSOPContent() {
+    var auth = window.PlaybookAuth;
+    if (!auth || !auth.workerUrl || !auth.authFetch || !TARGET_SOP) return;
+    // Dar tiempo a que el contenido quede renderizado
+    setTimeout(function() {
+      var container = document.querySelector('#sop-content .container') ||
+                      document.querySelector('.container');
+      if (!container) return;
+      var fullText = container.innerText || container.textContent || '';
+      if (fullText.length < 100) return; // ignorar si el contenido es muy corto
+      auth.authFetch(auth.workerUrl + '/proc/keywords', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ sopId: TARGET_SOP, fullText: fullText }),
+      }).catch(function(){}); // silencioso — no crítico
+    }, 1000);
+  })();
+
+  // 11. Sobrescribir submitFB para enviar feedback al Worker (no localStorage)
   (function patchFeedback() {
     var auth = window.PlaybookAuth;
     if (!auth || !auth.workerUrl || !auth.authFetch) return;
