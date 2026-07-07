@@ -129,13 +129,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
 /* Toast */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .proc-keywords{font-size:10px;color:#999;margin-top:3px;font-style:italic;line-height:1.4}
+  .proc-keywords{display:none}
   .proc-keywords:empty{display:none}
   .kw-label{font-style:normal}
   .kw-edit-btn{background:none;border:1px solid #d0d8e8;border-radius:4px;padding:1px 6px;font-size:10px;cursor:pointer;color:#0057a8;margin-left:6px;display:none;vertical-align:middle}
   .kw-edit-btn:hover{background:#e8f0fb}
   body.admin-mode .kw-edit-btn{display:inline}
-  body.admin-mode .proc-keywords{color:#0057a8}
+  body.admin-mode .proc-keywords{display:none}
 .bitacora-main-btn{width:100%;background:linear-gradient(135deg,#1a1a2e,#0d2d5a);color:#fff;border:none;cursor:pointer;border-radius:14px;padding:18px 24px;display:flex;align-items:center;gap:18px;text-align:left;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .bitacora-main-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
 .bita-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;margin-bottom:2px}
