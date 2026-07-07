@@ -806,7 +806,16 @@ function loadKnowledge(container) {
 }
 
 function renderKnowledge(c, entries) {
+  // Botón de indexación en la parte superior del panel KB
+  var idxStatus = '';
   var html =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:10px 12px;background:#f0f7ff;border-radius:8px;border:1px solid #c7d9f5">' +
+      '<div>' +
+        '<div style="font-size:12px;font-weight:700;color:#0057a8">&#128269; Indexación de contenido</div>' +
+        '<div style="font-size:11px;color:#555;margin-top:2px">Permite buscar texto dentro de los procedimientos publicados</div>' +
+      '</div>' +
+      '<button id="btn-index-all" class="pc-btn" style="width:auto;font-size:12px;padding:6px 14px">&#9881; Indexar todo</button>' +
+    '</div>' +
     '<div style="margin-bottom:16px">' +
       '<div class="pc-label" style="margin-bottom:6px">Nueva entrada</div>' +
       '<textarea class="pc-input" id="kb-text" rows="4" ' +
@@ -844,6 +853,20 @@ function renderKnowledge(c, entries) {
     });
   }
   c.innerHTML = html;
+
+  var idxBtn = document.getElementById('btn-index-all');
+  if (idxBtn) idxBtn.addEventListener('click', function() {
+    idxBtn.disabled = true; idxBtn.textContent = '⏳ Indexando...';
+    authFetch(A.workerUrl + '/proc/index-all', { method: 'POST' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        idxBtn.textContent = '✅ ' + (d.indexed||0) + ' SOPs indexados';
+        setTimeout(function(){ idxBtn.disabled=false; idxBtn.textContent='✅ Indexar todo'; }, 3000);
+        showToast('✅ ' + (d.indexed||0) + ' procedimientos indexados para búsqueda');
+      }).catch(function(){
+        idxBtn.disabled = false; idxBtn.textContent = '❌ Error al indexar';
+      });
+  });
 
   var addBtn = document.getElementById('kb-add-btn');
   if (addBtn) addBtn.addEventListener('click', function() {
