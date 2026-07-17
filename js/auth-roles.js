@@ -45,6 +45,8 @@ var NAV_ADMIN = [
   { id:'feedback',  label:'&#128172; Feedback Interno',                         action:'goFeedback' },
   { id:'shifts',    label:'&#128211; Bit\u00e1cora de Turno',                   action:'goShifts' },
   { id:'todos',     label:'&#9989; To Do\'s',                                   action:'goTodos' },
+  { id:'divider2' },
+  { id:'equipamiento', label:'&#128203; Control de Equipamiento', action:'goEquipamiento' },
 ];
 
 function injectCSS(){
@@ -319,6 +321,7 @@ function buildNav() {
       if (action === 'goFeedback') window.location.href = base() + 'feedback.html';
       if (action === 'goShifts')   window.location.href = base() + 'bitacora.html';
       if (action === 'goTodos')    window.location.href = base() + 'todos.html';
+      if (action === 'goEquipamiento') window.location.href = base() + 'equipamiento.html';
       // cerrar dropdown
       var dd = document.querySelector('.nav-admin-dropdown');
       if (dd) dd.style.display = 'none';
