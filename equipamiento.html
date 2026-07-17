@@ -4,58 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Control de Equipamiento — MDA Capstone</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;padding-top:48px}
-.page-header{background:linear-gradient(135deg,#0057a8,#1a1a2e);color:#fff;padding:24px 32px;margin-bottom:24px}
-.page-header h1{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;letter-spacing:.3px}
-.page-header p{font-size:13px;opacity:.8;margin-top:4px}
-.container{max-width:1400px;margin:0 auto;padding:0 24px 40px}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;padding-top:48px;font-size:12px}
+.page-header{background:linear-gradient(135deg,#0057a8,#1a1a2e);color:#fff;padding:14px 24px;margin-bottom:16px}
+.page-header h1{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px}
+.page-header p{font-size:11px;opacity:.75;margin-top:2px}
+.container{max-width:100%;padding:0 16px 32px}
 
-/* Secciones */
-.section{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:28px;overflow:hidden}
-.section-hdr{padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eef1f7}
-.section-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:#1a1a2e;display:flex;align-items:center;gap:10px}
-.section-hdr .badge{background:#e8f0fb;color:#0057a8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.section{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:20px;overflow:hidden}
+.section-hdr{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eef1f7;flex-wrap:wrap;gap:8px}
+.section-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#1a1a2e;display:flex;align-items:center;gap:8px}
+.badge{background:#e8f0fb;color:#0057a8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.hdr-actions{display:flex;align-items:center;gap:8px}
 
-/* Tabla */
 .tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{background:#f7f9fc;color:#555;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:center;border-bottom:2px solid #eef1f7;white-space:nowrap}
-thead th.agent-col{text-align:left;min-width:160px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{background:#f7f9fc;color:#555;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:7px 5px;text-align:center;border-bottom:2px solid #eef1f7;white-space:nowrap}
+thead th.agent-col{text-align:left;min-width:80px;padding-left:12px}
 tbody tr{border-bottom:1px solid #f0f3f8;transition:background .1s}
 tbody tr:hover{background:#f7f9fc}
 tbody tr:last-child{border-bottom:none}
-td.agent-name{padding:12px 16px;font-weight:600;color:#1a1a2e;white-space:nowrap}
-td.agent-role{font-size:11px;color:#888;font-weight:400;display:block;margin-top:1px}
-td.check-cell{text-align:center;padding:8px 6px;vertical-align:middle}
+td.agent-name{padding:7px 12px;font-weight:700;color:#1a1a2e;white-space:nowrap;font-size:11px}
+td.check-cell{text-align:center;padding:4px 2px;vertical-align:middle}
 
-/* Checkbox custom */
 .cb-wrap{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .cb-wrap input[type=checkbox]{display:none}
-.cb-box{width:24px;height:24px;border-radius:6px;border:2px solid #d0d8e8;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer}
+.cb-box{width:20px;height:20px;border-radius:5px;border:1.5px solid #d0d8e8;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .12s;cursor:pointer}
 .cb-box.checked{background:#0057a8;border-color:#0057a8}
-.cb-box.checked::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
+.cb-box.checked::after{content:"✓";color:#fff;font-size:11px;font-weight:800}
 .cb-box:hover{border-color:#0057a8}
 
-/* Leyenda */
-.legend{display:flex;gap:16px;padding:12px 24px;background:#f7f9fc;border-top:1px solid #eef1f7;font-size:12px;color:#555}
-.legend span{display:flex;align-items:center;gap:6px}
+.stats-bar{display:flex;gap:10px;padding:8px 16px;flex-wrap:wrap}
+.stat{background:#f0f7ff;border:1px solid #c7d9f5;border-radius:6px;padding:5px 12px;font-size:11px;color:#0057a8;font-weight:600}
+.stat span{font-size:15px;font-weight:800;display:block;line-height:1.2}
 
-/* Stats bar */
-.stats-bar{display:flex;gap:16px;padding:12px 24px;flex-wrap:wrap}
-.stat{background:#f0f7ff;border:1px solid #c7d9f5;border-radius:8px;padding:8px 14px;font-size:12px;color:#0057a8;font-weight:600}
-.stat span{font-size:18px;font-weight:800;display:block;line-height:1.2}
+.btn{border:none;border-radius:7px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s}
+.btn-primary{background:#0057a8;color:#fff}
+.btn-primary:hover{background:#003d7a}
+.btn-primary:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-excel{background:#1d6f42;color:#fff}
+.btn-excel:hover{background:#145232}
+.save-status{font-size:11px;color:#10b981;font-weight:600;display:none}
 
-/* Save button */
-.save-btn{background:#0057a8;color:#fff;border:none;border-radius:9px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s}
-.save-btn:hover{background:#003d7a}
-.save-btn:disabled{background:#94a3b8;cursor:not-allowed}
-.save-status{font-size:12px;color:#10b981;font-weight:600;display:none}
+.legend{display:flex;gap:12px;padding:8px 16px;background:#f7f9fc;border-top:1px solid #eef1f7;font-size:10px;color:#555}
+.legend span{display:flex;align-items:center;gap:5px}
 
-/* Loading */
 #auth-screen{display:flex;align-items:center;justify-content:center;min-height:60vh}
-.spinner{width:40px;height:40px;border:4px solid #eef1f7;border-top-color:#0057a8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.spinner{width:36px;height:36px;border:3px solid #eef1f7;border-top-color:#0057a8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -64,7 +61,7 @@ td.check-cell{text-align:center;padding:8px 6px;vertical-align:middle}
 <div id="auth-screen">
   <div style="text-align:center">
     <div class="spinner"></div>
-    <div style="color:#888;font-size:14px">Verificando permisos...</div>
+    <div style="color:#888;font-size:13px">Verificando permisos...</div>
   </div>
 </div>
 
@@ -75,51 +72,38 @@ td.check-cell{text-align:center;padding:8px 6px;vertical-align:middle}
   </div>
 
   <div class="container">
-
-    <!-- TABLA 1: EQUIPAMIENTO FÍSICO -->
     <div class="section">
       <div class="section-hdr">
         <h2>🖥️ Equipamiento Físico <span class="badge" id="eq-badge">0/90</span></h2>
-        <div style="display:flex;align-items:center;gap:12px">
+        <div class="hdr-actions">
           <span class="save-status" id="eq-save-status">✅ Guardado</span>
-          <button class="save-btn" id="eq-save-btn">💾 Guardar cambios</button>
+          <button class="btn btn-excel" onclick="exportExcel()">📥 Exportar Excel</button>
+          <button class="btn btn-primary" id="eq-save-btn">💾 Guardar</button>
         </div>
       </div>
       <div class="stats-bar" id="eq-stats"></div>
-      <div class="tbl-wrap">
-        <table id="eq-table">
-          <thead id="eq-thead"></thead>
-          <tbody id="eq-tbody"></tbody>
-        </table>
-      </div>
+      <div class="tbl-wrap"><table id="eq-table"><thead id="eq-thead"></thead><tbody id="eq-tbody"></tbody></table></div>
       <div class="legend">
-        <span><div class="cb-box checked"></div> Implemento disponible</span>
-        <span><div class="cb-box"></div> Pendiente</span>
+        <span><div class="cb-box checked" style="width:16px;height:16px;font-size:9px"></div> Disponible</span>
+        <span><div class="cb-box" style="width:16px;height:16px"></div> Pendiente</span>
       </div>
     </div>
 
-    <!-- TABLA 2: ACCESO A PLATAFORMAS -->
     <div class="section">
       <div class="section-hdr">
         <h2>🔐 Acceso a Plataformas <span class="badge" id="pl-badge">0/90</span></h2>
-        <div style="display:flex;align-items:center;gap:12px">
+        <div class="hdr-actions">
           <span class="save-status" id="pl-save-status">✅ Guardado</span>
-          <button class="save-btn" id="pl-save-btn">💾 Guardar cambios</button>
+          <button class="btn btn-primary" id="pl-save-btn">💾 Guardar</button>
         </div>
       </div>
       <div class="stats-bar" id="pl-stats"></div>
-      <div class="tbl-wrap">
-        <table id="pl-table">
-          <thead id="pl-thead"></thead>
-          <tbody id="pl-tbody"></tbody>
-        </table>
-      </div>
+      <div class="tbl-wrap"><table id="pl-table"><thead id="pl-thead"></thead><tbody id="pl-tbody"></tbody></table></div>
       <div class="legend">
-        <span><div class="cb-box checked"></div> Acceso habilitado</span>
-        <span><div class="cb-box"></div> Pendiente</span>
+        <span><div class="cb-box checked" style="width:16px;height:16px;font-size:9px"></div> Habilitado</span>
+        <span><div class="cb-box" style="width:16px;height:16px"></div> Pendiente</span>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -127,29 +111,22 @@ td.check-cell{text-align:center;padding:8px 6px;vertical-align:middle}
 var WORKER_URL = localStorage.getItem('mda_worker_url') || '';
 var SESSION    = localStorage.getItem('mda_session')    || '';
 
+// Fix 2: inicial + apellido, sin cargo
 var AGENTS = [
-  { name:'Óscar Blanco',    role:'Supervisor MDA' },
-  { name:'Jorge Palma',     role:'Agente MDA' },
-  { name:'Felipe Flores',   role:'Agente MDA' },
-  { name:'Jason Campos',    role:'Agente MDA' },
-  { name:'William Carvajal',role:'Agente MDA' },
-  { name:'Manuel Wilson',   role:'Agente MDA' },
-  { name:'Carlos Bascur',   role:'Agente MDA' },
-  { name:'Eliazer Ormeño',  role:'Agente MDA' },
-  { name:'Diego López',     role:'Agente MDA' }
+  'O. Blanco','J. Palma','F. Flores','J. Campos',
+  'W. Carvajal','M. Wilson','C. Bascur','E. Ormeño','D. López'
 ];
 
 var EQUIPMENT = [
-  'Pantalla','Headset (cintillo)','Silla ergonómica','Laptop',
-  'Apoya muñecas','Pad mouse','Teclado ergonómico',
-  '16GB de RAM','Mouse bluetooth','Base para laptop'
+  'Pantalla','Headset','Silla Erg.','Laptop',
+  'Apoya muñecas','Pad mouse','Teclado Erg.',
+  '16GB RAM','Mouse BT','Base laptop'
 ];
 
 var PLATFORMS = [
   'Manage Engine','AD Manager','Endpoint','Correo Tres60',
-  'Lista de distribución','Acceso SharePoint','Acceso Playbook',
-  'Inducción Seguimiento activo','Inducción Creación de cuentas',
-  'Inducción a PowerApps'
+  'Lista distribución','SharePoint','Playbook',
+  'Ind. Seguimiento','Ind. Cuentas','Ind. PowerApps'
 ];
 
 var state = { equipment:{}, platforms:{} };
@@ -157,112 +134,118 @@ var state = { equipment:{}, platforms:{} };
 function apiCall(method, path, body) {
   return fetch(WORKER_URL + path, {
     method: method,
-    headers: Object.assign({'Authorization':'Bearer '+SESSION}, body ? {'Content-Type':'application/json'} : {}),
+    headers: Object.assign({'Authorization':'Bearer '+SESSION}, body?{'Content-Type':'application/json'}:{}),
     body: body ? JSON.stringify(body) : undefined
   }).then(function(r){ return r.json(); });
 }
 
-function initTable(tblId, theadId, tbodyId, items, stateKey, badgeId) {
-  // Thead
+function initTable(theadId, tbodyId, items, stateKey, badgeId) {
   var thead = document.getElementById(theadId);
   var hRow  = '<tr><th class="agent-col">Agente</th>';
   items.forEach(function(item){ hRow += '<th>' + item + '</th>'; });
-  hRow += '</tr>';
-  thead.innerHTML = hRow;
-
-  // Tbody
+  thead.innerHTML = hRow + '</tr>';
   renderTable(tbodyId, items, stateKey, badgeId);
 }
 
 function renderTable(tbodyId, items, stateKey, badgeId) {
-  var tbody   = document.getElementById(tbodyId);
-  var checked = 0; var total = AGENTS.length * items.length;
-  var html    = '';
-  AGENTS.forEach(function(agent) {
-    var agKey = agent.name;
-    if (!state[stateKey][agKey]) state[stateKey][agKey] = {};
-    html += '<tr>';
-    html += '<td class="agent-name">' + agent.name + '<span class="agent-role">' + agent.role + '</span></td>';
+  var tbody = document.getElementById(tbodyId);
+  var checked = 0, total = AGENTS.length * items.length;
+  var html = '';
+  AGENTS.forEach(function(ag) {
+    if (!state[stateKey][ag]) state[stateKey][ag] = {};
+    html += '<tr><td class="agent-name">' + ag + '</td>';
     items.forEach(function(item) {
-      var val = !!state[stateKey][agKey][item];
+      var val = !!state[stateKey][ag][item];
       if (val) checked++;
-      html += '<td class="check-cell">' +
-        '<label class="cb-wrap">' +
-          '<input type="checkbox" data-agent="' + agKey + '" data-item="' + item + '" data-key="' + stateKey + '"' + (val?' checked':'') + '>' +
-          '<div class="cb-box' + (val?' checked':'') + '"></div>' +
-        '</label></td>';
+      html += '<td class="check-cell"><label class="cb-wrap">' +
+        '<input type="checkbox" data-agent="' + ag + '" data-item="' + item + '" data-key="' + stateKey + '"' + (val?' checked':'') + '>' +
+        '<div class="cb-box' + (val?' checked':'') + '"></div></label></td>';
     });
     html += '</tr>';
   });
   tbody.innerHTML = html;
-  document.getElementById(badgeId).textContent = checked + '/' + total;
   updateStats(stateKey, items, badgeId);
-
-  // Listeners
   tbody.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
     cb.addEventListener('change', function() {
-      var ag = cb.dataset.agent, it = cb.dataset.item, sk = cb.dataset.key;
-      state[sk][ag][it] = cb.checked;
-      var box = cb.nextElementSibling;
-      box.classList.toggle('checked', cb.checked);
-      updateStats(sk, sk==='equipment'?EQUIPMENT:PLATFORMS, sk==='equipment'?'eq-badge':'pl-badge');
+      state[cb.dataset.key][cb.dataset.agent][cb.dataset.item] = cb.checked;
+      cb.nextElementSibling.classList.toggle('checked', cb.checked);
+      updateStats(cb.dataset.key, cb.dataset.key==='equipment'?EQUIPMENT:PLATFORMS, cb.dataset.key==='equipment'?'eq-badge':'pl-badge');
     });
   });
 }
 
 function updateStats(stateKey, items, badgeId) {
-  var statsId = stateKey === 'equipment' ? 'eq-stats' : 'pl-stats';
-  var checked = 0; var total = AGENTS.length * items.length;
-  AGENTS.forEach(function(a){
-    items.forEach(function(it){ if(state[stateKey][a.name]&&state[stateKey][a.name][it]) checked++; });
-  });
+  var checked=0, total=AGENTS.length*items.length;
+  AGENTS.forEach(function(ag){ items.forEach(function(it){ if(state[stateKey][ag]&&state[stateKey][ag][it]) checked++; }); });
   var pct = total ? Math.round(checked/total*100) : 0;
-  document.getElementById(badgeId).textContent = checked + '/' + total;
+  document.getElementById(badgeId).textContent = checked+'/'+total;
+  var statsId = stateKey==='equipment'?'eq-stats':'pl-stats';
   document.getElementById(statsId).innerHTML =
-    '<div class="stat"><span>' + checked + '</span>Cumplidos</div>' +
-    '<div class="stat"><span>' + (total-checked) + '</span>Pendientes</div>' +
-    '<div class="stat"><span>' + pct + '%</span>Completado</div>';
+    '<div class="stat"><span>'+checked+'</span>Cumplidos</div>'+
+    '<div class="stat"><span>'+(total-checked)+'</span>Pendientes</div>'+
+    '<div class="stat"><span>'+pct+'%</span>Completado</div>';
 }
 
 function saveTable(stateKey, saveBtnId, saveStatusId) {
-  var btn    = document.getElementById(saveBtnId);
-  var status = document.getElementById(saveStatusId);
-  btn.disabled = true; btn.textContent = '⏳ Guardando...';
-  apiCall('POST', '/equipamiento', { data: state })
-    .then(function(d) {
-      btn.disabled = false; btn.textContent = '💾 Guardar cambios';
-      status.style.display = 'inline';
-      setTimeout(function(){ status.style.display='none'; }, 3000);
-    }).catch(function() {
-      btn.disabled = false; btn.textContent = '⚠️ Error al guardar';
-      setTimeout(function(){ btn.textContent='💾 Guardar cambios'; }, 2000);
-    });
+  var btn = document.getElementById(saveBtnId);
+  var sts = document.getElementById(saveStatusId);
+  btn.disabled=true; btn.textContent='⏳';
+  apiCall('POST','/equipamiento',{data:state})
+    .then(function(){ btn.disabled=false; btn.innerHTML='💾 Guardar'; sts.style.display='inline'; setTimeout(function(){sts.style.display='none';},3000); })
+    .catch(function(){ btn.disabled=false; btn.innerHTML='⚠️ Error'; setTimeout(function(){btn.innerHTML='💾 Guardar';},2000); });
 }
 
-// ── Auth + Init ───────────────────────────────────────────────────────────────
-(function init() {
-  if (!WORKER_URL || !SESSION) { window.location.href = 'login.html'; return; }
-  fetch(WORKER_URL + '/auth/me', { headers:{'Authorization':'Bearer '+SESSION} })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-      if (!d.authenticated) { window.location.href = 'login.html'; return; }
-      if (d.role !== 'admin') {
-        document.getElementById('auth-screen').innerHTML =
-          '<div style="text-align:center"><p style="font-size:48px">🔒</p><h2 style="margin-top:12px">Acceso restringido</h2><p style="color:#888;margin-top:8px">Esta sección es solo para administradores.</p><a href="Catalogo_Servicios_MDA_Capstone.html" style="display:inline-block;margin-top:20px;color:#0057a8;font-weight:700">← Volver al catálogo</a></div>';
+// Fix 4: Exportar Excel con SheetJS
+function exportExcel() {
+  var wb = XLSX.utils.book_new();
+
+  // Hoja 1: Equipamiento
+  var eq_data = [['Agente'].concat(EQUIPMENT)];
+  AGENTS.forEach(function(ag){
+    var row = [ag];
+    EQUIPMENT.forEach(function(it){ row.push(state.equipment[ag]&&state.equipment[ag][it]?'✓':''); });
+    eq_data.push(row);
+  });
+  var ws1 = XLSX.utils.aoa_to_sheet(eq_data);
+  ws1['!cols'] = [{wch:14}].concat(EQUIPMENT.map(function(){return {wch:13};}));
+  XLSX.utils.book_append_sheet(wb, ws1, 'Equipamiento');
+
+  // Hoja 2: Plataformas
+  var pl_data = [['Agente'].concat(PLATFORMS)];
+  AGENTS.forEach(function(ag){
+    var row = [ag];
+    PLATFORMS.forEach(function(it){ row.push(state.platforms[ag]&&state.platforms[ag][it]?'✓':''); });
+    pl_data.push(row);
+  });
+  var ws2 = XLSX.utils.aoa_to_sheet(pl_data);
+  ws2['!cols'] = [{wch:14}].concat(PLATFORMS.map(function(){return {wch:18};}));
+  XLSX.utils.book_append_sheet(wb, ws2, 'Plataformas');
+
+  var fecha = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'Control_Equipamiento_MDA_'+fecha+'.xlsx');
+}
+
+// Auth + Init
+(function init(){
+  if(!WORKER_URL||!SESSION){ window.location.href='login.html'; return; }
+  fetch(WORKER_URL+'/auth/me',{headers:{'Authorization':'Bearer '+SESSION}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.authenticated){window.location.href='login.html';return;}
+      if(d.role!=='admin'){
+        document.getElementById('auth-screen').innerHTML='<div style="text-align:center"><p style="font-size:40px">🔒</p><h2 style="margin-top:10px">Acceso restringido</h2><p style="color:#888;font-size:12px;margin-top:6px">Solo administradores.</p><a href="Catalogo_Servicios_MDA_Capstone.html" style="color:#0057a8;font-weight:700;font-size:12px;display:inline-block;margin-top:16px">← Catálogo</a></div>';
         return;
       }
-      // Cargar datos guardados
-      apiCall('GET', '/equipamiento')
-        .then(function(res) {
-          if (res.data) state = res.data;
-          document.getElementById('auth-screen').style.display  = 'none';
-          document.getElementById('main-content').style.display = 'block';
-          initTable('eq-table','eq-thead','eq-tbody', EQUIPMENT,'equipment','eq-badge');
-          initTable('pl-table','pl-thead','pl-tbody', PLATFORMS,'platforms','pl-badge');
-          document.getElementById('eq-save-btn').addEventListener('click', function(){ saveTable('equipment','eq-save-btn','eq-save-status'); });
-          document.getElementById('pl-save-btn').addEventListener('click', function(){ saveTable('platforms','pl-save-btn','pl-save-status'); });
-        });
-    }).catch(function(){ window.location.href = 'login.html'; });
+      apiCall('GET','/equipamiento').then(function(res){
+        if(res.data) state=res.data;
+        document.getElementById('auth-screen').style.display='none';
+        document.getElementById('main-content').style.display='block';
+        initTable('eq-thead','eq-tbody',EQUIPMENT,'equipment','eq-badge');
+        initTable('pl-thead','pl-tbody',PLATFORMS,'platforms','pl-badge');
+        document.getElementById('eq-save-btn').addEventListener('click',function(){saveTable('equipment','eq-save-btn','eq-save-status');});
+        document.getElementById('pl-save-btn').addEventListener('click',function(){saveTable('platforms','pl-save-btn','pl-save-status');});
+      });
+    }).catch(function(){window.location.href='login.html';});
 })();
 </script>
 <script src="js/auth-roles.js"></script>
