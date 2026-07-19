@@ -98,14 +98,23 @@ async function testPromptCaching() {
   var r1 = await go('POST', '/chat', { system: SYSTEM, messages: MSG });
   var ms1 = Date.now() - t1;
 
+  if(!r1.ok) {
+    box('Llamada 1 — ERROR',
+      'HTTP ' + r1.status + ' (' + ms1 + 'ms)\n' +
+      'Error         : ' + (r1.json&&r1.json.error||'desconocido') + '\n' +
+      'Tipo          : ' + (r1.json&&r1.json.errorType||'') + '\n' +
+      'Modelo        : ' + (r1.json&&r1.json.model||'') + '\n' +
+      'Raw           : ' + (r1.json&&r1.json.raw||''), 'err');
+    return;
+  }
   box('Llamada 1 — Creación de caché',
     'HTTP ' + r1.status + ' (' + ms1 + 'ms)\n' +
     'cached        : ' + (r1.json&&r1.json.cached) + '\n' +
     'input_tokens  : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.in) + '\n' +
-    'cache_write   : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.cacheWrite||0) + ' tokens ← primer uso, escribe caché\n' +
+    'cache_write   : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.cacheWrite||0) + ' tokens\n' +
     'cache_read    : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.cacheRead||0) + '\n' +
     'Respuesta     : ' + ((r1.json&&r1.json.response||'').slice(0,80)+'...'),
-    r1.ok ? 'info' : 'err');
+    'info');
 
   // Esperar 500ms y enviar la misma llamada
   await new Promise(res => setTimeout(res, 500));
