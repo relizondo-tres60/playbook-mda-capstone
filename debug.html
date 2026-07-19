@@ -18,6 +18,7 @@ button{background:#238636;color:#fff;border:none;padding:10px 24px;border-radius
 <button onclick="runAll()">&#9654; Ejecutar todo</button>
 <button onclick="clearKV()" style="background:#da3633">&#128465; Borrar SOP de prueba</button>
 <button onclick="testPromptCaching()" style="background:#7b2d8b">&#129520; Test Prompt Caching</button>
+<button onclick="checkKeywords()" style="background:#1d6f42">&#128269; Ver proc_keywords</button>
 <div id="out"></div>
 <script>
 var W = localStorage.getItem('mda_worker_url') || '';
@@ -133,6 +134,40 @@ async function testPromptCaching() {
         ? 'El chat funciona. El caché puede activarse si el sistema prompt supera los 2048 tokens (mínimo Haiku).'
         : 'Error: ' + (r1.json&&r1.json.error||'revisar Worker'),
     cr>0 ? 'ok' : (r1.ok ? 'info' : 'err'));
+}
+
+async function checkKeywords() {
+  document.getElementById('out').innerHTML = '';
+  var r = await go('GET', '/proc/keywords');
+  var kw = r.json && r.json.keywords ? r.json.keywords : {};
+  var sops = Object.keys(kw);
+  var total = sops.reduce(function(acc, s){ return acc + (kw[s]||'').split(' ').length; }, 0);
+  box('proc_keywords en KV',
+    'SOPs indexados: ' + sops.length + '\n' +
+    'Total palabras: ' + total + '\n' +
+    'Tokens estimados: ~' + Math.round(total/0.75) + '\n\n' +
+    (sops.length > 0
+      ? sops.map(function(s){ return '• ' + s + ': ' + (kw[s]||'').split(' ').length + ' palabras'; }).join('\n')
+      : '⚠️ KV vacío — necesitas indexar desde Admin → Conocimiento → ⚙️ Indexar todo'),
+    sops.length > 0 ? 'ok' : 'err');
+
+  if(sops.length > 0) {
+    var sys_est  = 400;
+    var cat_est  = 1200;
+    var kw_est   = Math.round(total/0.75);
+    var total_est = sys_est + cat_est + kw_est;
+    box(total_est >= 2048 ? '✅ Umbral de caching superado' : '⚠️ Aún bajo el umbral',
+      'System prompt:  ~' + sys_est  + ' tokens\n' +
+      'Catálogo SOPs:  ~' + cat_est  + ' tokens\n' +
+      'Keywords KV:    ~' + kw_est   + ' tokens\n' +
+      '─────────────────────────\n' +
+      'TOTAL estimado: ~' + total_est + ' tokens\n' +
+      'Mínimo Haiku:    2048 tokens\n' +
+      (total_est >= 2048
+        ? '→ El caching debería activarse en el próximo deploy.'
+        : '→ Faltan ~' + (2048 - total_est) + ' tokens. Corre "Indexar todo" o agrega entradas en la Base de Conocimiento.'),
+      total_est >= 2048 ? 'ok' : 'warn');
+  }
 }
 
 async function clearKV(){
