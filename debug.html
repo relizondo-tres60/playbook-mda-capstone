@@ -88,72 +88,55 @@ async function runAll(){
 
 async function testPromptCaching() {
   document.getElementById('out').innerHTML = '';
-  box('Test Prompt Caching', 'Enviando 2 llamadas consecutivas al chat...', 'info');
 
-  var SYSTEM = 'Eres el asistente MDA de Capstone Copper Chile. Responde en español.';
-  var MSG    = [{ role:'user', content:'¿Qué es un SOP?' }];
+  // PASO 1: Verificar que el modelo responde (sin caching)
+  box('Paso 1 — Test modelo con claude-haiku-4-5', 'Probando modelo...', 'info');
+  var rm1 = await go('POST', '/debug/anthropic', { model:'claude-haiku-4-5-20251001' });
+  box('Paso 1 — claude-haiku-4-5-20251001',
+    'HTTP ' + rm1.status + '\n' + JSON.stringify(rm1.json, null, 2),
+    rm1.ok && rm1.json.ok ? 'ok' : 'err');
 
-  // Llamada 1 — debería CREAR el caché (cacheWrite > 0)
-  var t1 = Date.now();
-  var r1 = await go('POST', '/chat', { system: SYSTEM, messages: MSG });
-  var ms1 = Date.now() - t1;
+  if(!rm1.ok || !rm1.json.ok) {
+    // Probar con Haiku 3.5 como alternativa
+    box('Paso 1b — Probando claude-haiku-3-5-20241022 (alternativa)', '', 'info');
+    var rm2 = await go('POST', '/debug/anthropic', { model:'claude-haiku-3-5-20241022' });
+    box('Paso 1b — claude-haiku-3-5-20241022',
+      'HTTP ' + rm2.status + '\n' + JSON.stringify(rm2.json, null, 2),
+      rm2.ok && rm2.json.ok ? 'ok' : 'err');
 
-  if(!r1.ok) {
-    box('Llamada 1 — ERROR',
-      'HTTP ' + r1.status + ' (' + ms1 + 'ms)\n' +
-      'Error         : ' + (r1.json&&r1.json.error||'desconocido') + '\n' +
-      'Tipo          : ' + (r1.json&&r1.json.errorType||'') + '\n' +
-      'Modelo        : ' + (r1.json&&r1.json.model||'') + '\n' +
-      'Raw           : ' + (r1.json&&r1.json.raw||''), 'err');
+    box('⚠️ ACCIÓN NECESARIA',
+      rm2.ok && rm2.json.ok
+        ? 'claude-haiku-4-5 no disponible en tu API key.\nUsa claude-haiku-3-5-20241022 en el Worker.'
+        : 'Ningún modelo Haiku responde. Verifica que ANTHROPIC_API_KEY esté configurada en el Worker.',
+      rm2.ok && rm2.json.ok ? 'warn' : 'err');
     return;
   }
-  box('Llamada 1 — Creación de caché',
-    'HTTP ' + r1.status + ' (' + ms1 + 'ms)\n' +
-    'cached        : ' + (r1.json&&r1.json.cached) + '\n' +
-    'input_tokens  : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.in) + '\n' +
-    'cache_write   : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.cacheWrite||0) + ' tokens\n' +
-    'cache_read    : ' + (r1.json&&r1.json.tokens&&r1.json.tokens.cacheRead||0) + '\n' +
-    'Respuesta     : ' + ((r1.json&&r1.json.response||'').slice(0,80)+'...'),
-    'info');
 
-  // Esperar 500ms y enviar la misma llamada
-  await new Promise(res => setTimeout(res, 500));
+  // PASO 2: Test de caching (solo si el modelo funciona)
+  box('Paso 2 — Test Prompt Caching (2 llamadas)', 'Enviando...', 'info');
+  var SYS = 'Eres el asistente MDA de Capstone Copper Chile. Responde siempre en español.';
+  var MSG = [{role:'user', content:'¿Qué es un SOP?'}];
 
-  // Llamada 2 — debería LEER desde caché (cacheRead > 0, cached: true)
-  var t2 = Date.now();
-  var r2 = await go('POST', '/chat', { system: SYSTEM, messages: MSG });
-  var ms2 = Date.now() - t2;
+  var t1=Date.now(), r1=await go('POST','/chat',{system:SYS,messages:MSG}), ms1=Date.now()-t1;
+  await new Promise(res=>setTimeout(res,600));
+  var t2=Date.now(), r2=await go('POST','/chat',{system:SYS,messages:MSG}), ms2=Date.now()-t2;
 
-  var cacheRead  = r2.json&&r2.json.tokens&&r2.json.tokens.cacheRead  || 0;
-  var cacheWrite = r2.json&&r2.json.tokens&&r2.json.tokens.cacheWrite || 0;
-  var isCached   = r2.json&&r2.json.cached;
-  var status     = cacheRead > 0 ? 'ok' : 'err';
+  var cr = r2.json&&r2.json.tokens&&r2.json.tokens.cacheRead||0;
+  var cw = r1.json&&r1.json.tokens&&r1.json.tokens.cacheWrite||0;
 
-  box('Llamada 2 — Lectura desde caché',
-    'HTTP ' + r2.status + ' (' + ms2 + 'ms)\n' +
-    'cached        : ' + isCached + '\n' +
-    'input_tokens  : ' + (r2.json&&r2.json.tokens&&r2.json.tokens.in) + '\n' +
-    'cache_write   : ' + cacheWrite + '\n' +
-    'cache_read    : ' + cacheRead + ' tokens ← debe ser > 0 si el caché funciona\n' +
-    'Respuesta     : ' + ((r2.json&&r2.json.response||'').slice(0,80)+'...'),
-    status);
+  box('Llamada 1 | Llamada 2',
+    'Call 1: HTTP ' + r1.status + ' ' + ms1 + 'ms | cache_write=' + cw + '\n' +
+    'Call 2: HTTP ' + r2.status + ' ' + ms2 + 'ms | cache_read='  + cr + '\n' +
+    'Respuesta: ' + ((r2.json&&r2.json.response||r2.json&&r2.json.error||'').slice(0,100)),
+    cr>0 ? 'ok' : (r1.ok ? 'warn' : 'err'));
 
-  // Veredicto
-  if(cacheRead > 0) {
-    var savings = Math.round(cacheRead * 0.9); // 90% cheaper
-    box('✅ PROMPT CACHING ACTIVO',
-      'El caché está funcionando correctamente.\n' +
-      'En esta llamada se ahorraron ~' + savings + ' tokens (90% desc. en ' + cacheRead + ' tokens cacheados).\n' +
-      'Velocidad: Llamada 1=' + ms1 + 'ms  Llamada 2=' + ms2 + 'ms',
-      'ok');
-  } else {
-    box('❌ CACHÉ NO ACTIVO',
-      'cache_read = 0 en la 2ª llamada.\nPosibles causas:\n' +
-      '• El Worker aún no fue desplegado con los cambios\n' +
-      '• El bloque cacheado tiene menos de 1024 tokens (mínimo requerido)\n' +
-      '• La API key no tiene acceso a Prompt Caching',
-      'err');
-  }
+  box(cr>0 ? '✅ PROMPT CACHING ACTIVO' : (r1.ok ? '⚠️ Chat OK pero sin caché aún' : '❌ Chat con error'),
+    cr>0
+      ? 'Ahorro: ~' + Math.round(cr*0.9) + ' tokens (90% desc.) | Call1=' + ms1 + 'ms Call2=' + ms2 + 'ms'
+      : r1.ok
+        ? 'El chat funciona. El caché puede activarse si el sistema prompt supera los 2048 tokens (mínimo Haiku).'
+        : 'Error: ' + (r1.json&&r1.json.error||'revisar Worker'),
+    cr>0 ? 'ok' : (r1.ok ? 'info' : 'err'));
 }
 
 async function clearKV(){
