@@ -90,25 +90,21 @@ async function testPromptCaching() {
   document.getElementById('out').innerHTML = '';
 
   // PASO 1: Verificar que el modelo responde (sin caching)
-  box('Paso 1 — Test modelo con claude-haiku-4-5', 'Probando modelo...', 'info');
-  var rm1 = await go('POST', '/debug/anthropic', { model:'claude-haiku-4-5-20251001' });
-  box('Paso 1 — claude-haiku-4-5-20251001',
+  // Sin pasar modelo → el Worker usa su AI_MODEL configurado
+  box('Paso 1 — Testeando modelo configurado en el Worker', 'Probando...', 'info');
+  var rm1 = await go('POST', '/debug/anthropic', {});
+  var modelUsed = rm1.json && rm1.json.modelUsed || 'desconocido';
+  box('Paso 1 — Modelo: ' + modelUsed,
     'HTTP ' + rm1.status + '\n' + JSON.stringify(rm1.json, null, 2),
-    rm1.ok && rm1.json.ok ? 'ok' : 'err');
+    rm1.ok && rm1.json && rm1.json.ok ? 'ok' : 'err');
 
-  if(!rm1.ok || !rm1.json.ok) {
-    // Probar con Haiku 3.5 como alternativa
-    box('Paso 1b — Probando claude-haiku-3-5-20241022 (alternativa)', '', 'info');
-    var rm2 = await go('POST', '/debug/anthropic', { model:'claude-haiku-3-5-20241022' });
-    box('Paso 1b — claude-haiku-3-5-20241022',
-      'HTTP ' + rm2.status + '\n' + JSON.stringify(rm2.json, null, 2),
-      rm2.ok && rm2.json.ok ? 'ok' : 'err');
-
-    box('⚠️ ACCIÓN NECESARIA',
-      rm2.ok && rm2.json.ok
-        ? 'claude-haiku-4-5 no disponible en tu API key.\nUsa claude-haiku-3-5-20241022 en el Worker.'
-        : 'Ningún modelo Haiku responde. Verifica que ANTHROPIC_API_KEY esté configurada en el Worker.',
-      rm2.ok && rm2.json.ok ? 'warn' : 'err');
+  if(!rm1.ok || !(rm1.json && rm1.json.ok)) {
+    var errMsg = rm1.json && rm1.json.error || 'Error desconocido';
+    box('❌ PROBLEMA CON EL MODELO',
+      'Modelo: ' + modelUsed + '\nError: ' + errMsg + '\n\nPosibles causas:\n' +
+      '• ANTHROPIC_API_KEY no configurada en el Worker (Settings → Variables)\n' +
+      '• El modelo "' + modelUsed + '" no está disponible en tu plan API',
+      'err');
     return;
   }
 
