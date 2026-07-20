@@ -144,7 +144,12 @@ function apiCall(method, path, body) {
     method: method,
     headers: Object.assign({'Authorization':'Bearer '+SESSION}, body?{'Content-Type':'application/json'}:{}),
     body: body ? JSON.stringify(body) : undefined
-  }).then(function(r){ return r.json(); });
+  }).then(function(r) {
+    return r.json().then(function(d) {
+      if (!r.ok) throw new Error((d && d.error) || 'HTTP ' + r.status);
+      return d;
+    });
+  });
 }
 
 function initTable(theadId, tbodyId, items, stateKey, badgeId) {
@@ -218,10 +223,23 @@ function updateStats(stateKey, items, badgeId) {
 function saveTable(stateKey, saveBtnId, saveStatusId) {
   var btn = document.getElementById(saveBtnId);
   var sts = document.getElementById(saveStatusId);
-  btn.disabled=true; btn.textContent='⏳';
+  btn.disabled=true; btn.textContent='⏳ Guardando...';
   apiCall('POST','/equipamiento',{data:state})
-    .then(function(){ btn.disabled=false; btn.innerHTML='💾 Guardar'; sts.style.display='inline'; setTimeout(function(){sts.style.display='none';},3000); })
-    .catch(function(){ btn.disabled=false; btn.innerHTML='⚠️ Error'; setTimeout(function(){btn.innerHTML='💾 Guardar';},2000); });
+    .then(function(d) {
+      btn.disabled=false; btn.innerHTML='💾 Guardar';
+      sts.textContent='✅ Guardado en la nube';
+      sts.style.color='#10b981';
+      sts.style.display='inline';
+      setTimeout(function(){ sts.style.display='none'; }, 3000);
+    })
+    .catch(function(err) {
+      btn.disabled=false; btn.innerHTML='💾 Guardar';
+      sts.textContent='❌ ' + (err.message || 'Error al guardar');
+      sts.style.color='#ef4444';
+      sts.style.display='inline';
+      setTimeout(function(){ sts.style.display='none'; }, 5000);
+      console.error('saveTable error:', err);
+    });
 }
 
 // Exportar solo Equipamiento
@@ -265,15 +283,24 @@ function exportPlatformas() {
         document.getElementById('auth-screen').innerHTML='<div style="text-align:center"><p style="font-size:40px">🔒</p><h2 style="margin-top:10px">Acceso restringido</h2><p style="color:#888;font-size:12px;margin-top:6px">Solo administradores.</p><a href="Catalogo_Servicios_MDA_Capstone.html" style="color:#0057a8;font-weight:700;font-size:12px;display:inline-block;margin-top:16px">← Catálogo</a></div>';
         return;
       }
-      apiCall('GET','/equipamiento').then(function(res){
-        if(res.data) state=res.data;
-        document.getElementById('auth-screen').style.display='none';
-        document.getElementById('main-content').style.display='block';
-        initTable('eq-thead','eq-tbody',EQUIPMENT,'equipment','eq-badge');
-        initTable('pl-thead','pl-tbody',PLATFORMS,'platforms','pl-badge');
-        document.getElementById('eq-save-btn').addEventListener('click',function(){saveTable('equipment','eq-save-btn','eq-save-status');});
-        document.getElementById('pl-save-btn').addEventListener('click',function(){saveTable('platforms','pl-save-btn','pl-save-status');});
-      });
+      apiCall('GET','/equipamiento')
+        .then(function(res){
+          if(res.data) state=res.data;
+          document.getElementById('auth-screen').style.display='none';
+          document.getElementById('main-content').style.display='block';
+          initTable('eq-thead','eq-tbody',EQUIPMENT,'equipment','eq-badge');
+          initTable('pl-thead','pl-tbody',PLATFORMS,'platforms','pl-badge');
+          document.getElementById('eq-save-btn').addEventListener('click',function(){saveTable('equipment','eq-save-btn','eq-save-status');});
+          document.getElementById('pl-save-btn').addEventListener('click',function(){saveTable('platforms','pl-save-btn','pl-save-status');});
+        })
+        .catch(function(err){
+          document.getElementById('auth-screen').innerHTML=
+            '<div style="text-align:center"><p style="font-size:40px">⚠️</p>'+
+            '<h2 style="margin-top:10px">Error al cargar datos</h2>'+
+            '<p style="color:#888;font-size:12px;margin-top:6px">'+(err.message||'Sin conexión al servidor')+'</p>'+
+            '<p style="font-size:12px;margin-top:12px">Cierra sesión y vuelve a entrar si el problema persiste.</p>'+
+            '<a href="Catalogo_Servicios_MDA_Capstone.html" style="color:#0057a8;font-weight:700;font-size:12px;display:inline-block;margin-top:16px">← Volver al catálogo</a></div>';
+        });
     }).catch(function(){window.location.href='login.html';});
 })();
 </script>
