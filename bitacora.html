@@ -243,19 +243,28 @@ function formatTime(iso) {
 }
 
 // ── Cálculo de turno actual ───────────────────────────────────────────────────
+function localDateStr(d) {
+  // Fecha en hora local (no UTC) para evitar desfase por zona horaria
+  var y   = d.getFullYear();
+  var mo  = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + mo + '-' + day;
+}
+
 function getCurrentShift() {
-  var now   = new Date();
-  var hour  = now.getHours();
-  var date  = now.toISOString().slice(0,10);
+  var now  = new Date();
+  var hour = now.getHours();
+  var date = localDateStr(now);   // ← fecha LOCAL, no UTC
 
   if (hour >= 8 && hour < 20) {
-    return { date: date, shift: 'dia', label: 'Turno Día (08:00–20:00)', endHour: 20 };
+    return { date: date, shift: 'dia',   label: 'Turno Día (08:00–20:00)',   endHour: 20 };
   } else if (hour >= 20) {
-    return { date: date, shift: 'noche', label: 'Turno Noche (20:00–08:00)', endHour: 8 };
+    return { date: date, shift: 'noche', label: 'Turno Noche (20:00–08:00)', endHour: 8  };
   } else {
-    // 00:00–08:00 → turno noche de ayer
-    var yesterday = new Date(now); yesterday.setDate(yesterday.getDate()-1);
-    return { date: yesterday.toISOString().slice(0,10), shift: 'noche', label: 'Turno Noche (20:00–08:00)', endHour: 8 };
+    // 00:00–08:00 → turno noche que comenzó ayer
+    var yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return { date: localDateStr(yesterday), shift: 'noche', label: 'Turno Noche (20:00–08:00)', endHour: 8 };
   }
 }
 
