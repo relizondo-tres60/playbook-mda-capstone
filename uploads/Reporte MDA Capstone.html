@@ -96,11 +96,11 @@
   .tab-btn:not(.active):hover{background:#f0f4f8;color:#0057a8}
   .tab-panel{display:none}
   .tab-panel.active{display:block}
-  /* Gestion de Tickets se ensancha 30% respecto al resto del reporte (1200px
-     -> 1560px) para que sus graficos/tarjetas queden mas legibles en una
+  /* Gestion de Tickets se ensancha 50% respecto al resto del reporte (1200px
+     -> 1800px) para que sus graficos/tarjetas queden mas legibles en una
      captura de pantalla unica. Se "escapa" del ancho maximo de .page con
      margenes negativos simetricos, sin afectar a las demas pestanas. */
-  #tabGestion{max-width:130%;width:130%;margin-left:-15%}
+  #tabGestion{max-width:150%;width:150%;margin-left:-25%}
   @media(max-width:1250px){
     #tabGestion{max-width:100%;width:100%;margin-left:0}
   }
@@ -1414,14 +1414,20 @@ function setResueltosCustomRange() {
     <div class="kpi-card blue" style="cursor:pointer" onclick="showDrilldown('mensual_informacion', 'Información — Jul-2026')"><div class="kpi-val blue">10,9%</div><div class="kpi-label">% Información</div><div class="kpi-sub">294 · <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 9.3%</span> vs Jun-2026</div><div style="font-size:9px;color:#94a3b8;margin-top:4px">🔍 Clic para ver detalle</div></div>
   </div>
 
-  <div class="grid2">
+  <div class="grid3">
     <div class="chart-card">
       <h4>📈 Gestión de Tickets — Mensual (últ. 6 meses) <span style="color:#94a3b8;font-weight:600;font-size:12px">— no incluye Ago-2026, aún en curso</span></h4>
-      <canvas id="gestionTendenciaChart" height="120"></canvas>
+      <canvas id="gestionTendenciaChart" height="150"></canvas>
     </div>
     <div class="chart-card">
-      <h4>🟠 Backlog Acumulado SAP Chile — Últ. 6 Meses</h4>
-      <canvas id="gestionSapBacklogChart" height="120"></canvas>
+      <h4>📊 Volumen de Tickets por Grupo de Asignación — Jul-2026</h4>
+      <canvas id="gestionVolumenChart" height="150"></canvas>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>Help Desk Support Chile (N1)</strong> concentra el <strong>42,1%</strong> del volumen del mes (1.135 tickets).</div>
+    </div>
+    <div class="chart-card">
+      <h4>📊 Tickets Acumulados (Pendientes de Cierre) por Torre <span style="font-size:10px;font-weight:600;color:#94a3b8">(fotografía a hoy)</span></h4>
+      <canvas id="gestionBacklogTorreChart" height="150"></canvas>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>SAP Chile</strong> concentra el <strong>43,2%</strong> del backlog pendiente (318 tickets).</div>
     </div>
   </div>
 
@@ -1456,16 +1462,10 @@ function setResueltosCustomRange() {
     </div>
   </div>
 
-  <div class="grid3">
+  <div class="grid2">
     <div class="chart-card">
-      <h4>📊 Volumen de Tickets por Grupo de Asignación — Jul-2026</h4>
-      <canvas id="gestionVolumenChart" height="150"></canvas>
-      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>Help Desk Support Chile (N1)</strong> concentra el <strong>42,1%</strong> del volumen del mes (1.135 tickets).</div>
-    </div>
-    <div class="chart-card">
-      <h4>📊 Tickets Acumulados (Pendientes de Cierre) por Torre <span style="font-size:10px;font-weight:600;color:#94a3b8">(fotografía a hoy)</span></h4>
-      <canvas id="gestionBacklogTorreChart" height="150"></canvas>
-      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>SAP Chile</strong> concentra el <strong>43,2%</strong> del backlog pendiente (318 tickets).</div>
+      <h4>🟠 Backlog Acumulado SAP Chile — Últ. 6 Meses</h4>
+      <canvas id="gestionSapBacklogChart" height="150"></canvas>
     </div>
     <div class="chart-card">
       <h4>📊 Volumen por Categoría de Negocio — Jul-2026</h4>
@@ -1741,9 +1741,9 @@ new Chart(document.getElementById('gestionBacklogTorreChart'), {
 });
 
 new Chart(document.getElementById('gestionSapBacklogChart'), {
-  type: 'line',
+  type: 'bar',
   data: { labels: ["Mar-2026", "Abr-2026", "May-2026", "Jun-2026", "Jul-2026", "Ago-2026"],
-    datasets: [{ label: 'Backlog SAP', data: [266, 357, 309, 369, 303, 318], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', fill:true, tension:0.3, pointRadius:4 }] },
+    datasets: [{ label: 'Backlog SAP', data: [266, 357, 309, 369, 303, 318], backgroundColor: '#f59e0b', borderRadius:6 }] },
   options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'#f1f5f9'}}, x:{grid:{color:'#f1f5f9'}} } }
 });
 
@@ -1763,7 +1763,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 13-57.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 14-29.html';
   a.click();
   URL.revokeObjectURL(url);
 }
