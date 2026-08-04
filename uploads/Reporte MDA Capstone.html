@@ -1435,7 +1435,7 @@ function setResueltosCustomRange() {
     <div class="card" style="border-top:4px solid #f59e0b;display:flex;flex-direction:column;justify-content:space-between">
       <div>
         <h4 style="color:#f59e0b">🟠 SAP Chile</h4>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:10px">
           <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('mensual_sap_asignados', 'Tickets Asignados a SAP Chile — Jul-2026')">419 🔍</div><div class="kpi-label">Asignados (Jul-2026)</div></div>
           <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('backlog_torre_sap_chile_tech', 'Backlog Actual — SAP Chile')">318 🔍</div><div class="kpi-label">Pendiente de Resolución/Cierre</div></div>
         </div>
@@ -1447,7 +1447,7 @@ function setResueltosCustomRange() {
     <div class="card" style="border-top:4px solid #8b5cf6;display:flex;flex-direction:column;justify-content:space-between">
       <div>
         <h4 style="color:#8b5cf6">🟣 Derivados de Chile a Vancouver_Tech</h4>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:10px">
           <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('mensual_vancouver_derivados', 'Tickets Derivados a Vancouver_Tech — Jul-2026')">8 🔍</div><div class="kpi-label">Derivados (Jul-2026)</div></div>
           <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('vancouver_derivados_pendientes', 'Derivados a Vancouver — Aún Pendientes')">23 🔍</div><div class="kpi-label">Aún Pendientes</div></div>
         </div>
@@ -1456,7 +1456,7 @@ function setResueltosCustomRange() {
         <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 27.3%</span> vs Jun-2026 (11 tickets). <span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted" onclick="showDrilldown('vancouver_derivados', 'Histórico Total de Derivados a Vancouver_Tech')">Ver histórico completo 🔍</span>.
       </div>
     </div>
-    <div class="card" style="border-top:4px solid #16a34a;display:flex;flex-direction:column;justify-content:flex-start">
+    <div class="card" style="border-top:4px solid #16a34a;display:flex;flex-direction:column;justify-content:space-between">
       <h4 style="color:#16a34a">🏆 Aspectos Destacados del Período</h4>
       <div style="font-size:12px;color:#334155;line-height:1.6">
         <span style="background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 8.6%</span> tiempo de resolución en Mis Grupos, comparado con el período anterior.<br>
@@ -1464,7 +1464,7 @@ function setResueltosCustomRange() {
         <strong>37,8%</strong> de cancelaciones sin comentario de cierre — oportunidad de mejora en documentación, ya en seguimiento activo.
       </div>
     </div>
-    <div class="chart-card" style="display:flex;flex-direction:column">
+    <div class="chart-card" style="display:flex;flex-direction:column;justify-content:space-between">
       <h4>📊 Volumen por Categoría de Negocio — Jul-2026</h4>
       <div style="position:relative;height:210px">
         <canvas id="gestionCategoriaChart"></canvas>
@@ -1550,28 +1550,87 @@ Chart.defaults.color = '#64748b';
 // Plugin generico: dibuja valor + porcentaje sobre cada segmento de un
 // grafico de rosca/torta, para poder leer los numeros sin pasar el mouse --
 // pensado para capturas de pantalla (copy/paste a PowerPoint).
+// Para los IDs en DONUT_OUTSIDE_LABEL_IDS, las etiquetas se dibujan AFUERA
+// del anillo con una linea guia (en vez de encima del segmento), a pedido
+// puntual para ese grafico -- el resto de las roscas del reporte (ej.
+// statusChart) conservan el estilo original (etiqueta encima del segmento).
+const DONUT_OUTSIDE_LABEL_IDS = ['gestionCategoriaChart'];
 const donutValueLabelsPlugin = {
   id: 'donutValueLabels',
   afterDatasetsDraw(chart) {
+    const outside = DONUT_OUTSIDE_LABEL_IDS.includes(chart.canvas.id);
     const {ctx} = chart;
     chart.data.datasets.forEach((dataset, dsIndex) => {
       const meta = chart.getDatasetMeta(dsIndex);
       if (meta.type !== 'doughnut' && meta.type !== 'pie') return;
       const total = dataset.data.reduce((a, b) => a + b, 0);
+
+      if (!outside) {
+        meta.data.forEach((arc, index) => {
+          const value = dataset.data[index];
+          if (!value) return;
+          const pctVal = total ? (value / total * 100) : 0;
+          const label = value + ' (' + pctVal.toFixed(0) + '%)';
+          const pos = arc.tooltipPosition();
+          ctx.save();
+          ctx.font = 'bold 11px Barlow, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+          ctx.strokeText(label, pos.x, pos.y);
+          ctx.fillStyle = '#fff';
+          ctx.fillText(label, pos.x, pos.y);
+          ctx.restore();
+        });
+        return;
+      }
+
+      // Etiquetas externas con linea guia (formato "explotado" clasico de
+      // torta ejecutiva): borde del arco -> quiebre -> texto alineado segun
+      // el lado del circulo en que cae el segmento. Dos pasadas: primero se
+      // calculan todas las posiciones candidatas y se resuelven colisiones
+      // verticales entre etiquetas del mismo lado (segmentos chicos y
+      // adyacentes, ej. 8% y 1% pegados arriba, quedarian superpuestos si
+      // se dibujaran directo), recien despues se dibuja.
+      const items = [];
       meta.data.forEach((arc, index) => {
         const value = dataset.data[index];
         if (!value) return;
         const pctVal = total ? (value / total * 100) : 0;
-        const pos = arc.tooltipPosition();
+        const label = value + ' (' + pctVal.toFixed(0) + '%)';
+        const angle = (arc.startAngle + arc.endAngle) / 2;
+        const cos = Math.cos(angle), sin = Math.sin(angle);
+        const cx = arc.x, cy = arc.y;
+        const outerR = arc.outerRadius;
+        const x0 = cx + outerR * cos, y0 = cy + outerR * sin;
+        const bendR = outerR + 16;
+        const x1 = cx + bendR * cos, y1 = cy + bendR * sin;
+        const isRight = cos >= 0;
+        const x2 = x1 + (isRight ? 22 : -22);
+        items.push({x0, y0, x1, y1, x2, y2: y1, isRight, label});
+      });
+      const minGap = 15;
+      [true, false].forEach(side => {
+        const group = items.filter(it => it.isRight === side).sort((a, b) => a.y2 - b.y2);
+        for (let i = 1; i < group.length; i++) {
+          if (group[i].y2 - group[i - 1].y2 < minGap) group[i].y2 = group[i - 1].y2 + minGap;
+        }
+      });
+      items.forEach(it => {
         ctx.save();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(it.x0, it.y0);
+        ctx.lineTo(it.x1, it.y1);
+        ctx.lineTo(it.x2, it.y2);
+        ctx.stroke();
         ctx.font = 'bold 11px Barlow, sans-serif';
-        ctx.textAlign = 'center';
+        ctx.fillStyle = '#1e293b';
+        ctx.textAlign = it.isRight ? 'left' : 'right';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-        ctx.strokeText(value + ' (' + pctVal.toFixed(0) + '%)', pos.x, pos.y);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(value + ' (' + pctVal.toFixed(0) + '%)', pos.x, pos.y);
+        ctx.fillText(it.label, it.x2 + (it.isRight ? 4 : -4), it.y2);
         ctx.restore();
       });
     });
@@ -1718,7 +1777,7 @@ new Chart(document.getElementById('gestionCategoriaChart'), {
   type: 'doughnut',
   data: { labels: ["SOP_TI", "MINA", "SERVIDORES", "REDES"],
     datasets: [{ data: [1608, 821, 225, 39], backgroundColor: ["#0057a8", "#22c55e", "#0ea5e9", "#f59e0b"], borderWidth: 2, borderColor: '#fff' }] },
-  options: { responsive:true, maintainAspectRatio:false, onClick: chartDrillOnClick(["volumen_categoria_mes_sop_ti", "volumen_categoria_mes_mina", "volumen_categoria_mes_servidores", "volumen_categoria_mes_redes"], ["Tickets — Categoría SOP_TI (Jul-2026)", "Tickets — Categoría MINA (Jul-2026)", "Tickets — Categoría SERVIDORES (Jul-2026)", "Tickets — Categoría REDES (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{ legend:{ position:'right', labels:{ boxWidth:10, font:{size:9} } } } }
+  options: { responsive:true, maintainAspectRatio:false, layout:{padding:{left:80,right:80,top:28,bottom:16}}, onClick: chartDrillOnClick(["volumen_categoria_mes_sop_ti", "volumen_categoria_mes_mina", "volumen_categoria_mes_servidores", "volumen_categoria_mes_redes"], ["Tickets — Categoría SOP_TI (Jul-2026)", "Tickets — Categoría MINA (Jul-2026)", "Tickets — Categoría SERVIDORES (Jul-2026)", "Tickets — Categoría REDES (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:9} } } } }
 });
 
 new Chart(document.getElementById('gestionTendenciaChart'), {
@@ -1769,7 +1828,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 15-46.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 16-19.html';
   a.click();
   URL.revokeObjectURL(url);
 }
