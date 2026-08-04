@@ -96,6 +96,14 @@
   .tab-btn:not(.active):hover{background:#f0f4f8;color:#0057a8}
   .tab-panel{display:none}
   .tab-panel.active{display:block}
+  /* Gestion de Tickets se ensancha 30% respecto al resto del reporte (1200px
+     -> 1560px) para que sus graficos/tarjetas queden mas legibles en una
+     captura de pantalla unica. Se "escapa" del ancho maximo de .page con
+     margenes negativos simetricos, sin afectar a las demas pestanas. */
+  #tabGestion{max-width:130%;width:130%;margin-left:-15%}
+  @media(max-width:1250px){
+    #tabGestion{max-width:100%;width:100%;margin-left:0}
+  }
   .oos-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
   .oos-stat{text-align:center;border-radius:10px;padding:14px}
   @media(max-width:900px){
@@ -1722,7 +1730,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 13-29.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 13-50.html';
   a.click();
   URL.revokeObjectURL(url);
 }
