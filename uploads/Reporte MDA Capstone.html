@@ -313,6 +313,7 @@ function showDrilldown(key, title) {
 <div class="tabs-nav">
   <button class="tab-btn active" id="navBtnTab1" onclick="showTab('tab1', this)">📊 Vista Ejecutiva</button>
   <button class="tab-btn" id="navBtnTab2" onclick="showTab('tab2', this)">👥 Desempeño de Agentes y Niveles de Servicio</button>
+  <button class="tab-btn" id="navBtnTabGestion" onclick="showTab('tabGestion', this)">📋 Gestión de Tickets</button>
   <button class="tab-btn" id="navBtnTab3" onclick="showTab('tab3', this)">🔍 Detalle de Métricas</button>
 </div>
 
@@ -333,84 +334,6 @@ function showDrilldown(key, title) {
     <div class="kpi-card red" style="cursor:pointer" onclick="showDrilldown('sinasignar_n1', 'Requerimientos Sin Asignar N1 (sin técnico)')"><div class="kpi-val red">33</div><div class="kpi-label">Requerimientos Sin Asignar N1</div><div class="kpi-sub">sin técnico asignado</div><div style="font-size:9px;color:#94a3b8;margin-top:4px">🔍 Clic para ver detalle</div></div>
     <div class="kpi-card orange" style="cursor:pointer" onclick="showDrilldown('enespera_n1', 'Asignados en Espera de Atención N1 (con técnico asignado)')"><div class="kpi-val orange">130</div><div class="kpi-label">Asignados en Espera de Atención N1</div><div class="kpi-sub">ya tienen técnico; aún no en curso</div><div style="font-size:9px;color:#94a3b8;margin-top:4px">🔍 Clic para ver detalle</div></div>
     <div class="kpi-card red" style="cursor:pointer" onclick="showDrilldown('backlog_n1', 'Backlog Actual N1')"><div class="kpi-val red">169</div><div class="kpi-label">Backlog Actual N1</div><div class="kpi-sub">fotografía actual</div><div style="font-size:9px;color:#94a3b8;margin-top:4px">🔍 Clic para ver detalle</div></div>
-  </div>
-</div>
-
-
-<div class="section">
-  <div class="section-title">📋 Gestión de Tickets — Resumen Semanal (Todas las Torres + SAP + Derivados a Vancouver)</div>
-  <div class="section-context">
-    Apartado listo para copiar en la slide centralizada del equipo de reportería. Alcance: las 6 torres de Mis Grupos + SAP Chile, período 05 Jun - 04 Ago 2026. Incluye además un bloque nuevo — tickets derivados desde equipos de Chile hacia Vancouver_Tech — que la slide de referencia no contemplaba.
-  </div>
-
-  <div class="kpi-grid-fit">
-    <div class="kpi-card blue"><div class="kpi-val blue">5.353</div><div class="kpi-label">Total General</div><div class="kpi-sub">05 Jun - 04 Ago 2026</div></div>
-    <div class="kpi-card green"><div class="kpi-val green">11,4%</div><div class="kpi-label">% Pendiente</div><div class="kpi-sub">611 tickets</div></div>
-    <div class="kpi-card green"><div class="kpi-val green">70,3%</div><div class="kpi-label">% Cerrados / Resueltos</div><div class="kpi-sub">3.764 tickets</div></div>
-    <div class="kpi-card orange"><div class="kpi-val orange">18,3%</div><div class="kpi-label">% Cancelados</div><div class="kpi-sub">977 tickets</div></div>
-  </div>
-
-  <div class="grid3">
-    <div class="card" style="border-top:4px solid #f59e0b">
-      <h4 style="color:#f59e0b">🟠 SAP Chile</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:22px;font-weight:900;color:#f59e0b">816</div><div class="kpi-label">Total del Período</div></div>
-        <div><div style="font-size:22px;font-weight:900;color:#f59e0b">318</div><div class="kpi-label">Pendientes Acumulados</div></div>
-      </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
-        <span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▲ 5.0%</span> variación del backlog vs. mes anterior — representa <strong>43,2%</strong> del total de tickets pendientes entre SAP y Mis Grupos.
-      </div>
-    </div>
-    <div class="card" style="border-top:4px solid #8b5cf6">
-      <h4 style="color:#8b5cf6">🟣 Derivados de Chile a Vancouver_Tech <span style="font-size:10px;font-weight:600;color:#94a3b8">(nuevo)</span></h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('vancouver_derivados', 'Tickets Derivados de Chile a Vancouver_Tech')">55 🔍</div><div class="kpi-label">Total Derivados</div></div>
-        <div><div style="font-size:22px;font-weight:900;color:#8b5cf6">23</div><div class="kpi-label">Aún Pendientes</div></div>
-      </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
-        32 cerrados/resueltos, 0 cancelados. Origen principal: <strong>Help Desk Support Chile</strong> (40 tickets). Detectado vía historial de auditoría — no incluye tickets creados directamente en Vancouver.
-      </div>
-    </div>
-    <div class="card" style="border-top:4px solid #16a34a">
-      <h4 style="color:#16a34a">✅ Lo que este apartado suma (vs. la slide actual)</h4>
-      <div style="font-size:12px;color:#334155;line-height:1.6">
-        <span style="background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 8.6%</span> tiempo de resolución en Mis Grupos (mejora vs. período anterior).<br>
-        <strong>218</strong> tickets resueltos por el roster N1 en los últimos 7 días (detalle por agente en pestaña 2).<br>
-        <strong>37,8%</strong> de N1 son cancelaciones sin comentario de cierre — área de mejora continua ya identificada y en seguimiento (Riesgos, sección 5).
-      </div>
-    </div>
-  </div>
-
-  <div class="grid2">
-    <div class="chart-card">
-      <h4>🥧 Distribución por Tipo — 05 Jun - 04 Ago 2026</h4>
-      <canvas id="gestionTipoChart" height="110"></canvas>
-    </div>
-    <div class="table-wrapper">
-      <div class="table-title">Detalle por Tipo <span style="font-size:11px;color:#94a3b8;font-weight:500">vs. 06 Abr - 05 Jun 2026</span></div>
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Tipo</th><th style="text-align:center">Volumen</th><th style="text-align:center">% del Total</th><th style="text-align:center">Variación</th></tr></thead>
-          <tbody><tr><td style="font-weight:700;color:#ef4444">Incidentes</td><td style="text-align:center">1.037</td><td style="text-align:center">19,4%</td><td style="text-align:center"><span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▲ 6.9%</span></td></tr><tr><td style="font-weight:700;color:#0057a8">Requerimientos</td><td style="text-align:center">3.588</td><td style="text-align:center">67,0%</td><td style="text-align:center"><span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▲ 7.5%</span></td></tr><tr><td style="font-weight:700;color:#0ea5e9">Información</td><td style="text-align:center">728</td><td style="text-align:center">13,6%</td><td style="text-align:center"><span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 14.4%</span></td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <h4>📈 Gestión de Tickets — Mensual (últ. 6 meses) <span style="color:#dc2626;font-weight:700">⚠ mes en curso, 4 días transcurridos de Ago-26</span></h4>
-    <canvas id="gestionTendenciaChart" height="90"></canvas>
-  </div>
-
-  <div class="grid2">
-    <div class="chart-card">
-      <h4>📊 Volumen de Tickets por Grupo de Asignación</h4>
-      <canvas id="gestionVolumenChart" height="110"></canvas>
-    </div>
-    <div class="chart-card">
-      <h4>🟠 Backlog Acumulado SAP Chile — Últ. 6 Meses</h4>
-      <canvas id="gestionSapBacklogChart" height="110"></canvas>
-    </div>
   </div>
 </div>
 
@@ -1452,6 +1375,110 @@ function setResueltosCustomRange() {
 
 </div>
 
+<div id="tabGestion" class="tab-panel">
+
+<div class="section">
+  <div class="section-title">📋 Gestión de Tickets — Resumen Semanal</div>
+  <div class="section-context">
+    Pestaña autocontenida para copiar/pegar directo en la slide centralizada del equipo de reportería ("Gestión de tickets - Distribución por Grupo Resolutor"). Alcance: las 6 torres de Mis Grupos + SAP Chile, período 05 Jun - 04 Ago 2026. Incluye además un bloque que la slide de referencia no contemplaba — tickets derivados desde equipos de Chile hacia Vancouver_Tech.
+  </div>
+
+  <div class="kpi-grid-fit">
+    <div class="kpi-card blue"><div class="kpi-val blue">5.349</div><div class="kpi-label">Total General</div><div class="kpi-sub">05 Jun - 04 Ago 2026</div></div>
+    <div class="kpi-card green"><div class="kpi-val green">11,4%</div><div class="kpi-label">% Pendiente</div><div class="kpi-sub">611 tickets</div></div>
+    <div class="kpi-card green"><div class="kpi-val green">70,3%</div><div class="kpi-label">% Cerrados / Resueltos</div><div class="kpi-sub">3.762 tickets</div></div>
+    <div class="kpi-card orange"><div class="kpi-val orange">18,2%</div><div class="kpi-label">% Cancelados</div><div class="kpi-sub">975 tickets</div></div>
+  </div>
+
+  <div class="grid3">
+    <div class="card" style="text-align:center">
+      <div style="font-size:26px;font-weight:900;color:#0057a8">3.314</div>
+      <div class="kpi-label">Prom. Tickets Creados — Mensual</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px">Prom. sobre 5 meses completos (excluye mes en curso)</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:26px;font-weight:900;color:#16a34a">3.194</div>
+      <div class="kpi-label">Prom. Tickets Gestionados — Mensual</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px">Cerrados + cancelados, mismo criterio</div>
+    </div>
+    <div class="card" style="text-align:center;border-top:4px solid #f59e0b">
+      <div style="font-size:26px;font-weight:900;color:#f59e0b">▲ 11,0%</div>
+      <div class="kpi-label">Pendientes: Aumento vs. Mes Anterior</div>
+      <div style="font-size:12px;color:#64748b;margin-top:6px">SAP explica solo <strong>20,5%</strong> de este movimiento — el resto se distribuye entre el resto de las torres.</div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card" style="border-top:4px solid #f59e0b">
+      <h4 style="color:#f59e0b">🟠 SAP Chile</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:22px;font-weight:900;color:#f59e0b">816</div><div class="kpi-label">Total del Período</div></div>
+        <div><div style="font-size:22px;font-weight:900;color:#f59e0b">318</div><div class="kpi-label">Pendientes Acumulados</div></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
+        <span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▲ 5.0%</span> variación del backlog vs. mes anterior — representa <strong>43,2%</strong> del total de tickets pendientes entre SAP y Mis Grupos.
+      </div>
+    </div>
+    <div class="card" style="border-top:4px solid #8b5cf6">
+      <h4 style="color:#8b5cf6">🟣 Derivados de Chile a Vancouver_Tech <span style="font-size:10px;font-weight:600;color:#94a3b8">(nuevo)</span></h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('vancouver_derivados', 'Tickets Derivados de Chile a Vancouver_Tech')">55 🔍</div><div class="kpi-label">Total Derivados</div></div>
+        <div><div style="font-size:22px;font-weight:900;color:#8b5cf6">23</div><div class="kpi-label">Aún Pendientes</div></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
+        32 cerrados/resueltos, 0 cancelados. Origen principal: <strong>Help Desk Support Chile</strong> (40 tickets). Detectado vía historial de auditoría — no incluye tickets creados directamente en Vancouver.
+      </div>
+    </div>
+    <div class="card" style="border-top:4px solid #16a34a">
+      <h4 style="color:#16a34a">✅ Lo que este apartado suma (vs. la slide actual)</h4>
+      <div style="font-size:12px;color:#334155;line-height:1.6">
+        <span style="background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 8.6%</span> tiempo de resolución en Mis Grupos (mejora vs. período anterior).<br>
+        <strong>218</strong> tickets resueltos por el roster N1 en los últimos 7 días (detalle por agente en pestaña 2).<br>
+        <strong>37,8%</strong> de N1 son cancelaciones sin comentario de cierre — área de mejora continua ya identificada y en seguimiento (Riesgos, sección 5).
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="chart-card">
+      <h4>🥧 Distribución por Tipo — 05 Jun - 04 Ago 2026</h4>
+      <canvas id="gestionTipoChart" height="110"></canvas>
+    </div>
+    <div class="table-wrapper">
+      <div class="table-title">Detalle por Tipo <span style="font-size:11px;color:#94a3b8;font-weight:500">vs. 06 Abr - 05 Jun 2026</span></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Tipo</th><th style="text-align:center">Volumen</th><th style="text-align:center">% del Total</th><th style="text-align:center">Variación</th></tr></thead>
+          <tbody><tr><td style="font-weight:700;color:#ef4444">Incidentes</td><td style="text-align:center">1.037</td><td style="text-align:center">19,4%</td><td style="text-align:center"><span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▲ 6.9%</span></td></tr><tr><td style="font-weight:700;color:#0057a8">Requerimientos</td><td style="text-align:center">3.584</td><td style="text-align:center">67,0%</td><td style="text-align:center"><span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▲ 7.4%</span></td></tr><tr><td style="font-weight:700;color:#0ea5e9">Información</td><td style="text-align:center">728</td><td style="text-align:center">13,6%</td><td style="text-align:center"><span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 14.4%</span></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h4>📈 Gestión de Tickets — Mensual (últ. 6 meses) <span style="color:#dc2626;font-weight:700">⚠ mes en curso, 4 días transcurridos de Ago-26</span></h4>
+    <canvas id="gestionTendenciaChart" height="90"></canvas>
+  </div>
+
+  <div class="grid3">
+    <div class="chart-card">
+      <h4>📊 Volumen de Tickets por Grupo de Asignación</h4>
+      <canvas id="gestionVolumenChart" height="130"></canvas>
+    </div>
+    <div class="chart-card">
+      <h4>🥧 Volumen por Categoría de Negocio</h4>
+      <canvas id="gestionCategoriaChart" height="130"></canvas>
+      <div style="font-size:10px;color:#94a3b8;margin-top:6px">SOP_TI = Help Desk + Santiago + SAP · MINA = Mantoverde + Mantos Blancos · SERVIDORES = Server Support · REDES = Networking</div>
+    </div>
+    <div class="chart-card">
+      <h4>🟠 Backlog Acumulado SAP Chile — Últ. 6 Meses</h4>
+      <canvas id="gestionSapBacklogChart" height="130"></canvas>
+    </div>
+  </div>
+</div>
+
+</div>
+
 <div id="tab3" class="tab-panel">
 
 <div class="section">
@@ -1605,17 +1632,24 @@ function toggleDailySeries(idx, visible) {
 new Chart(document.getElementById('gestionTipoChart'), {
   type: 'doughnut',
   data: { labels: ["Incidentes", "Requerimientos", "Información"],
-    datasets: [{ data: [1037, 3588, 728], backgroundColor: ["#ef4444", "#0057a8", "#0ea5e9"], borderWidth: 2, borderColor: '#fff' }] },
+    datasets: [{ data: [1037, 3584, 728], backgroundColor: ["#ef4444", "#0057a8", "#0ea5e9"], borderWidth: 2, borderColor: '#fff' }] },
   options: { responsive:true, plugins: { legend: { position:'right', labels: { boxWidth:10, font:{size:10} } } } }
+});
+
+new Chart(document.getElementById('gestionCategoriaChart'), {
+  type: 'doughnut',
+  data: { labels: ["SOP_TI", "MINA", "SERVIDORES", "REDES"],
+    datasets: [{ data: [3286, 1570, 433, 60], backgroundColor: ["#0057a8", "#22c55e", "#0ea5e9", "#f59e0b"], borderWidth: 2, borderColor: '#fff' }] },
+  options: { responsive:true, plugins: { legend: { position:'bottom', labels: { boxWidth:10, font:{size:9} } } } }
 });
 
 new Chart(document.getElementById('gestionTendenciaChart'), {
   type: 'bar',
   data: { labels: ["Mar-26", "Abr-26", "May-26", "Jun-26", "Jul-26", "Ago-26"],
     datasets: [
-      { type: 'line', label: 'Total Creados', data: [3923, 3712, 3200, 3090, 2647, 285], borderColor: CC_BLUE, backgroundColor: 'rgba(0,87,168,0.08)', fill:false, tension:0.3, pointRadius:3, order:1 },
-      { type: 'bar', label: 'Pendientes (fin de mes)', data: [752, 840, 666, 735, 665, 736], backgroundColor: '#f59e0b', borderRadius:4, order:2 },
-      { type: 'bar', label: 'Gestionados (cerrados+cancelados)', data: [3901, 3681, 3153, 2948, 2289, 160], backgroundColor: 'rgba(22,163,74,0.75)', borderRadius:4, order:3 }
+      { type: 'line', label: 'Total Creados', data: [3931, 3704, 3207, 3089, 2641, 282], borderColor: CC_BLUE, backgroundColor: 'rgba(0,87,168,0.08)', fill:false, tension:0.3, pointRadius:3, order:1 },
+      { type: 'bar', label: 'Pendientes (fin de mes)', data: [758, 842, 672, 737, 663, 736], backgroundColor: '#f59e0b', borderRadius:4, order:2 },
+      { type: 'bar', label: 'Gestionados (cerrados+cancelados)', data: [3909, 3673, 3160, 2946, 2283, 158], backgroundColor: 'rgba(22,163,74,0.75)', borderRadius:4, order:3 }
     ] },
   options: { responsive:true, plugins:{legend:{position:'top'}}, scales:{ y:{grid:{color:'#f1f5f9'}}, x:{grid:{color:'#f1f5f9'}} } }
 });
@@ -1623,14 +1657,14 @@ new Chart(document.getElementById('gestionTendenciaChart'), {
 new Chart(document.getElementById('gestionVolumenChart'), {
   type: 'bar',
   data: { labels: ["Help Desk Support Chile (N1)", "Mantoverde", "SAP Chile", "Mantos Blancos", "Server Support Chile", "Santiago", "Networking Support Chile"],
-    datasets: [{ label: 'Tickets del Período', data: [2347, 944, 816, 626, 435, 125, 60], backgroundColor: ['#0057a8','#ff6b00','#f59e0b','#0ea5e9','#8b5cf6','#10b981','#ef4444'], borderRadius:6 }] },
+    datasets: [{ label: 'Tickets del Período', data: [2345, 944, 816, 626, 433, 125, 60], backgroundColor: ['#0057a8','#ff6b00','#f59e0b','#0ea5e9','#8b5cf6','#10b981','#ef4444'], borderRadius:6 }] },
   options: { indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#f1f5f9'}} } }
 });
 
 new Chart(document.getElementById('gestionSapBacklogChart'), {
   type: 'line',
   data: { labels: ["Mar-2026", "Abr-2026", "May-2026", "Jun-2026", "Jul-2026", "Ago-2026"],
-    datasets: [{ label: 'Backlog SAP', data: [276, 357, 306, 369, 303, 318], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', fill:true, tension:0.3, pointRadius:4 }] },
+    datasets: [{ label: 'Backlog SAP', data: [278, 356, 305, 368, 303, 318], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', fill:true, tension:0.3, pointRadius:4 }] },
   options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'#f1f5f9'}}, x:{grid:{color:'#f1f5f9'}} } }
 });
 
@@ -1650,7 +1684,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 10-45.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 11-41.html';
   a.click();
   URL.revokeObjectURL(url);
 }
