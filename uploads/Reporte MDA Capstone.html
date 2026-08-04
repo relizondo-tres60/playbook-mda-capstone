@@ -1414,6 +1414,17 @@ function setResueltosCustomRange() {
     <div class="kpi-card blue" style="cursor:pointer" onclick="showDrilldown('mensual_informacion', 'Información — Jul-2026')"><div class="kpi-val blue">10,9%</div><div class="kpi-label">% Información</div><div class="kpi-sub">294 · <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 9.3%</span> vs Jun-2026</div><div style="font-size:9px;color:#94a3b8;margin-top:4px">🔍 Clic para ver detalle</div></div>
   </div>
 
+  <div class="grid2">
+    <div class="chart-card">
+      <h4>📈 Gestión de Tickets — Mensual (últ. 6 meses) <span style="color:#94a3b8;font-weight:600;font-size:12px">— no incluye Ago-2026, aún en curso</span></h4>
+      <canvas id="gestionTendenciaChart" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+      <h4>🟠 Backlog Acumulado SAP Chile — Últ. 6 Meses</h4>
+      <canvas id="gestionSapBacklogChart" height="120"></canvas>
+    </div>
+  </div>
+
   <div class="grid3">
     <div class="card" style="border-top:4px solid #f59e0b">
       <h4 style="color:#f59e0b">🟠 SAP Chile</h4>
@@ -1445,30 +1456,22 @@ function setResueltosCustomRange() {
     </div>
   </div>
 
-  <div class="grid2">
-    <div class="chart-card">
-      <h4>📈 Gestión de Tickets — Mensual (últ. 6 meses) <span style="color:#94a3b8;font-weight:600;font-size:12px">— no incluye Ago-2026, aún en curso</span></h4>
-      <canvas id="gestionTendenciaChart" height="120"></canvas>
-    </div>
-    <div class="chart-card">
-      <h4>🟠 Backlog Acumulado SAP Chile — Últ. 6 Meses</h4>
-      <canvas id="gestionSapBacklogChart" height="120"></canvas>
-    </div>
-  </div>
-
   <div class="grid3">
     <div class="chart-card">
-      <h4>🥧 Volumen de Tickets por Grupo de Asignación — Jul-2026</h4>
+      <h4>📊 Volumen de Tickets por Grupo de Asignación — Jul-2026</h4>
       <canvas id="gestionVolumenChart" height="150"></canvas>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>Help Desk Support Chile (N1)</strong> concentra el <strong>42,1%</strong> del volumen del mes (1.135 tickets).</div>
     </div>
     <div class="chart-card">
       <h4>📊 Tickets Acumulados (Pendientes de Cierre) por Torre <span style="font-size:10px;font-weight:600;color:#94a3b8">(fotografía a hoy)</span></h4>
       <canvas id="gestionBacklogTorreChart" height="150"></canvas>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>SAP Chile</strong> concentra el <strong>43,2%</strong> del backlog pendiente (318 tickets).</div>
     </div>
     <div class="chart-card">
-      <h4>🥧 Volumen por Categoría de Negocio — Jul-2026</h4>
+      <h4>📊 Volumen por Categoría de Negocio — Jul-2026</h4>
       <canvas id="gestionCategoriaChart" height="150"></canvas>
       <div style="font-size:9px;color:#94a3b8;margin-top:4px">SOP_TI = Help Desk + Santiago + SAP · MINA = Mantoverde + Mantos Blancos · SERVIDORES = Server Support · REDES = Networking</div>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>SOP_TI</strong> representa el <strong>59,7%</strong> del volumen del mes (1.608 tickets).</div>
     </div>
   </div>
 
@@ -1569,6 +1572,36 @@ const donutValueLabelsPlugin = {
   }
 };
 Chart.register(donutValueLabelsPlugin);
+
+// Igual que arriba pero para barras horizontales -- escrito solo para los 3
+// graficos de composicion de "Gestion de Tickets" (se scopea por id de
+// canvas para no llenar de numeros el resto de los graficos de barra del
+// reporte, que no lo pidieron).
+const BAR_VALUE_LABEL_IDS = ['gestionVolumenChart', 'gestionBacklogTorreChart', 'gestionCategoriaChart'];
+const barValueLabelsPlugin = {
+  id: 'barValueLabels',
+  afterDatasetsDraw(chart) {
+    if (!BAR_VALUE_LABEL_IDS.includes(chart.canvas.id)) return;
+    const {ctx} = chart;
+    chart.data.datasets.forEach((dataset, dsIndex) => {
+      const meta = chart.getDatasetMeta(dsIndex);
+      const total = dataset.data.reduce((a, b) => a + b, 0);
+      meta.data.forEach((bar, index) => {
+        const value = dataset.data[index];
+        if (value === undefined || value === null) return;
+        const pctVal = total ? (value / total * 100) : 0;
+        ctx.save();
+        ctx.font = 'bold 11px Barlow, sans-serif';
+        ctx.fillStyle = '#1e293b';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(value.toLocaleString('es-CL') + ' (' + pctVal.toFixed(0) + '%)', bar.x + 6, bar.y);
+        ctx.restore();
+      });
+    });
+  }
+};
+Chart.register(barValueLabelsPlugin);
 
 function showTab(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1676,10 +1709,10 @@ function toggleDailySeries(idx, visible) {
 }
 
 new Chart(document.getElementById('gestionCategoriaChart'), {
-  type: 'doughnut',
+  type: 'bar',
   data: { labels: ["SOP_TI", "MINA", "SERVIDORES", "REDES"],
-    datasets: [{ data: [1608, 821, 225, 39], backgroundColor: ["#0057a8", "#22c55e", "#0ea5e9", "#f59e0b"], borderWidth: 2, borderColor: '#fff' }] },
-  options: { responsive:true, onClick: chartDrillOnClick(["volumen_categoria_mes_sop_ti", "volumen_categoria_mes_mina", "volumen_categoria_mes_servidores", "volumen_categoria_mes_redes"], ["Tickets — Categoría SOP_TI (Jul-2026)", "Tickets — Categoría MINA (Jul-2026)", "Tickets — Categoría SERVIDORES (Jul-2026)", "Tickets — Categoría REDES (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins: { legend: { position:'bottom', labels: { boxWidth:10, font:{size:9} } } } }
+    datasets: [{ label: 'Tickets — Jul-2026', data: [1608, 821, 225, 39], backgroundColor: ["#0057a8", "#22c55e", "#0ea5e9", "#f59e0b"], borderRadius:6 }] },
+  options: { indexAxis:'y', responsive:true, layout:{padding:{right:60}}, onClick: chartDrillOnClick(["volumen_categoria_mes_sop_ti", "volumen_categoria_mes_mina", "volumen_categoria_mes_servidores", "volumen_categoria_mes_redes"], ["Tickets — Categoría SOP_TI (Jul-2026)", "Tickets — Categoría MINA (Jul-2026)", "Tickets — Categoría SERVIDORES (Jul-2026)", "Tickets — Categoría REDES (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#f1f5f9'}} } }
 });
 
 new Chart(document.getElementById('gestionTendenciaChart'), {
@@ -1694,17 +1727,17 @@ new Chart(document.getElementById('gestionTendenciaChart'), {
 });
 
 new Chart(document.getElementById('gestionVolumenChart'), {
-  type: 'doughnut',
+  type: 'bar',
   data: { labels: ["Help Desk Support Chile (N1)", "Mantoverde", "SAP Chile", "Mantos Blancos", "Server Support Chile", "Santiago", "Networking Support Chile"],
-    datasets: [{ data: [1135, 498, 419, 323, 225, 54, 39], backgroundColor: ['#0057a8','#ff6b00','#f59e0b','#0ea5e9','#8b5cf6','#10b981','#ef4444'], borderWidth: 2, borderColor: '#fff' }] },
-  options: { responsive:true, onClick: chartDrillOnClick(["volumen_grupo_mes_help_desk_support_chile_tech", "volumen_grupo_mes_mantoverde_tech", "volumen_grupo_mes_sap_chile_tech", "volumen_grupo_mes_mantos_blancos_tech", "volumen_grupo_mes_server_support_chile_tech", "volumen_grupo_mes_santiago_tech", "volumen_grupo_mes_networking_support_chile_tech"], ["Tickets — Help Desk Support Chile (N1) (Jul-2026)", "Tickets — Mantoverde (Jul-2026)", "Tickets — SAP Chile (Jul-2026)", "Tickets — Mantos Blancos (Jul-2026)", "Tickets — Server Support Chile (Jul-2026)", "Tickets — Santiago (Jul-2026)", "Tickets — Networking Support Chile (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins: { legend: { position:'bottom', labels: { boxWidth:10, font:{size:9} } } } }
+    datasets: [{ label: 'Tickets — Jul-2026', data: [1135, 498, 419, 323, 225, 54, 39], backgroundColor: ['#0057a8','#ff6b00','#f59e0b','#0ea5e9','#8b5cf6','#10b981','#ef4444'], borderRadius:6 }] },
+  options: { indexAxis:'y', responsive:true, layout:{padding:{right:60}}, onClick: chartDrillOnClick(["volumen_grupo_mes_help_desk_support_chile_tech", "volumen_grupo_mes_mantoverde_tech", "volumen_grupo_mes_sap_chile_tech", "volumen_grupo_mes_mantos_blancos_tech", "volumen_grupo_mes_server_support_chile_tech", "volumen_grupo_mes_santiago_tech", "volumen_grupo_mes_networking_support_chile_tech"], ["Tickets — Help Desk Support Chile (N1) (Jul-2026)", "Tickets — Mantoverde (Jul-2026)", "Tickets — SAP Chile (Jul-2026)", "Tickets — Mantos Blancos (Jul-2026)", "Tickets — Server Support Chile (Jul-2026)", "Tickets — Santiago (Jul-2026)", "Tickets — Networking Support Chile (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#f1f5f9'}} } }
 });
 
 new Chart(document.getElementById('gestionBacklogTorreChart'), {
   type: 'bar',
   data: { labels: ["SAP Chile", "Help Desk Support Chile (N1)", "Mantoverde", "Mantos Blancos", "Santiago", "Networking Support Chile", "Server Support Chile"],
     datasets: [{ label: 'Backlog Actual', data: [318, 169, 117, 53, 32, 24, 23], backgroundColor: '#ef4444', borderRadius:6 }] },
-  options: { indexAxis:'y', responsive:true, onClick: chartDrillOnClick(["backlog_torre_sap_chile_tech", "backlog_torre_help_desk_support_chile_tech", "backlog_torre_mantoverde_tech", "backlog_torre_mantos_blancos_tech", "backlog_torre_santiago_tech", "backlog_torre_networking_support_chile_tech", "backlog_torre_server_support_chile_tech"], ["Backlog Actual — SAP Chile", "Backlog Actual — Help Desk Support Chile (N1)", "Backlog Actual — Mantoverde", "Backlog Actual — Mantos Blancos", "Backlog Actual — Santiago", "Backlog Actual — Networking Support Chile", "Backlog Actual — Server Support Chile"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#f1f5f9'}} } }
+  options: { indexAxis:'y', responsive:true, layout:{padding:{right:60}}, onClick: chartDrillOnClick(["backlog_torre_sap_chile_tech", "backlog_torre_help_desk_support_chile_tech", "backlog_torre_mantoverde_tech", "backlog_torre_mantos_blancos_tech", "backlog_torre_santiago_tech", "backlog_torre_networking_support_chile_tech", "backlog_torre_server_support_chile_tech"], ["Backlog Actual — SAP Chile", "Backlog Actual — Help Desk Support Chile (N1)", "Backlog Actual — Mantoverde", "Backlog Actual — Mantos Blancos", "Backlog Actual — Santiago", "Backlog Actual — Networking Support Chile", "Backlog Actual — Server Support Chile"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#f1f5f9'}} } }
 });
 
 new Chart(document.getElementById('gestionSapBacklogChart'), {
@@ -1730,7 +1763,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 13-50.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 13-57.html';
   a.click();
   URL.revokeObjectURL(url);
 }
