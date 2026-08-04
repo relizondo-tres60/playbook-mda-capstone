@@ -1432,27 +1432,31 @@ function setResueltosCustomRange() {
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr 2fr;gap:20px;margin-bottom:24px">
-    <div class="card" style="border-top:4px solid #f59e0b">
-      <h4 style="color:#f59e0b">🟠 SAP Chile</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('mensual_sap_asignados', 'Tickets Asignados a SAP Chile — Jul-2026')">419 🔍</div><div class="kpi-label">Asignados (Jul-2026)</div></div>
-        <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('backlog_torre_sap_chile_tech', 'Backlog Actual — SAP Chile')">318 🔍</div><div class="kpi-label">Pendiente de Resolución/Cierre</div></div>
+    <div class="card" style="border-top:4px solid #f59e0b;display:flex;flex-direction:column;justify-content:space-between">
+      <div>
+        <h4 style="color:#f59e0b">🟠 SAP Chile</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('mensual_sap_asignados', 'Tickets Asignados a SAP Chile — Jul-2026')">419 🔍</div><div class="kpi-label">Asignados (Jul-2026)</div></div>
+          <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('backlog_torre_sap_chile_tech', 'Backlog Actual — SAP Chile')">318 🔍</div><div class="kpi-label">Pendiente de Resolución/Cierre</div></div>
+        </div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
         <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 7.5%</span> asignados vs Jun-2026 (453 tickets) — el pendiente representa <strong>43,2%</strong> del total entre SAP y Mis Grupos.
       </div>
     </div>
-    <div class="card" style="border-top:4px solid #8b5cf6">
-      <h4 style="color:#8b5cf6">🟣 Derivados de Chile a Vancouver_Tech</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('mensual_vancouver_derivados', 'Tickets Derivados a Vancouver_Tech — Jul-2026')">8 🔍</div><div class="kpi-label">Derivados (Jul-2026)</div></div>
-        <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('vancouver_derivados_pendientes', 'Derivados a Vancouver — Aún Pendientes')">23 🔍</div><div class="kpi-label">Aún Pendientes</div></div>
+    <div class="card" style="border-top:4px solid #8b5cf6;display:flex;flex-direction:column;justify-content:space-between">
+      <div>
+        <h4 style="color:#8b5cf6">🟣 Derivados de Chile a Vancouver_Tech</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('mensual_vancouver_derivados', 'Tickets Derivados a Vancouver_Tech — Jul-2026')">8 🔍</div><div class="kpi-label">Derivados (Jul-2026)</div></div>
+          <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('vancouver_derivados_pendientes', 'Derivados a Vancouver — Aún Pendientes')">23 🔍</div><div class="kpi-label">Aún Pendientes</div></div>
+        </div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
         <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 27.3%</span> vs Jun-2026 (11 tickets). <span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted" onclick="showDrilldown('vancouver_derivados', 'Histórico Total de Derivados a Vancouver_Tech')">Ver histórico completo 🔍</span>.
       </div>
     </div>
-    <div class="card" style="border-top:4px solid #16a34a">
+    <div class="card" style="border-top:4px solid #16a34a;display:flex;flex-direction:column;justify-content:flex-start">
       <h4 style="color:#16a34a">🏆 Aspectos Destacados del Período</h4>
       <div style="font-size:12px;color:#334155;line-height:1.6">
         <span style="background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 8.6%</span> tiempo de resolución en Mis Grupos, comparado con el período anterior.<br>
@@ -1460,9 +1464,11 @@ function setResueltosCustomRange() {
         <strong>37,8%</strong> de cancelaciones sin comentario de cierre — oportunidad de mejora en documentación, ya en seguimiento activo.
       </div>
     </div>
-    <div class="chart-card">
+    <div class="chart-card" style="display:flex;flex-direction:column">
       <h4>📊 Volumen por Categoría de Negocio — Jul-2026</h4>
-      <canvas id="gestionCategoriaChart" height="150"></canvas>
+      <div style="position:relative;height:210px">
+        <canvas id="gestionCategoriaChart"></canvas>
+      </div>
       <div style="font-size:9px;color:#94a3b8;margin-top:4px">SOP_TI = Help Desk + Santiago + SAP · MINA = Mantoverde + Mantos Blancos · SERVIDORES = Server Support · REDES = Networking</div>
       <div style="font-size:11px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">💡 <strong>SOP_TI</strong> representa el <strong>59,7%</strong> del volumen del mes (1.608 tickets).</div>
     </div>
@@ -1712,7 +1718,7 @@ new Chart(document.getElementById('gestionCategoriaChart'), {
   type: 'doughnut',
   data: { labels: ["SOP_TI", "MINA", "SERVIDORES", "REDES"],
     datasets: [{ data: [1608, 821, 225, 39], backgroundColor: ["#0057a8", "#22c55e", "#0ea5e9", "#f59e0b"], borderWidth: 2, borderColor: '#fff' }] },
-  options: { responsive:true, onClick: chartDrillOnClick(["volumen_categoria_mes_sop_ti", "volumen_categoria_mes_mina", "volumen_categoria_mes_servidores", "volumen_categoria_mes_redes"], ["Tickets — Categoría SOP_TI (Jul-2026)", "Tickets — Categoría MINA (Jul-2026)", "Tickets — Categoría SERVIDORES (Jul-2026)", "Tickets — Categoría REDES (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{ legend:{ position:'right', labels:{ boxWidth:10, font:{size:9} } } } }
+  options: { responsive:true, maintainAspectRatio:false, onClick: chartDrillOnClick(["volumen_categoria_mes_sop_ti", "volumen_categoria_mes_mina", "volumen_categoria_mes_servidores", "volumen_categoria_mes_redes"], ["Tickets — Categoría SOP_TI (Jul-2026)", "Tickets — Categoría MINA (Jul-2026)", "Tickets — Categoría SERVIDORES (Jul-2026)", "Tickets — Categoría REDES (Jul-2026)"]), onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{ legend:{ position:'right', labels:{ boxWidth:10, font:{size:9} } } } }
 });
 
 new Chart(document.getElementById('gestionTendenciaChart'), {
@@ -1763,7 +1769,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 14-36.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 15-46.html';
   a.click();
   URL.revokeObjectURL(url);
 }
