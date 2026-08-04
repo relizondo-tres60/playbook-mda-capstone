@@ -1440,7 +1440,7 @@ function setResueltosCustomRange() {
           <div><div style="font-size:22px;font-weight:900;color:#f59e0b;cursor:pointer" onclick="showDrilldown('backlog_torre_sap_chile_tech', 'Backlog Actual — SAP Chile')">318 🔍</div><div class="kpi-label">Pendiente de Resolución/Cierre</div></div>
         </div>
       </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:14px;color:#334155">
         <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 7.5%</span> asignados vs Jun-2026 (453 tickets) — el pendiente representa <strong>43,2%</strong> del total entre SAP y Mis Grupos.
       </div>
     </div>
@@ -1452,11 +1452,11 @@ function setResueltosCustomRange() {
           <div><div style="font-size:22px;font-weight:900;color:#8b5cf6;cursor:pointer" onclick="showDrilldown('vancouver_derivados_pendientes', 'Derivados a Vancouver — Aún Pendientes')">23 🔍</div><div class="kpi-label">Aún Pendientes</div></div>
         </div>
       </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:14px;color:#334155">
         <span style="background:#f1f5f9;color:#64748b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 27.3%</span> vs Jun-2026 (11 tickets). <span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted" onclick="showDrilldown('vancouver_derivados', 'Histórico Total de Derivados a Vancouver_Tech')">Ver histórico completo 🔍</span>.
       </div>
     </div>
-    <div class="card" style="border-top:4px solid #16a34a;display:flex;flex-direction:column;justify-content:space-between">
+    <div class="card" style="border-top:4px solid #16a34a;display:flex;flex-direction:column;justify-content:flex-start">
       <h4 style="color:#16a34a">🏆 Aspectos Destacados del Período</h4>
       <div style="font-size:12px;color:#334155;line-height:1.6">
         <span style="background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">▼ 8.6%</span> tiempo de resolución en Mis Grupos, comparado con el período anterior.<br>
@@ -1828,7 +1828,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 16-19.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 16-42.html';
   a.click();
   URL.revokeObjectURL(url);
 }
