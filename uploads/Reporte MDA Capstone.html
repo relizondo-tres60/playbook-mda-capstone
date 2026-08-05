@@ -335,6 +335,7 @@ function chartDrillOnClick(keys, titles) {
   <button class="tab-btn active" id="navBtnTab1" onclick="showTab('tab1', this)">📊 Vista Ejecutiva</button>
   <button class="tab-btn" id="navBtnTab2" onclick="showTab('tab2', this)">👥 Desempeño de Agentes y Niveles de Servicio</button>
   <button class="tab-btn" id="navBtnTabGestion" onclick="showTab('tabGestion', this)">📋 Gestión de Tickets</button>
+  <button class="tab-btn" id="navBtnTabCentral" onclick="showTab('tabCentral', this)">📞 Central Telefónica</button>
   <button class="tab-btn" id="navBtnTab3" onclick="showTab('tab3', this)">🔍 Detalle de Métricas</button>
 </div>
 
@@ -1496,6 +1497,78 @@ function setResueltosCustomRange() {
 
 </div>
 
+<div id="tabCentral" class="tab-panel">
+
+<div class="section">
+  <div class="section-title">📞 Mesa de Ayuda — Central Telefónica — Estadísticas · julio 2026</div>
+  <div class="section-context">
+    Llamadas entrantes recibidas por la mesa de ayuda vía central telefónica, destino Capstone Copper. Período: 01-Jul-2026 al 31-Jul-2026 (31 días). Horario laboral considerado: 08:00–20:00, Lunes a Viernes — fuera de este rango y los fines de semana completos se cuentan como "fuera de horario". Fuente: Central telefónica netvoiss (CDR), llamadas entrantes con destino Capstone.
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1.6fr 1.6fr;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card" style="text-align:center">
+        <div class="kpi-label">Total de Llamadas Entrantes</div>
+        <div style="font-size:32px;font-weight:900;color:#0057a8;margin-top:6px">860</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="kpi-label">Promedio Diario de Llamadas</div>
+        <div style="font-size:32px;font-weight:900;color:#0057a8;margin-top:6px">27.7</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="kpi-label">Día con Más Llamados</div>
+        <div style="font-size:22px;font-weight:900;color:#0057a8;margin-top:6px">06-Jul-26</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">76 llamadas</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="kpi-label">Total de Llamadas Fuera de Horario</div>
+        <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-top:6px">181</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">21,1% del total</div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="display:flex;flex-direction:column">
+      <h4 style="text-align:center">⏱️ Tiempo de Respuesta Promedio (ASA)</h4>
+      <div style="position:relative;height:170px;margin-top:6px">
+        <canvas id="centralAsaGauge"></canvas>
+      </div>
+      <div style="text-align:center;margin-top:-10px">
+        <span style="font-size:30px;font-weight:900;color:#f59e0b">20.0s</span>
+        <span style="font-size:20px">⚠️</span>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">Mediana: 10.0s · P90: 30.0s</div>
+      <div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px;font-size:11px;color:#64748b;display:flex;justify-content:space-around">
+        <span>✅ &lt;20s</span><span>⚠️ 20–30s</span><span>❌ ≥30s</span>
+      </div>
+    </div>
+
+    <div class="chart-card" style="display:flex;flex-direction:column">
+      <h4 style="text-align:center">📵 Tasa de Abandono</h4>
+      <div style="position:relative;height:170px;margin-top:6px">
+        <canvas id="centralAbandonoChart"></canvas>
+      </div>
+      <div style="text-align:center;margin-top:6px">
+        <span style="font-size:30px;font-weight:900;color:#dc2626">12,7%</span>
+        <span style="font-size:20px">❌</span>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">751 contestadas · 109 abandonadas de 860 llamadas</div>
+      <div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px;font-size:11px;color:#64748b;display:flex;justify-content:space-around">
+        <span>✅ ≤10%</span><span>⚠️ 10–12%</span><span>❌ &gt;12%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h4>🕑 Horarios con Más Llamadas</h4>
+    <div style="font-size:13px;color:#334155;line-height:1.9">
+      <strong>Mañana:</strong> 09:00 - 11:00 hrs (<strong>201</strong> llamadas)<br>
+      <strong>Tarde:</strong> 16:00 - 18:00 hrs (<strong>118</strong> llamadas)
+    </div>
+  </div>
+</div>
+
+</div>
+
 <div id="tab3" class="tab-panel">
 
 <div class="section">
@@ -1549,9 +1622,15 @@ Chart.defaults.color = '#64748b';
 // puntual para ese grafico -- el resto de las roscas del reporte (ej.
 // statusChart) conservan el estilo original (etiqueta encima del segmento).
 const DONUT_OUTSIDE_LABEL_IDS = ['gestionCategoriaChart'];
+// centralAsaGauge no es una rosca de datos reales -- son 3 bandas de ancho
+// fijo (0-20/20-30/30-40s) usadas solo como fondo de color de un gauge, asi
+// que se excluye explicitamente de las etiquetas de valor/porcentaje (no
+// tiene sentido leer "10 (25%)" sobre una banda de color de una escala).
+const DONUT_NO_LABEL_IDS = ['centralAsaGauge'];
 const donutValueLabelsPlugin = {
   id: 'donutValueLabels',
   afterDatasetsDraw(chart) {
+    if (DONUT_NO_LABEL_IDS.includes(chart.canvas.id)) return;
     const outside = DONUT_OUTSIDE_LABEL_IDS.includes(chart.canvas.id);
     const {ctx} = chart;
     chart.data.datasets.forEach((dataset, dsIndex) => {
@@ -1661,6 +1740,54 @@ const barValueLabelsPlugin = {
   }
 };
 Chart.register(barValueLabelsPlugin);
+
+// Aguja de un gauge semicircular (velocimetro), para el ASA de Central
+// Telefonica. El fondo del gauge es un doughnut de 3 segmentos fijos
+// (rotation:180, circumference:180) con los colores de las bandas
+// verde/amarillo/rojo; este plugin solo dibuja la aguja negra encima,
+// leyendo el valor/maximo desde chart.config.options.gauge (no es una
+// opcion nativa de Chart.js). Se scopea por id de canvas.
+const gaugeNeedlePlugin = {
+  id: 'gaugeNeedle',
+  afterDatasetsDraw(chart) {
+    const opts = chart.config.options.gauge;
+    if (!opts) return;
+    const {ctx} = chart;
+    const meta = chart.getDatasetMeta(0);
+    const arc = meta.data[0];
+    if (!arc) return;
+    const cx = arc.x, cy = arc.y;
+    const r = arc.outerRadius * 0.82;
+    const frac = Math.min(1, Math.max(0, opts.value / opts.max));
+    const angle = Math.PI + frac * Math.PI; // 180 -> 360 grados (Chart.js: 0deg = 3 en punto)
+    const nx = cx + r * Math.cos(angle);
+    const ny = cy + r * Math.sin(angle);
+    ctx.save();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.fillStyle = '#1e293b';
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // Etiquetas 0s / max en los extremos del arco
+    ctx.save();
+    ctx.font = '10px Barlow, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText('0s', cx - arc.outerRadius - 6, cy + 14);
+    ctx.textAlign = 'right';
+    ctx.fillText(opts.max + 's', cx + arc.outerRadius + 6, cy + 14);
+    ctx.restore();
+  }
+};
+Chart.register(gaugeNeedlePlugin);
 
 function showTab(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1816,13 +1943,40 @@ new Chart(document.getElementById('backlog3mChart'), {
   options: { responsive:true, plugins:{legend:{position:'top'}}, scales:{ y:{grid:{color:'#f1f5f9'}}, x:{grid:{color:'#f1f5f9'}} } }
 });
 
+new Chart(document.getElementById('centralAsaGauge'), {
+  type: 'doughnut',
+  data: {
+    labels: ['0–20s (verde)', '20–30s (amarillo)', '30–40s (rojo)'],
+    datasets: [{ data: [20, 10, 10], backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'], borderWidth: 0 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    rotation: 180, circumference: 180, cutout: '68%',
+    gauge: { value: 20.0, max: 40 },
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    events: []
+  }
+});
+
+new Chart(document.getElementById('centralAbandonoChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Contestadas', 'Abandonadas'],
+    datasets: [{ data: [751, 109], backgroundColor: [CC_BLUE, CC_ORANGE], borderWidth: 2, borderColor: '#fff' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size:9} } } }
+  }
+});
+
 function downloadReport() {
   const html = document.documentElement.outerHTML;
   const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-04 17-19.html';
+  a.download = 'Reporte MDA Capstone 2026-08-04 23-26.html';
   a.click();
   URL.revokeObjectURL(url);
 }
