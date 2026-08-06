@@ -1501,30 +1501,30 @@ function setResueltosCustomRange() {
 
 <div class="section">
   <div class="section-title">📞 Mesa de Ayuda — Central Telefónica — Estadísticas · julio 2026</div>
-  <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e">⚠️ Datos de Central Telefónica no disponibles en esta ejecución (cdr.sqlite no accesible en este entorno). Los valores de esta pestaña se muestran en cero.</div>
+  
   <div class="section-context">
-    Llamadas entrantes recibidas por la mesa de ayuda vía central telefónica, destino Capstone Copper. Período: 01-Jul-2026 al 01-Jul-2026 (0 días). Horario laboral considerado: 08:00–20:00, Lunes a Viernes — fuera de este rango y los fines de semana completos se cuentan como "fuera de horario". Fuente: Central telefónica netvoiss (CDR) — NO DISPONIBLE en esta ejecución (cdr.sqlite no accesible).
+    Llamadas entrantes recibidas por la mesa de ayuda vía central telefónica, destino Capstone Copper. Período: 01-Jul-2026 al 31-Jul-2026 (31 días). Horario laboral considerado: 08:00–20:00, Lunes a Viernes — fuera de este rango y los fines de semana completos se cuentan como "fuera de horario". Fuente: Central telefónica netvoiss (CDR), llamadas entrantes con destino Capstone.
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1.6fr 1.6fr;gap:20px">
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="card" style="text-align:center">
         <div class="kpi-label">Total de Llamadas Entrantes</div>
-        <div style="font-size:32px;font-weight:900;color:#0057a8;margin-top:6px">0</div>
+        <div style="font-size:32px;font-weight:900;color:#0057a8;margin-top:6px">860</div>
       </div>
       <div class="card" style="text-align:center">
         <div class="kpi-label">Promedio Diario de Llamadas</div>
-        <div style="font-size:32px;font-weight:900;color:#0057a8;margin-top:6px">0</div>
+        <div style="font-size:32px;font-weight:900;color:#0057a8;margin-top:6px">27.7</div>
       </div>
       <div class="card" style="text-align:center">
         <div class="kpi-label">Día con Más Llamados</div>
-        <div style="font-size:22px;font-weight:900;color:#0057a8;margin-top:6px">—</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:2px">0 llamadas</div>
+        <div style="font-size:22px;font-weight:900;color:#0057a8;margin-top:6px">06-Jul-26</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">76 llamadas</div>
       </div>
       <div class="card" style="text-align:center">
         <div class="kpi-label">Total de Llamadas Fuera de Horario</div>
-        <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-top:6px">0</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:2px">0,0% del total</div>
+        <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-top:6px">181</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">21,1% del total</div>
       </div>
     </div>
 
@@ -1534,10 +1534,10 @@ function setResueltosCustomRange() {
         <canvas id="centralAsaGauge"></canvas>
       </div>
       <div style="text-align:center;margin-top:-10px">
-        <span style="font-size:30px;font-weight:900;color:#94a3b8">—s</span>
-        <span style="font-size:20px">—</span>
+        <span style="font-size:30px;font-weight:900;color:#f59e0b">20.0s</span>
+        <span style="font-size:20px">⚠️</span>
       </div>
-      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">Mediana: —s · P90: —s</div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">Mediana: 10.0s · P90: 30.0s</div>
       <div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px;font-size:11px;color:#64748b;display:flex;justify-content:space-around">
         <span>✅ &lt;20s</span><span>⚠️ 20–30s</span><span>❌ ≥30s</span>
       </div>
@@ -1549,10 +1549,10 @@ function setResueltosCustomRange() {
         <canvas id="centralAbandonoChart"></canvas>
       </div>
       <div style="text-align:center;margin-top:6px">
-        <span style="font-size:30px;font-weight:900;color:#16a34a">0,0%</span>
-        <span style="font-size:20px">✅</span>
+        <span style="font-size:30px;font-weight:900;color:#dc2626">12,7%</span>
+        <span style="font-size:20px">❌</span>
       </div>
-      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">0 contestadas · 0 abandonadas de 0 llamadas</div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">751 contestadas · 109 abandonadas de 860 llamadas</div>
       <div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px;font-size:11px;color:#64748b;display:flex;justify-content:space-around">
         <span>✅ ≤10%</span><span>⚠️ 10–12%</span><span>❌ &gt;12%</span>
       </div>
@@ -1566,7 +1566,7 @@ function setResueltosCustomRange() {
         <canvas id="centralHorasChart"></canvas>
       </div>
       <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:8px">
-        Pico mañana: <strong>00:00–02:00</strong> (0 llam.) · Pico tarde: <strong>12:00–14:00</strong> (0 llam.)
+        Pico mañana: <strong>09:00–11:00</strong> (201 llam.) · Pico tarde: <strong>16:00–18:00</strong> (118 llam.)
       </div>
     </div>
     <div class="chart-card" style="display:flex;flex-direction:column">
@@ -1575,7 +1575,7 @@ function setResueltosCustomRange() {
         <canvas id="centralDiasChart"></canvas>
       </div>
       <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:8px">
-        Día con más volumen: <strong>—</strong> (0 llamadas)
+        Día con más volumen: <strong>06-Jul-26</strong> (76 llamadas)
       </div>
     </div>
   </div>
@@ -1966,7 +1966,7 @@ new Chart(document.getElementById('centralAsaGauge'), {
   options: {
     responsive: true, maintainAspectRatio: false,
     rotation: 180, circumference: 180, cutout: '68%',
-    gauge: { value: 0, max: 40 },
+    gauge: { value: 20.0, max: 40 },
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
     events: []
   }
@@ -1976,7 +1976,7 @@ new Chart(document.getElementById('centralAbandonoChart'), {
   type: 'doughnut',
   data: {
     labels: ['Contestadas', 'Abandonadas'],
-    datasets: [{ data: [0, 0], backgroundColor: [CC_BLUE, CC_ORANGE], borderWidth: 2, borderColor: '#fff' }]
+    datasets: [{ data: [751, 109], backgroundColor: [CC_BLUE, CC_ORANGE], borderWidth: 2, borderColor: '#fff' }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
@@ -1987,14 +1987,14 @@ new Chart(document.getElementById('centralAbandonoChart'), {
 new Chart(document.getElementById('centralHorasChart'), {
   type: 'bar',
   data: { labels: ["00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"],
-    datasets: [{ label: 'Llamadas', data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], backgroundColor: CC_BLUE, borderRadius:4 }] },
+    datasets: [{ label: 'Llamadas', data: [7, 7, 4, 2, 0, 3, 4, 12, 84, 111, 90, 67, 54, 52, 56, 46, 51, 67, 49, 29, 28, 16, 13, 8], backgroundColor: CC_BLUE, borderRadius:4 }] },
   options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'#f1f5f9'},beginAtZero:true}, x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,font:{size:9}}} } }
 });
 
 new Chart(document.getElementById('centralDiasChart'), {
   type: 'bar',
   data: { labels: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
-    datasets: [{ label: 'Llamadas', data: [0, 0, 0, 0, 0, 0, 0], backgroundColor: CC_ORANGE, borderRadius:6 }] },
+    datasets: [{ label: 'Llamadas', data: [190, 167, 173, 129, 94, 48, 59], backgroundColor: CC_ORANGE, borderRadius:6 }] },
   options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'#f1f5f9'},beginAtZero:true}, x:{grid:{display:false}} } }
 });
 
@@ -2004,7 +2004,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-06 08-33.html';
+  a.download = 'Reporte MDA Capstone 2026-08-06 12-10.html';
   a.click();
   URL.revokeObjectURL(url);
 }
