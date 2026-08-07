@@ -1539,15 +1539,16 @@ function setResueltosCustomRange() {
     </div>
 
     <div class="chart-card" style="display:flex;flex-direction:column">
-      <h4 style="text-align:center">⏱️ Tiempo de Respuesta Promedio (ASA)</h4>
+      <h4 style="text-align:center">⏱️ Tiempo de Respuesta (ASA) — Mediana</h4>
       <div style="position:relative;height:170px;margin-top:6px">
         <canvas id="centralAsaGauge"></canvas>
       </div>
       <div style="text-align:center;margin-top:-10px">
-        <span style="font-size:30px;font-weight:900;color:#16a34a">19.5s</span>
+        <span style="font-size:30px;font-weight:900;color:#16a34a">10.0s</span>
         <span style="font-size:20px">✅</span>
       </div>
-      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">Mediana: 10.0s · P90: 29.0s</div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:4px">Promedio: 19.5s · P90: 29.0s</div>
+      <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:2px">Se usa la mediana como indicador principal: es más robusta que el promedio ante llamadas puntuales con espera atípica.</div>
       <div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px;font-size:11px;color:#64748b;display:flex;justify-content:space-around">
         <span>✅ &lt;20s</span><span>⚠️ 20–30s</span><span>❌ ≥30s</span>
       </div>
@@ -1990,7 +1991,7 @@ new Chart(document.getElementById('centralAsaGauge'), {
   options: {
     responsive: true, maintainAspectRatio: false,
     rotation: 180, circumference: 180, cutout: '68%',
-    gauge: { value: 19.5, max: 40 },
+    gauge: { value: 10.0, max: 40 },
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
     events: []
   }
@@ -2028,7 +2029,7 @@ function downloadReport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Reporte MDA Capstone 2026-08-07 10-32.html';
+  a.download = 'Reporte MDA Capstone 2026-08-07 16-24.html';
   a.click();
   URL.revokeObjectURL(url);
 }
