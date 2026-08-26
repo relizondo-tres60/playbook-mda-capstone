@@ -106,6 +106,12 @@ despliegue atomico. El frontend quedo igualmente estatico y desacoplado, de modo
 publicarlo en Pages sigue siendo posible cambiando una variable. El detalle esta en
 `docs/ARQUITECTURA.md`.
 
+**Este repositorio ya tiene un servicio de Cloudflare Workers Builds conectado**
+(`playbook-mda-capstone`), que al ver `ext-audit/wrangler.toml` intenta tomarlo como
+suyo y falla. Hay que acotarlo o darle a `ext-audit` su propio servicio antes de
+integrar: el procedimiento esta en `docs/DESPLIEGUE.md`, seccion *Convivencia con las
+integraciones ya existentes del repositorio*.
+
 **El correo va por la API de Gmail y no por SMTP** porque el runtime de Workers no permite
 abrir conexiones SMTP. La casilla remitente se cambia con una variable de entorno, sin tocar
 codigo.

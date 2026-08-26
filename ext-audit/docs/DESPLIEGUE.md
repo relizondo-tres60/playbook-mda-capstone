@@ -75,6 +75,44 @@ emite automaticamente.
 
 ---
 
+## Convivencia con las integraciones ya existentes del repositorio
+
+El repositorio que hoy aloja este proyecto ya tiene dos integraciones de
+Cloudflare conectadas, anteriores a `ext-audit`:
+
+| Integracion | Que despliega |
+|---|---|
+| Cloudflare Pages (`playbook-mda`) | el sitio estatico del playbook |
+| Workers Builds (`playbook-mda-capstone`) | un Worker asociado al repositorio |
+
+**Workers Builds construye a partir del repositorio completo.** Al aparecer
+`ext-audit/wrangler.toml` intenta tomarlo como su configuracion, y falla porque
+`database_id` es un marcador de posicion y el `name` del servicio no coincide.
+Esa falla es una proteccion util: si el despliegue prosperara, publicaria la
+aplicacion de auditoria **encima del Worker del playbook**, que es justamente lo
+que no debe ocurrir.
+
+Hay que resolverlo del lado de Cloudflare, en el dashboard, eligiendo una de
+estas dos opciones:
+
+1. **Acotar el servicio existente** (recomendado si `ext-audit` se despliega por
+   GitHub Actions, como propone este proyecto).
+   *Workers & Pages → playbook-mda-capstone → Settings → Builds*: fijar
+   **Root directory** en la carpeta del playbook y agregar `ext-audit/*` a
+   **Build watch paths → Exclude**, para que los cambios de este proyecto no
+   disparen ese build.
+
+2. **Dar a `ext-audit` su propio servicio de Workers Builds.**
+   Crear un Worker nuevo conectado al mismo repositorio con **Root directory**
+   `ext-audit/`, y en ese caso **desactivar** el workflow
+   `.github/workflows/ext-audit-deploy.yml`, para no tener dos caminos de
+   despliegue compitiendo por el mismo Worker.
+
+Elegir una u otra, no ambas: dos mecanismos desplegando el mismo Worker se
+pisan entre si y hacen imposible saber que version esta publicada.
+
+---
+
 ## Despliegue continuo con GitHub Actions
 
 `.github/workflows/ext-audit-ci.yml` corre en cada push y PR que toque `ext-audit/`:
