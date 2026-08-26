@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Validacion enviada</title>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9989;</text></svg>">
+</head>
+<body>
+<header class="portal-header">
+  <h1>Validacion enviada</h1>
+  <div class="meta">Gracias por responder dentro del plazo</div>
+</header>
+
+<div class="portal-wrap">
+  <div class="card">
+    <div class="alert ok">
+      <strong>Su validacion quedo registrada correctamente.</strong>
+      <div style="margin-top:5px;">Le enviamos un correo de confirmacion con el detalle de lo informado.</div>
+    </div>
+    <div class="grid cols-2" id="resumen"></div>
+    <p class="hint" style="margin-top:16px;">
+      Las bajas seran ejecutadas por el equipo de administracion de identidades.
+      Si detecta un error, responda el correo de confirmacion antes del cierre de la campana.
+    </p>
+  </div>
+</div>
+
+<div class="footer-note">Puede cerrar esta ventana.</div>
+
+<script type="module">
+const q = new URLSearchParams(location.search);
+const keep = Math.max(0, Math.min(9999, Number(q.get('k')) || 0));
+const disable = Math.max(0, Math.min(9999, Number(q.get('d')) || 0));
+document.getElementById('resumen').innerHTML = `
+  <div class="kpi ok"><div class="value">${keep}</div><div class="label">cuentas se mantienen activas</div></div>
+  <div class="kpi danger"><div class="value">${disable}</div><div class="label">cuentas se daran de baja</div></div>`;
+</script>
+</body>
+</html>

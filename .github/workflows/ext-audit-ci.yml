@@ -1,0 +1,54 @@
+name: ext-audit CI
+
+# Proyecto independiente: solo corre cuando cambia ext-audit/.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "ext-audit/**"
+      - ".github/workflows/ext-audit-ci.yml"
+  pull_request:
+    paths:
+      - "ext-audit/**"
+      - ".github/workflows/ext-audit-ci.yml"
+
+defaults:
+  run:
+    working-directory: ext-audit
+
+jobs:
+  verify:
+    name: Sintaxis, imports y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verificar sintaxis e imports del Worker
+        run: node scripts/check-syntax.mjs
+
+      - name: Ejecutar pruebas unitarias
+        run: node --test test/*.test.js
+
+      - name: Validar el esquema de base de datos (D1 es SQLite)
+        run: python3 scripts/check-schema.py
+
+  dry-run:
+    name: Validar configuracion de Cloudflare
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm ci || npm install
+
+      - name: Compilar el Worker sin desplegar
+        run: npx wrangler deploy --dry-run --outdir /tmp/ext-audit-build

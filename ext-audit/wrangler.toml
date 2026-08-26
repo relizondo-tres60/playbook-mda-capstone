@@ -1,0 +1,93 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "ext-audit"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# El frontend (Cloudflare Pages / Workers Static Assets) se sirve desde ./public.
+# Ver docs/ARQUITECTURA.md -> "Pages vs Workers Static Assets".
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "404-page"
+# Se usa el manejo por defecto ("auto-trailing-slash"): la raiz sirve
+# index.html y las rutas sin extension (/validar, /panel) sirven el .html
+# correspondiente sin redirect. Por eso los enlaces de la aplicacion se
+# generan sin ".html". Ver docs/ARQUITECTURA.md.
+
+[vars]
+APP_NAME = "Auditoria de Cuentas Externas EXT"
+APP_BASE_URL = "http://localhost:8787"
+RESPONSE_DAYS = "14"
+REMINDER_DAYS = "7,3,1"
+TOKEN_GRACE_DAYS = "7"
+MAIL_PROVIDER = "console"
+MAIL_FROM = "relizondo@tres60.cl"
+MAIL_FROM_NAME = "Auditoria de Cuentas Externas - Tres60"
+MAIL_REPLY_TO = "relizondo@tres60.cl"
+MAIL_CC_HELPDESK = ""
+ALLOWED_ORIGINS = ""
+EXT_MATCH_MODE = "token"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ext_audit"
+database_id = "REEMPLAZAR_CON_ID_REAL"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "ext-audit-files"
+
+[triggers]
+# 08:00 UTC = 04:00/05:00 America/Santiago. Vencimientos + recordatorios diarios.
+crons = ["0 8 * * *"]
+
+[observability]
+enabled = true
+
+# --------------------------------------------------------------------------
+# Entorno productivo. Los secretos se cargan con `wrangler secret put`.
+# --------------------------------------------------------------------------
+[env.production]
+name = "ext-audit-prod"
+
+[env.production.vars]
+APP_NAME = "Auditoria de Cuentas Externas EXT"
+APP_BASE_URL = "https://ext-audit.tres60.cl"
+RESPONSE_DAYS = "14"
+REMINDER_DAYS = "7,3,1"
+TOKEN_GRACE_DAYS = "7"
+MAIL_PROVIDER = "gmail_service_account"
+MAIL_FROM = "relizondo@tres60.cl"
+MAIL_FROM_NAME = "Auditoria de Cuentas Externas - Tres60"
+MAIL_REPLY_TO = "relizondo@tres60.cl"
+MAIL_CC_HELPDESK = "mesadeayuda@tres60.cl"
+ALLOWED_ORIGINS = ""
+EXT_MATCH_MODE = "token"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "ext_audit"
+database_id = "REEMPLAZAR_CON_ID_REAL"
+migrations_dir = "migrations"
+
+[[env.production.r2_buckets]]
+binding = "FILES"
+bucket_name = "ext-audit-files"
+
+[env.production.assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "404-page"
+# Se usa el manejo por defecto ("auto-trailing-slash"): la raiz sirve
+# index.html y las rutas sin extension (/validar, /panel) sirven el .html
+# correspondiente sin redirect. Por eso los enlaces de la aplicacion se
+# generan sin ".html". Ver docs/ARQUITECTURA.md.
+
+[env.production.triggers]
+crons = ["0 8 * * *"]
+
+[env.production.observability]
+enabled = true
