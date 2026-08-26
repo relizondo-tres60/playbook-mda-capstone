@@ -1,21 +1,25 @@
-name = "mda-playbook"
-main = "worker.js"
+# ─────────────────────────────────────────────────────────────────────────────
+# Backend Playbook MDA Capstone — configuracion de despliegue
+# Ubicacion: RAIZ del repositorio relizondo-tres60/playbook-mda-capstone
+# Workers Builds ejecuta "npx wrangler deploy" desde la raiz.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name               = "playbook-mda-capstone"
+main               = "worker.js"
 compatibility_date = "2024-09-23"
 
-# KV Namespace — crear en Cloudflare Dashboard → KV → Create namespace "MDA_KV"
-# Luego pegar el ID aquí
 [[kv_namespaces]]
 binding = "MDA_KV"
-id      = "PEGA_EL_KV_ID_AQUI"
+id      = "6e083200070d4fbbbdd3236513c34536"
 
-# Variables no sensibles (las sensibles van con: wrangler secret put NOMBRE)
 [vars]
-ADMIN_KEY = "Tres60admin"
+PAGES_URL  = "https://playbook-mda.pages.dev"
+WORKER_URL = "https://playbook-mda-capstone.relizondo-0d3.workers.dev"
 
-# Variables sensibles — configurar en el Dashboard o con wrangler secret put:
-#   GOOGLE_CLIENT_ID      → Client ID de Google Cloud Console
-#   GOOGLE_CLIENT_SECRET  → Client Secret de Google Cloud Console
-#   PAGES_URL             → URL de Cloudflare Pages
-#   WORKER_URL            → URL de este Worker
-#   BOOTSTRAP_EMAIL       → Tu correo (siempre tiene acceso)
-#   ANTHROPIC_API_KEY     → API Key Anthropic (opcional, para bot IA)
+# ─────────────────────────────────────────────────────────────────────────────
+# Variables sensibles: NO se declaran aqui. Cargarlas como Secret en
+# Workers & Pages > playbook-mda-capstone > Settings > Variables and secrets:
+#   GOOGLE_CLIENT_ID      (Google Cloud Console — OAuth client tipo External)
+#   GOOGLE_CLIENT_SECRET  (Google Cloud Console)
+#   ANTHROPIC_API_KEY     (opcional — habilita el asistente IA en /chat)
+# ─────────────────────────────────────────────────────────────────────────────
