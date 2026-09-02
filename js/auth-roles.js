@@ -152,9 +152,13 @@ function injectCSS(){
 
 // ═══ SESION Y ARRANQUE ════════════════════════════════════════════════════════
 function verifySession() {
-  if (!A.workerUrl) {
-    A.user = { email: 'demo@capstonecopper.com', name: 'Demo', role: 'admin' };
-    finishBoot();
+  // Sin Worker URL → sin sesión válida → redirigir al login
+  if (!A.workerUrl || !A.session) {
+    var p = window.location.pathname;
+    // Solo permitir acceso a login.html sin sesión
+    if (p.indexOf('login') < 0) {
+      redirectToLogin();
+    }
     return;
   }
   authFetch(A.workerUrl + '/auth/me')
@@ -165,7 +169,8 @@ function verifySession() {
       finishBoot();
     })
     .catch(function () {
-      A.user = { email: 'local', name: 'Sin conexi\u00f3n', role: 'agent' };
+      // Error de red: mostrar nav mínimo sin privilegios para no revelar opciones
+      A.user = { email: 'local', name: 'Sin conexión', role: 'agent' };
       finishBoot();
     });
 }
