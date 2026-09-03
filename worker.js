@@ -7,6 +7,13 @@
  *   POST            /sop/upload       → Subir nuevo SOP (admin)
  *   GET             /sop/:sopId       → Obtener HTML de SOP custom
  *   DELETE          /sop/:sopId       → Eliminar SOP custom (admin)
+ *
+ * Verificador de Baja de Cuentas (offboarding):
+ *   GET             /bajas            → Casos de baja + checklist maestra
+ *   POST            /bajas            → Abrir caso de baja
+ *   PATCH           /bajas/:id        → Verificar control, editar antecedentes o validar
+ *   DELETE          /bajas/:id        → Eliminar caso (admin)
+ *   GET/POST        /bajas/checklist  → Checklist maestra (POST solo admin)
  */
 
 const AI_MODEL='claude-haiku-4-5-20251001';
@@ -94,6 +101,182 @@ async function equipamientoPost(req,env){
     await env.MDA_KV.put('mda_equipamiento',JSON.stringify(data));
     return jsonR({ok:true,savedAt:new Date().toISOString()});
   }catch(e){ return jsonR({error:'Error al guardar: '+e.message},500); }
+}
+
+// ═══ VERIFICADOR DE BAJA DE CUENTAS (Offboarding) ═══════════════════════════
+// Operacionaliza SOP-GIA-003 (Offboarding — Desactivacion de Cuenta AD),
+// SOP-SAP-004 (bloqueo SAP), SOP-GIA-007 (MFA), SOP-EQU-* y SOP-VHF-*.
+// Modelo de riesgo: mientras exista un item OBLIGATORIO aplicable sin verificar,
+// el caso mantiene exposicion residual y acumula dias desde la fecha de egreso.
+
+const BAJA_CHECKLIST = [
+  // --- Identidad: AD / Entra ID (SOP-GIA-003 pasos 02, 03, 05) ---
+  {key:'AD-01', grupo:'Identidad (AD / Entra ID)',        label:'Cuenta deshabilitada en Active Directory',                    obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'AD-02', grupo:'Identidad (AD / Entra ID)',        label:'Sesiones activas revocadas en Entra ID',                      obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'AD-03', grupo:'Identidad (AD / Entra ID)',        label:'Export de grupos adjunto al ticket (previo a remocion)',      obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'AD-04', grupo:'Identidad (AD / Entra ID)',        label:'Removida de grupos de seguridad (excepto Domain Users)',      obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'AD-05', grupo:'Identidad (AD / Entra ID)',        label:'Removida de listas de distribucion de correo',                obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'AD-06', grupo:'Identidad (AD / Entra ID)',        label:'Cuenta movida a OU Disabled (Users / Vendors)',               obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'AD-07', grupo:'Identidad (AD / Entra ID)',        label:'Campo Description actualizado: DISABLED - fecha - motivo',    obligatorio:false, sop:'SOP-GIA-003'},
+  {key:'AD-08', grupo:'Identidad (AD / Entra ID)',        label:'Metodos MFA y dispositivos de confianza eliminados',          obligatorio:true,  sop:'SOP-GIA-007'},
+
+  // --- Correo y colaboracion M365 (SOP-GIA-003 paso 04) ---
+  {key:'M365-01', grupo:'Correo y Colaboracion (M365)',   label:'Buzon gestionado segun instruccion del ADC/RRHH',             obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'M365-02', grupo:'Correo y Colaboracion (M365)',   label:'Licencias M365 liberadas',                                    obligatorio:false, sop:'SOP-GIA-003'},
+  {key:'M365-03', grupo:'Correo y Colaboracion (M365)',   label:'OneDrive: propiedad transferida al jefatura/manager',         obligatorio:false, sop:'SOP-GIA-003'},
+  {key:'M365-04', grupo:'Correo y Colaboracion (M365)',   label:'Teams / SharePoint: propiedad de sitios reasignada',          obligatorio:false, sop:'SOP-GIA-003'},
+
+  // --- Aplicaciones de negocio (SOP-SAP-004) ---
+  {key:'SAP-01', grupo:'Aplicaciones de Negocio',         label:'Bloqueo SAP solicitado a SAP-Chile_Tech',                     obligatorio:true,  sop:'SOP-SAP-004'},
+  {key:'SAP-02', grupo:'Aplicaciones de Negocio',         label:'Bloqueo SAP confirmado por escrito (N.o de ticket)',          obligatorio:true,  sop:'SOP-SAP-004'},
+  {key:'APP-01', grupo:'Aplicaciones de Negocio',         label:'Licencias de software liberadas (Adobe u otras)',             obligatorio:false, sop:'SOP-APP-006'},
+  {key:'APP-02', grupo:'Aplicaciones de Negocio',         label:'Power BI: workspaces y datasets reasignados',                 obligatorio:false, sop:'SOP-APP-006'},
+  {key:'APP-03', grupo:'Aplicaciones de Negocio',         label:'Plataformas de terceros notificadas (Ariba y similares)',     obligatorio:false, sop:'SOP-GIA-003'},
+
+  // --- Acceso remoto y perimetral (SOP-GIA-003 paso 07) ---
+  {key:'VPN-01', grupo:'Acceso Remoto y Perimetral',      label:'VPN FortiClient: certificados revocados',                     obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'VPN-02', grupo:'Acceso Remoto y Perimetral',      label:'Bastion Host: usuario eliminado',                             obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'VPN-03', grupo:'Acceso Remoto y Perimetral',      label:'Verificacion post-revocacion: sin sesiones activas',          obligatorio:true,  sop:'SOP-GIA-003'},
+
+  // --- Entorno OT (criticidad industrial) ---
+  {key:'OT-01', grupo:'Entorno OT / Operaciones',         label:'Accesos a sistemas OT revocados (PI Vision, SCADA/DCS)',      obligatorio:true,  sop:'SOP-CYB-003'},
+  {key:'OT-02', grupo:'Entorno OT / Operaciones',         label:'Revocacion OT confirmada por el ADC de seguridad Capstone',   obligatorio:true,  sop:'SOP-CYB-003'},
+
+  // --- Equipamiento y comunicaciones ---
+  {key:'EQU-01', grupo:'Equipamiento y Comunicaciones',   label:'Equipo computacional devuelto y registrado en inventario',    obligatorio:false, sop:'SOP-EQU-004'},
+  {key:'EQU-02', grupo:'Equipamiento y Comunicaciones',   label:'Equipo resguardado / formateado segun politica',              obligatorio:false, sop:'SOP-EQU-005'},
+  {key:'VHF-01', grupo:'Equipamiento y Comunicaciones',   label:'Radio VHF devuelta y desprogramada',                          obligatorio:false, sop:'SOP-VHF-002'},
+  {key:'TEL-01', grupo:'Equipamiento y Comunicaciones',   label:'Telefonia movil / anexo liberado',                            obligatorio:false, sop:'SOP-COL-003'},
+  {key:'ACC-01', grupo:'Equipamiento y Comunicaciones',   label:'Credencial de acceso fisico devuelta',                        obligatorio:false, sop:'SOP-EQU-004'},
+
+  // --- Cierre y evidencia ---
+  {key:'CIE-01', grupo:'Cierre y Evidencia',              label:'Evidencia de cada paso adjunta al ticket',                    obligatorio:true,  sop:'SOP-GIA-003'},
+  {key:'CIE-02', grupo:'Cierre y Evidencia',              label:'Ticket cerrado con resumen de accesos revocados',             obligatorio:true,  sop:'SOP-GIA-003'},
+];
+
+async function bajasChecklistGet(req,env){
+  const a=await requireAuth(req,env);if(a.error)return jsonR(a,a.status);
+  const custom=await kvGet(env,'bajas_checklist',null);
+  return jsonR({checklist:custom&&custom.length?custom:BAJA_CHECKLIST,esPersonalizada:!!(custom&&custom.length)});
+}
+
+async function bajasChecklistPost(req,env){
+  const a=await requireAdmin(req,env);if(a.error)return jsonR(a,a.status);
+  let body;try{body=await req.json();}catch{return jsonR({error:'JSON invalido'},400);}
+  const {checklist}=body;
+  if(!Array.isArray(checklist)||!checklist.length)return jsonR({error:'checklist requerida'},400);
+  await kvPut(env,'bajas_checklist',checklist);
+  return jsonR({ok:true,total:checklist.length});
+}
+
+function nuevaBaja(body,checklist,a){
+  const items={};
+  checklist.forEach(function(c){
+    items[c.key]={estado:'pendiente',evidencia:'',ticketRef:'',verificadoPor:'',verificadoAt:null};
+  });
+  return {
+    id: crypto.randomUUID(),
+    ticket:        (body.ticket||'').trim(),
+    nombre:        (body.nombre||'').trim(),
+    username:      (body.username||'').trim(),
+    email:         (body.email||'').trim(),
+    empresa:       (body.empresa||'').trim(),
+    cargo:         (body.cargo||'').trim(),
+    sitio:         body.sitio||'',
+    tipo:          body.tipo||'Empleado',
+    fechaEgreso:   body.fechaEgreso||null,
+    urgencia:      body.urgencia||'Normal',
+    solicitante:   (body.solicitante||'').trim(),
+    instruccionBuzon: body.instruccionBuzon||'Redirigir 30 dias',
+    notas:         (body.notas||'').trim(),
+    items:         items,
+    estado:        'En Proceso',
+    validadoPor:   '',
+    validadoAt:    null,
+    historial:     [{at:new Date().toISOString(),by:a.email,accion:'Caso de baja creado'}],
+    createdBy:     a.email,
+    createdAt:     new Date().toISOString(),
+    updatedAt:     new Date().toISOString(),
+  };
+}
+
+async function bajasGet(req,env){
+  const a=await requireAuth(req,env);if(a.error)return jsonR(a,a.status);
+  const custom=await kvGet(env,'bajas_checklist',null);
+  return jsonR({
+    bajas:     await kvGet(env,'bajas_list',[]),
+    checklist: custom&&custom.length?custom:BAJA_CHECKLIST,
+    role:      a.role,
+    email:     a.email,
+  });
+}
+
+async function bajasAdd(req,env){
+  const a=await requireAuth(req,env);if(a.error)return jsonR(a,a.status);
+  let body;try{body=await req.json();}catch{return jsonR({error:'JSON invalido'},400);}
+  if(!body.nombre||!body.nombre.trim())  return jsonR({error:'Nombre del usuario requerido'},400);
+  if(!body.username||!body.username.trim()) return jsonR({error:'Cuenta AD (username) requerida'},400);
+  const custom=await kvGet(env,'bajas_checklist',null);
+  const checklist=custom&&custom.length?custom:BAJA_CHECKLIST;
+  const bajas=await kvGet(env,'bajas_list',[]);
+  const baja=nuevaBaja(body,checklist,a);
+  bajas.push(baja);
+  await kvPut(env,'bajas_list',bajas);
+  return jsonR({ok:true,baja});
+}
+
+async function bajasPatch(id,req,env){
+  const a=await requireAuth(req,env);if(a.error)return jsonR(a,a.status);
+  const bajas=await kvGet(env,'bajas_list',[]);
+  const idx=bajas.findIndex(b=>b.id===id);
+  if(idx<0)return jsonR({error:'Caso no encontrado'},404);
+  let body;try{body=await req.json();}catch{return jsonR({error:'JSON invalido'},400);}
+  const prev=bajas[idx];
+  const hist=Array.isArray(prev.historial)?prev.historial.slice():[];
+  const now=new Date().toISOString();
+
+  // Actualizacion de un item del checklist
+  if(body.item&&body.item.key){
+    const k=body.item.key;
+    const it=Object.assign({},prev.items&&prev.items[k]?prev.items[k]:{estado:'pendiente',evidencia:'',ticketRef:''});
+    if(body.item.estado)              it.estado=body.item.estado;
+    if(body.item.evidencia!==undefined) it.evidencia=body.item.evidencia;
+    if(body.item.ticketRef!==undefined) it.ticketRef=body.item.ticketRef;
+    if(it.estado==='pendiente'){ it.verificadoPor=''; it.verificadoAt=null; }
+    else { it.verificadoPor=a.name||a.email; it.verificadoAt=now; }
+    prev.items=Object.assign({},prev.items,{[k]:it});
+    hist.push({at:now,by:a.email,accion:k+' -> '+it.estado});
+  }
+
+  // Validacion de segunda linea (segregacion de funciones)
+  if(body.validar===true){
+    if(prev.createdBy===a.email&&a.role!=='admin')
+      return jsonR({error:'La validacion de segunda linea debe hacerla un agente distinto al que abrio el caso'},403);
+    prev.validadoPor=a.name||a.email; prev.validadoAt=now;
+    hist.push({at:now,by:a.email,accion:'Validacion de segunda linea'});
+  }
+  if(body.validar===false){
+    prev.validadoPor=''; prev.validadoAt=null;
+    hist.push({at:now,by:a.email,accion:'Validacion de segunda linea revertida'});
+  }
+
+  // Campos de cabecera
+  const editables=['ticket','nombre','username','email','empresa','cargo','sitio','tipo',
+                   'fechaEgreso','urgencia','solicitante','instruccionBuzon','notas','estado'];
+  editables.forEach(function(f){ if(body[f]!==undefined) prev[f]=body[f]; });
+
+  prev.historial=hist.slice(-120);
+  prev.updatedAt=now;
+  bajas[idx]=prev;
+  await kvPut(env,'bajas_list',bajas);
+  return jsonR({ok:true,baja:prev});
+}
+
+async function bajasDelete(id,req,env){
+  const a=await requireAdmin(req,env);if(a.error)return jsonR(a,a.status);
+  const bajas=await kvGet(env,'bajas_list',[]);
+  await kvPut(env,'bajas_list',bajas.filter(b=>b.id!==id));
+  return jsonR({ok:true});
 }
 
 export default {
@@ -224,6 +407,17 @@ export default {
       // Ping
       if(pathname==='/ping') return jsonR({ok:true,ts:Date.now(),version:'3.0'});
       if(pathname==='/debug/anthropic'&&method==='POST') return await debugAnthropic(request,env);
+
+      // Verificador de Baja de Cuentas (offboarding)
+      if(pathname==='/bajas/checklist'&&method==='GET')  return await bajasChecklistGet(request,env);
+      if(pathname==='/bajas/checklist'&&method==='POST') return await bajasChecklistPost(request,env);
+      if(pathname==='/bajas'&&method==='GET')  return await bajasGet(request,env);
+      if(pathname==='/bajas'&&method==='POST') return await bajasAdd(request,env);
+      const bjM=pathname.match(/^\/bajas\/([^/]+)$/);
+      if(bjM){
+        if(method==='PATCH')  return await bajasPatch(bjM[1],request,env);
+        if(method==='DELETE') return await bajasDelete(bjM[1],request,env);
+      }
 
       return jsonR({error:'Not found'},404);
 

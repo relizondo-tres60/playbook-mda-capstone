@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificador de Baja de Cuentas &#8212; MDA Capstone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:#f0f3f8;color:#1a1a2e;padding-top:48px}
+.page{max-width:1240px;margin:0 auto;padding:22px 20px 80px}
+.page-hdr{margin-bottom:18px}
+.page-title{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;letter-spacing:.3px}
+.page-sub{font-size:12.5px;color:#667;margin-top:2px}
+.page-sub code{background:#e8f0fb;color:#0057a8;padding:1px 6px;border-radius:5px;font-size:11.5px;font-weight:700}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:12px;padding:15px 17px;box-shadow:0 1px 6px rgba(0,0,0,.07);border-top:3px solid #e0e4ea}
+.kpi.k-act{border-color:#0057a8}.kpi.k-exp{border-color:#ef4444}.kpi.k-sla{border-color:#f59e0b}
+.kpi.k-ver{border-color:#22c55e}.kpi.k-cmp{border-color:#1a1a2e}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#888;margin-bottom:5px}
+.kpi-val{font-size:31px;font-weight:800;font-family:'Barlow Condensed',sans-serif;line-height:1}
+.kpi.k-exp .kpi-val{color:#ef4444}.kpi.k-sla .kpi-val{color:#f59e0b}.kpi.k-ver .kpi-val{color:#22c55e}
+.kpi-foot{font-size:10.5px;color:#999;margin-top:4px}
+/* Toolbar */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.add-btn{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:700;transition:background .15s}
+.add-btn:hover{background:#003d7a}
+.filter-sel{border:1.5px solid #d0d8e8;background:#fff;border-radius:8px;padding:7px 12px;font-size:12px;font-family:'Barlow',sans-serif;color:#444;cursor:pointer;outline:none}
+.filter-sel:focus{border-color:#0057a8}
+.search-wrap{flex:1;min-width:190px;position:relative}
+.search-wrap input{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:8px 12px 8px 34px;font-size:12px;font-family:'Barlow',sans-serif;outline:none;background:#fff}
+.search-wrap input:focus{border-color:#0057a8}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px}
+.chk-wrap{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#555;cursor:pointer;background:#fff;border:1.5px solid #d0d8e8;border-radius:8px;padding:6px 12px;white-space:nowrap;user-select:none}
+.chk-wrap input{cursor:pointer;accent-color:#0057a8}
+/* Caso card */
+.caso{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:12px;overflow:hidden;border-left:4px solid #94a3b8}
+.caso.r-critico{border-left-color:#dc2626}.caso.r-alto{border-left-color:#f59e0b}
+.caso.r-medio{border-left-color:#3b82f6}.caso.r-ok{border-left-color:#22c55e}
+.caso-hdr{display:flex;align-items:center;gap:14px;padding:13px 16px;cursor:pointer;transition:background .1s}
+.caso-hdr:hover{background:#f7f9fc}
+.caso-id{flex:1;min-width:0}
+.caso-nombre{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.caso-meta{font-size:11.5px;color:#778;margin-top:3px;display:flex;gap:12px;flex-wrap:wrap}
+.caso-meta b{color:#445;font-weight:700}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:#f0f3f8;padding:1px 6px;border-radius:4px;color:#334}
+.riesgo{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.riesgo.r-critico{background:#fee2e2;color:#991b1b}.riesgo.r-alto{background:#fef3cd;color:#92400e}
+.riesgo.r-medio{background:#dbeafe;color:#1e40af}.riesgo.r-ok{background:#d1fae5;color:#065f46}
+.tipo-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:#eef1f7;color:#556}
+.urg-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;background:#fee2e2;color:#991b1b}
+.val-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:#d1fae5;color:#065f46}
+.expo{font-size:11px;font-weight:800;color:#dc2626;white-space:nowrap}
+.prog-wrap{width:150px;flex-shrink:0}
+.prog-txt{font-size:10.5px;color:#778;font-weight:700;margin-bottom:4px;text-align:right}
+.prog-bar{height:7px;border-radius:4px;background:#eef1f7;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;background:#22c55e;transition:width .3s}
+.prog-fill.pf-part{background:#f59e0b}.prog-fill.pf-low{background:#dc2626}
+.caret{color:#aaa;font-size:13px;flex-shrink:0;transition:transform .2s}
+.caso.open .caret{transform:rotate(90deg)}
+/* Body */
+.caso-body{display:none;border-top:1px solid #eef1f7;padding:4px 16px 16px}
+.caso.open .caso-body{display:block}
+.grp{margin-top:14px}
+.grp-hdr{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.grp-name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:.2px}
+.grp-count{background:#eef1f7;color:#556;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:9px}
+.grp-crit{background:#fee2e2;color:#991b1b;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:8px;letter-spacing:.3px}
+.itm{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;background:#f7f9fc;margin-bottom:5px}
+.itm.i-ok{background:#f0fdf4}.itm.i-falla{background:#fef2f2}.itm.i-na{background:#f4f5f7;opacity:.72}
+.itm-st{border:none;cursor:pointer;border-radius:7px;width:30px;height:30px;font-size:14px;font-weight:800;flex-shrink:0;font-family:'Barlow',sans-serif;transition:transform .1s}
+.itm-st:hover{transform:scale(1.08)}
+.st-pendiente{background:#e2e8f0;color:#64748b}.st-ok{background:#22c55e;color:#fff}
+.st-falla{background:#dc2626;color:#fff}.st-na{background:#cbd5e1;color:#64748b}
+.itm-main{flex:1;min-width:0}
+.itm-label{font-size:12.8px;font-weight:600;line-height:1.35}
+.itm.i-na .itm-label{text-decoration:line-through}
+.itm-obl{color:#dc2626;font-weight:800;margin-left:3px}
+.itm-sub{font-size:10.5px;color:#8a93a5;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.itm-sub a{color:#0057a8;text-decoration:none;font-weight:700}
+.itm-sub a:hover{text-decoration:underline}
+.itm-ev{border:1px solid #d8dfe9;background:#fff;border-radius:6px;padding:5px 9px;font-size:11.5px;font-family:'Barlow',sans-serif;outline:none;width:230px;flex-shrink:0}
+.itm-ev:focus{border-color:#0057a8}
+.itm-ev.itm-tk{width:120px;font-family:ui-monospace,Menlo,Consolas,monospace}
+/* Acciones caso */
+.caso-acts{display:flex;gap:8px;margin-top:16px;padding-top:13px;border-top:1px solid #eef1f7;flex-wrap:wrap;align-items:center}
+.ca{border:1.5px solid #d0d8e8;background:#fff;color:#445;cursor:pointer;border-radius:8px;padding:7px 15px;font-size:12px;font-weight:700;font-family:'Barlow',sans-serif;transition:all .12s}
+.ca:hover{border-color:#0057a8;color:#0057a8}
+.ca-val{background:#22c55e;border-color:#22c55e;color:#fff}.ca-val:hover{background:#16a34a;border-color:#16a34a;color:#fff}
+.ca-del{background:#fde8e8;border-color:#fca5a5;color:#c0392b}.ca-del:hover{border-color:#c0392b;color:#c0392b}
+.ca-sp{flex:1}
+.val-info{font-size:11.5px;color:#15803d;font-weight:700}
+.blk-info{font-size:11.5px;color:#92400e;font-weight:700}
+.notas-box{background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 7px 7px 0;padding:9px 12px;font-size:12px;color:#665;margin-top:12px;line-height:1.45}
+/* Empty */
+.empty-state{text-align:center;padding:52px;color:#aab;background:#fff;border-radius:12px}
+.empty-state .ei{font-size:40px;margin-bottom:10px}
+/* Modal */
+.mo{position:fixed;inset:0;background:rgba(10,10,30,.6);z-index:5000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.mo.open{display:flex}
+.mb{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.25)}
+.mh{background:linear-gradient(135deg,#0057a8,#1a1a2e);color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0;flex-shrink:0}
+.mh strong{font-size:15px}
+.mx{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+.mbody{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.mft{padding:13px 20px;border-top:1px solid #eef1f7;display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.flbl{font-size:10.5px;font-weight:700;color:#667;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.fi{width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Barlow',sans-serif;outline:none;color:#1a1a2e;background:#fff}
+.fi:focus{border-color:#0057a8}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+.btn-p{background:#0057a8;color:#fff;border:none;cursor:pointer;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:700}
+.btn-p:hover{background:#003d7a}
+.btn-s{background:#f0f3f8;color:#556;border:1.5px solid #d0d8e8;cursor:pointer;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600}
+.form-err{background:#fde8e8;color:#c0392b;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;display:none}
+/* Acta */
+.acta{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;background:#f7f9fc;border:1px solid #e0e6ef;border-radius:9px;padding:14px;max-height:60vh;overflow:auto;color:#223}
+/* Toast */
+.tst{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:24px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+.tst.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}.prog-wrap{display:none}.row3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-hdr">
+    <div class="page-title">&#128272; Verificador de Baja de Cuentas</div>
+    <div class="page-sub">
+      Control de cierre de accesos por egreso &#8212; base normativa
+      <code>SOP-GIA-003</code> <code>SOP-SAP-004</code> <code>SOP-GIA-007</code>.
+      Un caso permanece con <b>exposici&#243;n residual</b> mientras exista un control obligatorio sin verificar.
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi k-act"><div class="kpi-label">Casos abiertos</div><div class="kpi-val" id="k-act">&#8212;</div><div class="kpi-foot" id="k-act-f">&nbsp;</div></div>
+    <div class="kpi k-exp"><div class="kpi-label">Con exposici&#243;n residual</div><div class="kpi-val" id="k-exp">&#8212;</div><div class="kpi-foot" id="k-exp-f">&nbsp;</div></div>
+    <div class="kpi k-sla"><div class="kpi-label">Fuera de SLA</div><div class="kpi-val" id="k-sla">&#8212;</div><div class="kpi-foot">Egreso &gt; 1 d&#237;a h&#225;bil</div></div>
+    <div class="kpi k-ver"><div class="kpi-label">Verificados y validados</div><div class="kpi-val" id="k-ver">&#8212;</div><div class="kpi-foot">Con 2.&#170; l&#237;nea</div></div>
+    <div class="kpi k-cmp"><div class="kpi-label">Cumplimiento obligatorio</div><div class="kpi-val" id="k-cmp">&#8212;</div><div class="kpi-foot">Controles cr&#237;ticos cerrados</div></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="add-btn" id="btn-add">&#65291; Nueva baja</button>
+    <div class="search-wrap">
+      <span class="si">&#128269;</span>
+      <input type="text" id="s-text" placeholder="Buscar por nombre, cuenta AD, ticket, empresa...">
+    </div>
+    <select class="filter-sel" id="f-riesgo">
+      <option value="">Todo nivel de riesgo</option>
+      <option value="critico">Cr&#237;tico</option><option value="alto">Alto</option>
+      <option value="medio">Medio</option><option value="ok">Sin exposici&#243;n</option>
+    </select>
+    <select class="filter-sel" id="f-sitio">
+      <option value="">Todos los sitios</option>
+      <option>Mantoverde</option><option>Mantos Blancos</option>
+      <option>Santiago</option><option>Vancouver</option><option>Otro</option>
+    </select>
+    <label class="chk-wrap" title="Mostrar casos cerrados y validados">
+      <input type="checkbox" id="chk-cerr"> Ver cerrados
+    </label>
+  </div>
+
+  <div id="lista"></div>
+  <div class="empty-state" id="empty" style="display:none">
+    <div class="ei">&#128272;</div>
+    <p>Sin casos de baja registrados para el filtro aplicado.</p>
+  </div>
+</div>
+
+<!-- Modal alta/edicion -->
+<div class="mo" id="modal">
+  <div class="mb">
+    <div class="mh"><strong id="m-title">&#10133; Nueva baja de cuenta</strong><button class="mx" onclick="closeModal()">&#215;</button></div>
+    <div class="mbody">
+      <div class="form-err" id="m-err"></div>
+      <div class="row2">
+        <div><div class="flbl">Nombre del usuario *</div><input class="fi" id="f-nombre" placeholder="Nombre y apellido"></div>
+        <div><div class="flbl">Cuenta AD (samAccountName) *</div><input class="fi" id="f-username" placeholder="jperez"></div>
+      </div>
+      <div class="row2">
+        <div><div class="flbl">Correo corporativo</div><input class="fi" id="f-email" placeholder="jperez@capstonecopper.com"></div>
+        <div><div class="flbl">Ticket de origen</div><input class="fi" id="f-ticket" placeholder="INC0012345 / RITM0034521"></div>
+      </div>
+      <div class="row3">
+        <div><div class="flbl">Empresa</div><input class="fi" id="f-empresa" placeholder="Capstone / contratista"></div>
+        <div><div class="flbl">Cargo</div><input class="fi" id="f-cargo" placeholder="Cargo"></div>
+        <div><div class="flbl">Sitio</div>
+          <select class="fi" id="f-sitio-m">
+            <option>Mantoverde</option><option>Mantos Blancos</option>
+            <option>Santiago</option><option>Vancouver</option><option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="row3">
+        <div><div class="flbl">Tipo de egreso</div>
+          <select class="fi" id="f-tipo"><option>Empleado</option><option>Contratista</option><option>Transferencia interna</option></select>
+        </div>
+        <div><div class="flbl">Fecha efectiva de egreso</div><input class="fi" type="date" id="f-fecha"></div>
+        <div><div class="flbl">Urgencia</div>
+          <select class="fi" id="f-urg"><option>Normal</option><option>Inmediata</option></select>
+        </div>
+      </div>
+      <div class="row2">
+        <div><div class="flbl">Solicitante (RRHH / ADC)</div><input class="fi" id="f-solic" placeholder="Nombre y area del solicitante"></div>
+        <div><div class="flbl">Instrucci&#243;n del buz&#243;n</div>
+          <select class="fi" id="f-buzon">
+            <option>Redirigir 30 dias</option><option>Convertir a buzon compartido</option><option>Deshabilitar inmediato</option>
+          </select>
+        </div>
+      </div>
+      <div><div class="flbl">Notas / contexto</div><textarea class="fi" id="f-notas" rows="2" placeholder="Sistemas adicionales, accesos OT, condiciones especiales..."></textarea></div>
+    </div>
+    <div class="mft">
+      <button class="btn-s" onclick="closeModal()">Cancelar</button>
+      <button class="btn-p" onclick="saveBaja()">&#128190; Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal acta -->
+<div class="mo" id="modal-acta">
+  <div class="mb">
+    <div class="mh"><strong>&#128203; Acta de verificaci&#243;n de baja</strong><button class="mx" onclick="closeActa()">&#215;</button></div>
+    <div class="mbody"><div class="acta" id="acta-txt"></div></div>
+    <div class="mft">
+      <button class="btn-s" onclick="closeActa()">Cerrar</button>
+      <button class="btn-p" onclick="copiarActa()">&#128203; Copiar al portapapeles</button>
+    </div>
+  </div>
+</div>
+
+<div class="tst" id="toast"></div>
+
+<script>
+var WU = localStorage.getItem('mda_worker_url') || '';
+var SS = localStorage.getItem('mda_session')    || '';
+var bajas = [], checklist = [], userRole = '', userEmail = '';
+var editId = null, abiertos = {};
+
+// Grupos cuya exposicion se considera critica (identidad, perimetro, negocio, OT)
+var GRUPOS_CRITICOS = ['Identidad (AD / Entra ID)','Acceso Remoto y Perimetral','Entorno OT / Operaciones','Aplicaciones de Negocio'];
+var CICLO  = ['pendiente','ok','falla','na'];
+var SIMBOL = {pendiente:'·', ok:'✓', falla:'!', na:'–'};
+var ETIQ   = {pendiente:'Pendiente', ok:'Verificado', falla:'Con hallazgo', na:'No aplica'};
+
+function aFetch(url,opts){opts=opts||{};if(!opts.headers)opts.headers={};opts.headers['Authorization']='Bearer '+SS;return fetch(url,opts);}
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(iso){if(!iso)return '—';var p=String(iso).slice(0,10).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:iso;}
+function hoy(){return new Date().toISOString().slice(0,10);}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
+
+// Dias habiles transcurridos desde la fecha de egreso (excluye sabado y domingo)
+function diasHabiles(desde){
+  if(!desde) return 0;
+  var d=new Date(desde+'T00:00:00'), f=new Date(hoy()+'T00:00:00'), n=0;
+  if(d>=f) return 0;
+  while(d<f){ d.setDate(d.getDate()+1); var w=d.getDay(); if(w!==0&&w!==6) n++; }
+  return n;
+}
+
+// ── Modelo de riesgo ────────────────────────────────────────────────────────
+function evaluar(b){
+  var it=b.items||{}, oblig=0, obligOk=0, total=0, resueltos=0;
+  var pendCriticos=[], hallazgos=[];
+  checklist.forEach(function(c){
+    var e=(it[c.key]&&it[c.key].estado)||'pendiente';
+    if(e!=='na'){ total++; if(e==='ok') resueltos++; }
+    if(e==='falla') hallazgos.push(c);
+    if(c.obligatorio&&e!=='na'){
+      oblig++;
+      if(e==='ok') obligOk++;
+      else if(GRUPOS_CRITICOS.indexOf(c.grupo)>=0) pendCriticos.push(c);
+    }
+  });
+  var expuesto = oblig>obligOk;
+  var dias     = expuesto ? diasHabiles(b.fechaEgreso) : 0;
+  var riesgo;
+  if(!expuesto && !hallazgos.length){
+    // Obligatorios cerrados: 'ok' solo si tambien se resolvieron los controles
+    // complementarios (equipamiento, licencias, telefonia); si no, riesgo medio.
+    riesgo = (resueltos===total) ? 'ok' : 'medio';
+  }
+  else if(pendCriticos.length && dias>=1) riesgo='critico';
+  else riesgo='alto';
+  var cerrado = riesgo==='ok' && !!b.validadoAt;
+  return {oblig:oblig,obligOk:obligOk,total:total,resueltos:resueltos,expuesto:expuesto,
+          dias:dias,riesgo:riesgo,hallazgos:hallazgos,pendCriticos:pendCriticos,cerrado:cerrado,
+          pct: total? Math.round(resueltos*100/total) : 100};
+}
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  if(!WU||!SS){window.location.href='login.html';return;}
+  cargar();
+  document.getElementById('s-text').oninput   = render;
+  document.getElementById('f-riesgo').onchange= render;
+  document.getElementById('f-sitio').onchange = render;
+  document.getElementById('chk-cerr').onchange= render;
+  document.getElementById('btn-add').onclick  = openAdd;
+});
+
+function cargar(){
+  aFetch(WU+'/bajas').then(function(r){return r.json();}).then(function(d){
+    bajas=d.bajas||[]; checklist=d.checklist||[]; userRole=d.role||''; userEmail=d.email||'';
+    render(); kpis();
+  }).catch(function(e){console.error('Error cargando bajas:',e);});
+}
+
+// ── KPIs ────────────────────────────────────────────────────────────────────
+function kpis(){
+  var abiertas=0, expuestos=0, fueraSla=0, validados=0, oblig=0, obligOk=0, diasMax=0, criticos=0;
+  bajas.forEach(function(b){
+    var v=evaluar(b);
+    oblig+=v.oblig; obligOk+=v.obligOk;
+    if(v.cerrado){ validados++; return; }
+    abiertas++;
+    if(v.expuesto){ expuestos++; if(v.dias>diasMax) diasMax=v.dias; }
+    if(v.dias>=1) fueraSla++;
+    if(v.riesgo==='critico') criticos++;
+  });
+  document.getElementById('k-act').textContent = abiertas;
+  document.getElementById('k-exp').textContent = expuestos;
+  document.getElementById('k-sla').textContent = fueraSla;
+  document.getElementById('k-ver').textContent = validados;
+  document.getElementById('k-cmp').textContent = oblig? Math.round(obligOk*100/oblig)+'%' : '—';
+  document.getElementById('k-act-f').textContent = criticos? criticos+' en riesgo crítico' : 'Sin casos críticos';
+  document.getElementById('k-exp-f').textContent = diasMax? 'Mayor exposición: '+diasMax+' día(s) hábil(es)' : 'Sin accesos vigentes';
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+function render(){
+  var q=(document.getElementById('s-text').value||'').toLowerCase().trim();
+  var fr=document.getElementById('f-riesgo').value;
+  var fs=document.getElementById('f-sitio').value;
+  var verCerr=document.getElementById('chk-cerr').checked;
+
+  var vis=bajas.filter(function(b){
+    var v=evaluar(b);
+    if(v.cerrado&&!verCerr) return false;
+    if(fr&&v.riesgo!==fr) return false;
+    if(fs&&b.sitio!==fs) return false;
+    if(q){
+      var hay=[b.nombre,b.username,b.email,b.ticket,b.empresa,b.cargo,b.solicitante].join(' ').toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+
+  var ord={critico:0,alto:1,medio:2,ok:3};
+  vis.sort(function(a,b){
+    var va=evaluar(a), vb=evaluar(b);
+    if(ord[va.riesgo]!==ord[vb.riesgo]) return ord[va.riesgo]-ord[vb.riesgo];
+    if(vb.dias!==va.dias) return vb.dias-va.dias;
+    return (b.fechaEgreso||'').localeCompare(a.fechaEgreso||'');
+  });
+
+  document.getElementById('empty').style.display = vis.length?'none':'block';
+  document.getElementById('lista').innerHTML = vis.map(cardHTML).join('');
+}
+
+function cardHTML(b){
+  var v=evaluar(b), op=abiertos[b.id];
+  var pf = v.pct>=100?'':(v.pct>=50?' pf-part':' pf-low');
+  var h='<div class="caso r-'+v.riesgo+(op?' open':'')+'" id="c-'+b.id+'">';
+
+  h+='<div class="caso-hdr" onclick="toggle(\''+b.id+'\')">';
+  h+='<span class="caret">&#9654;</span>';
+  h+='<div class="caso-id">';
+  h+='<div class="caso-nombre">'+esc(b.nombre||'(sin nombre)');
+  h+=' <span class="mono">'+esc(b.username||'—')+'</span>';
+  h+=' <span class="tipo-badge">'+esc(b.tipo||'')+'</span>';
+  if(b.urgencia==='Inmediata') h+=' <span class="urg-badge">INMEDIATA</span>';
+  if(b.validadoAt) h+=' <span class="val-badge">&#10003; 2.ª línea</span>';
+  h+='</div>';
+  h+='<div class="caso-meta">';
+  if(b.ticket)  h+='<span><b>Ticket:</b> '+esc(b.ticket)+'</span>';
+  h+='<span><b>Egreso:</b> '+fmtDate(b.fechaEgreso)+'</span>';
+  if(b.sitio)   h+='<span><b>Sitio:</b> '+esc(b.sitio)+'</span>';
+  if(b.empresa) h+='<span><b>Empresa:</b> '+esc(b.empresa)+'</span>';
+  if(v.expuesto&&v.dias>=1) h+='<span class="expo">&#9888; '+v.dias+' día(s) hábil(es) con accesos vigentes</span>';
+  if(v.hallazgos.length)    h+='<span class="expo">&#9888; '+v.hallazgos.length+' hallazgo(s)</span>';
+  h+='</div></div>';
+  h+='<span class="riesgo r-'+v.riesgo+'">'+(v.riesgo==='ok'?'Sin exposición':v.riesgo)+'</span>';
+  h+='<div class="prog-wrap"><div class="prog-txt">'+v.resueltos+'/'+v.total+' controles &#183; obligatorios '+v.obligOk+'/'+v.oblig+'</div>';
+  h+='<div class="prog-bar"><div class="prog-fill'+pf+'" style="width:'+v.pct+'%"></div></div></div>';
+  h+='</div>';
+
+  h+='<div class="caso-body">';
+  if(op) h+=bodyHTML(b,v);
+  h+='</div></div>';
+  return h;
+}
+
+function bodyHTML(b,v){
+  var h='', grupos=[];
+  checklist.forEach(function(c){ if(grupos.indexOf(c.grupo)<0) grupos.push(c.grupo); });
+
+  grupos.forEach(function(g){
+    var items=checklist.filter(function(c){return c.grupo===g;});
+    var ok=items.filter(function(c){var e=est(b,c.key);return e==='ok'||e==='na';}).length;
+    h+='<div class="grp"><div class="grp-hdr"><span class="grp-name">'+esc(g)+'</span>';
+    h+='<span class="grp-count">'+ok+'/'+items.length+'</span>';
+    if(GRUPOS_CRITICOS.indexOf(g)>=0) h+='<span class="grp-crit">CRÍTICO</span>';
+    h+='</div>';
+    items.forEach(function(c){
+      var it=(b.items&&b.items[c.key])||{}, e=it.estado||'pendiente';
+      h+='<div class="itm i-'+e+'">';
+      h+='<button class="itm-st st-'+e+'" title="'+ETIQ[e]+' — clic para cambiar" onclick="ciclar(\''+b.id+'\',\''+c.key+'\')">'+SIMBOL[e]+'</button>';
+      h+='<div class="itm-main"><div class="itm-label">'+esc(c.label)+(c.obligatorio?'<span class="itm-obl" title="Control obligatorio">*</span>':'')+'</div>';
+      h+='<div class="itm-sub"><span class="mono">'+esc(c.key)+'</span>';
+      if(c.sop) h+='<a href="procedimientos/'+esc(c.sop)+'.html" target="_blank" rel="noopener">'+esc(c.sop)+'</a>';
+      h+='<span>'+ETIQ[e]+(it.verificadoPor?' por '+esc(it.verificadoPor):'')+(it.verificadoAt?' · '+fmtDate(it.verificadoAt):'')+'</span>';
+      h+='</div></div>';
+      h+='<input class="itm-ev itm-tk" placeholder="Ticket ref." value="'+esc(it.ticketRef||'')+'" onchange="setCampo(\''+b.id+'\',\''+c.key+'\',\'ticketRef\',this.value)">';
+      h+='<input class="itm-ev" placeholder="Evidencia / observación" value="'+esc(it.evidencia||'')+'" onchange="setCampo(\''+b.id+'\',\''+c.key+'\',\'evidencia\',this.value)">';
+      h+='</div>';
+    });
+    h+='</div>';
+  });
+
+  if(b.notas) h+='<div class="notas-box"><b>Notas:</b> '+esc(b.notas)+'</div>';
+  if(b.instruccionBuzon) h+='<div class="notas-box"><b>Instrucción de buzón (ADC/RRHH):</b> '+esc(b.instruccionBuzon)+'</div>';
+
+  h+='<div class="caso-acts">';
+  h+='<button class="ca" onclick="openEdit(\''+b.id+'\')">&#9998; Editar antecedentes</button>';
+  h+='<button class="ca" onclick="verActa(\''+b.id+'\')">&#128203; Generar acta</button>';
+  if(b.validadoAt){
+    h+='<span class="val-info">&#10003; Validado en 2.ª línea por '+esc(b.validadoPor)+' el '+fmtDate(b.validadoAt)+'</span>';
+    h+='<button class="ca" onclick="validar(\''+b.id+'\',false)">Revertir validación</button>';
+  } else if(v.riesgo!=='ok'){
+    h+='<span class="blk-info">&#9888; Validación bloqueada: quedan '+(v.total-v.resueltos)+' control(es) sin resolver'+(v.hallazgos.length?' y '+v.hallazgos.length+' hallazgo(s) abierto(s)':'')+'</span>';
+  } else {
+    h+='<button class="ca ca-val" onclick="validar(\''+b.id+'\',true)">&#10003; Validar en 2.ª línea</button>';
+  }
+  h+='<span class="ca-sp"></span>';
+  if(userRole==='admin') h+='<button class="ca ca-del" onclick="borrar(\''+b.id+'\')">&#128465; Eliminar</button>';
+  h+='</div>';
+  return h;
+}
+
+function est(b,key){ return (b.items&&b.items[key]&&b.items[key].estado)||'pendiente'; }
+function getBaja(id){ return bajas.filter(function(b){return b.id===id;})[0]; }
+
+function toggle(id){
+  abiertos[id]=!abiertos[id];
+  render();
+}
+
+// ── Mutaciones ──────────────────────────────────────────────────────────────
+function patch(id,payload,after){
+  return aFetch(WU+'/bajas/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.error){ toast(d.error); return; }
+      var i=bajas.findIndex(function(b){return b.id===id;});
+      if(i>=0) bajas[i]=d.baja;
+      if(after) after(d.baja);
+    }).catch(function(){ toast('Error de conexión con el backend'); });
+}
+
+function ciclar(id,key){
+  var b=getBaja(id); if(!b) return;
+  var e=est(b,key);
+  var nuevo=CICLO[(CICLO.indexOf(e)+1)%CICLO.length];
+  patch(id,{item:{key:key,estado:nuevo}},function(){ render(); kpis(); });
+}
+
+function setCampo(id,key,campo,val){
+  var it={key:key}; it[campo]=val;
+  patch(id,{item:it},function(){ kpis(); });
+}
+
+function validar(id,val){
+  if(val&&!confirm('Confirmas la validación de segunda línea? Deja registro auditable a tu nombre.')) return;
+  patch(id,{validar:val},function(){ render(); kpis(); });
+}
+
+function borrar(id){
+  var b=getBaja(id); if(!b) return;
+  if(!confirm('Eliminar definitivamente el caso de baja de '+(b.nombre||'')+'?')) return;
+  aFetch(WU+'/bajas/'+id,{method:'DELETE'}).then(function(r){return r.json();}).then(function(d){
+    if(d.error){ toast(d.error); return; }
+    bajas=bajas.filter(function(x){return x.id!==id;});
+    render(); kpis(); toast('Caso eliminado');
+  }).catch(function(){ toast('Error de conexión con el backend'); });
+}
+
+// ── Modal alta/edicion ──────────────────────────────────────────────────────
+var CAMPOS=[['f-nombre','nombre'],['f-username','username'],['f-email','email'],['f-ticket','ticket'],
+            ['f-empresa','empresa'],['f-cargo','cargo'],['f-sitio-m','sitio'],['f-tipo','tipo'],
+            ['f-fecha','fechaEgreso'],['f-urg','urgencia'],['f-solic','solicitante'],
+            ['f-buzon','instruccionBuzon'],['f-notas','notas']];
+
+function openAdd(){
+  editId=null;
+  document.getElementById('m-title').innerHTML='&#10133; Nueva baja de cuenta';
+  CAMPOS.forEach(function(p){ document.getElementById(p[0]).value=''; });
+  document.getElementById('f-sitio-m').value='Mantoverde';
+  document.getElementById('f-tipo').value='Empleado';
+  document.getElementById('f-urg').value='Normal';
+  document.getElementById('f-buzon').value='Redirigir 30 dias';
+  document.getElementById('f-fecha').value=hoy();
+  document.getElementById('m-err').style.display='none';
+  document.getElementById('modal').classList.add('open');
+}
+
+function openEdit(id){
+  var b=getBaja(id); if(!b) return;
+  editId=id;
+  document.getElementById('m-title').innerHTML='&#9998; Editar antecedentes de la baja';
+  CAMPOS.forEach(function(p){ document.getElementById(p[0]).value=b[p[1]]||''; });
+  document.getElementById('m-err').style.display='none';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+function saveBaja(){
+  var data={};
+  CAMPOS.forEach(function(p){ data[p[1]]=(document.getElementById(p[0]).value||'').trim(); });
+  var err=document.getElementById('m-err');
+  if(!data.nombre||!data.username){
+    err.textContent='Nombre del usuario y cuenta AD son obligatorios.';
+    err.style.display='block'; return;
+  }
+  if(!data.fechaEgreso) data.fechaEgreso=null;
+
+  if(editId){
+    patch(editId,data,function(){ render(); kpis(); closeModal(); toast('Antecedentes actualizados'); });
+  } else {
+    aFetch(WU+'/bajas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+      .then(function(r){return r.json();}).then(function(d){
+        if(d.error){ err.textContent=d.error; err.style.display='block'; return; }
+        bajas.push(d.baja); abiertos[d.baja.id]=true;
+        render(); kpis(); closeModal(); toast('Caso de baja creado');
+      }).catch(function(){ err.textContent='Error de conexión con el backend.'; err.style.display='block'; });
+  }
+}
+
+// ── Acta de verificacion ────────────────────────────────────────────────────
+function verActa(id){
+  var b=getBaja(id); if(!b) return;
+  var v=evaluar(b), L=[];
+  L.push('ACTA DE VERIFICACION DE BAJA DE CUENTAS');
+  L.push('MDA Capstone Copper Chile - Tres60 IT Services');
+  L.push('Base normativa: SOP-GIA-003 / SOP-SAP-004 / SOP-GIA-007');
+  L.push('='.repeat(72));
+  L.push('Usuario          : '+(b.nombre||'-')+'  ('+(b.username||'-')+')');
+  L.push('Correo           : '+(b.email||'-'));
+  L.push('Empresa / cargo  : '+(b.empresa||'-')+' / '+(b.cargo||'-'));
+  L.push('Sitio / tipo     : '+(b.sitio||'-')+' / '+(b.tipo||'-'));
+  L.push('Fecha de egreso  : '+fmtDate(b.fechaEgreso)+'   Urgencia: '+(b.urgencia||'Normal'));
+  L.push('Ticket de origen : '+(b.ticket||'-')+'   Solicitante: '+(b.solicitante||'-'));
+  L.push('Instruccion buzon: '+(b.instruccionBuzon||'-'));
+  L.push('-'.repeat(72));
+  L.push('RESULTADO: '+(v.cerrado?'BAJA VERIFICADA Y VALIDADA':'BAJA INCOMPLETA - EXPOSICION RESIDUAL'));
+  L.push('Controles cerrados: '+v.resueltos+'/'+v.total+'   Obligatorios: '+v.obligOk+'/'+v.oblig);
+  if(v.expuesto) L.push('Dias habiles con accesos vigentes: '+v.dias);
+  if(v.hallazgos.length) L.push('Hallazgos abiertos: '+v.hallazgos.length);
+  L.push('='.repeat(72));
+
+  var grupos=[];
+  checklist.forEach(function(c){ if(grupos.indexOf(c.grupo)<0) grupos.push(c.grupo); });
+  grupos.forEach(function(g){
+    L.push('');
+    L.push('['+g.toUpperCase()+']');
+    checklist.filter(function(c){return c.grupo===g;}).forEach(function(c){
+      var it=(b.items&&b.items[c.key])||{}, e=it.estado||'pendiente';
+      var marca={ok:'[X]',falla:'[!]',na:'[-]',pendiente:'[ ]'}[e];
+      var ln='  '+marca+' '+c.key+' '+c.label+(c.obligatorio?' (*)':'');
+      if(it.ticketRef) ln+='  | ticket: '+it.ticketRef;
+      if(it.evidencia) ln+='  | '+it.evidencia;
+      if(it.verificadoPor) ln+='  | '+it.verificadoPor+' '+fmtDate(it.verificadoAt);
+      L.push(ln);
+    });
+  });
+
+  L.push('');
+  L.push('='.repeat(72));
+  L.push('Ejecutado por  : '+(b.createdBy||'-')+'   Apertura: '+fmtDate(b.createdAt));
+  L.push('Validado 2.a l.: '+(b.validadoPor||'PENDIENTE')+(b.validadoAt?'   '+fmtDate(b.validadoAt):''));
+  L.push('Acta generada  : '+new Date().toLocaleString('es-CL'));
+  L.push('(*) Control obligatorio  [X] verificado  [!] hallazgo  [-] no aplica  [ ] pendiente');
+
+  document.getElementById('acta-txt').textContent=L.join('\n');
+  document.getElementById('modal-acta').classList.add('open');
+}
+function closeActa(){ document.getElementById('modal-acta').classList.remove('open'); }
+function copiarActa(){
+  var t=document.getElementById('acta-txt').textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){toast('Acta copiada al portapapeles');},function(){toast('No se pudo copiar');});
+  } else { toast('Copiado no disponible en este navegador'); }
+}
+
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closeModal(); closeActa(); } });
+</script>
+<script src="js/auth-roles.js"></script>
+</body>
+</html>

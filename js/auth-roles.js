@@ -35,6 +35,7 @@ var NAV_MAIN = [
   { label:'&#128196; Cat\u00e1logo', roles:['admin','agent'], href: function(){ return base()+'Catalogo_Servicios_MDA_Capstone.html'; } },
   { label:'&#128211; Bit\u00e1cora', roles:['admin','agent'], href: function(){ return base()+'bitacora.html'; } },
   { label:'&#9989; To Do\'s',        roles:['admin','agent'], href: function(){ return base()+'todos.html'; } },
+  { label:'&#128272; Baja de Cuentas', roles:['admin','agent'], href: function(){ return base()+'baja-cuentas.html'; } },
 ];
 
 var NAV_ADMIN = [
