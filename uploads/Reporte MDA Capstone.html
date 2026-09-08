@@ -411,7 +411,7 @@ function chartDrillOnClick(keys, titles) {
 <div class="section">
   <div class="section-title">Métricas KPI — Vista Ejecutiva — Help Desk Support Chile (N1)</div>
   <div class="section-context">
-    Recorte exclusivo del grupo <strong>Help_Desk_Support_Chile_Tech (N1)</strong>. "Total Gestionados" y "Cerrados" corresponden al período 10 Jul - 08 Sep 2026; "Incidentes en Progreso", "Sin Asignar", "Asignados en Espera de Atención" y "Backlog Actual" son fotografía del estado actual a la fecha de corte (2026-09-08 13:14:49).
+    Recorte exclusivo del grupo <strong>Help_Desk_Support_Chile_Tech (N1)</strong>. "Total Gestionados" y "Cerrados" corresponden al período 10 Jul - 08 Sep 2026; "Incidentes en Progreso", "Sin Asignar", "Asignados en Espera de Atención" y "Backlog Actual" son fotografía del estado actual a la fecha de corte (2026-09-08 13:14:53).
     <strong>Sin Asignar</strong> = tickets abiertos que <u>no</u> tienen técnico asignado. <strong>Asignados en Espera de Atención</strong> = tickets que <u>sí</u> tienen técnico asignado, pero permanecen en un estado de cola (Open, Waiting Reply, On Hold, Pending Parts/MSP) sin haber pasado aún a "In Progress"; son dos poblaciones distintas y no se superponen.
     <strong>Backlog Actual</strong> considera todos los sitios del grupo y descuenta los requests fusionados, que ManageEngine deja de contar como inventario abierto (410 si no se descontaran; 0 fusionados excluidos). Los tickets fusionados sí se contabilizan en volumen, cierres y desempeño por agente, porque fueron trabajo gestionado por la mesa.
     Haga clic en cualquier valor para ver el detalle de los tickets que lo componen (pestaña "Detalle de Métricas").
@@ -2729,7 +2729,7 @@ function actualizarCentralTelefonica(mesKey) {
 // asi el 2026-09-04: el corte de las 08:21 se leia como 04:21). Construyendo
 // NOW con el mismo constructor local, ambos lados quedan en la misma base y
 // la comparacion es correcta en cualquier zona.
-const CT_LLAMADAS_NOW_MS = new Date(2026, 8, 8, 13, 15, 2).getTime();
+const CT_LLAMADAS_NOW_MS = new Date(2026, 8, 8, 13, 15, 6).getTime();
 const CT_LLAMADAS_HOY_INICIO_MS = new Date(2026, 8, 8, 0, 0, 0).getTime();
 let ctLlamadasWindowActual = 'mes';
 let ctLlamadasMesActual = '2026-09';
