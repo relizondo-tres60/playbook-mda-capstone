@@ -136,12 +136,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
   .kw-edit-btn:hover{background:#e8f0fb}
   body.admin-mode .kw-edit-btn{display:inline}
   body.admin-mode .proc-keywords{display:none}
-.bitacora-main-btn{width:100%;background:linear-gradient(135deg,#1a1a2e,#0d2d5a);color:#fff;border:none;cursor:pointer;border-radius:14px;padding:18px 24px;display:flex;align-items:center;gap:18px;text-align:left;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.15)}
-.bitacora-main-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
-.bita-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;margin-bottom:2px}
-.bita-sub{font-size:12px;opacity:.75}
-.reporte-main-btn{width:100%;background:linear-gradient(135deg,#b34a00,#ff6b00);color:#fff;border:none;cursor:pointer;border-radius:14px;padding:18px 24px;display:flex;align-items:center;gap:18px;text-align:left;transition:all .15s;box-shadow:0 4px 16px rgba(255,107,0,.25)}
-.reporte-main-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,107,0,.35)}
+.home-btns-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media(max-width:780px){.home-btns-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.home-btns-grid{grid-template-columns:1fr}}
+.home-btn{width:100%;color:#fff;border:none;cursor:pointer;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:13px;text-align:left;transition:all .15s;box-shadow:0 3px 10px rgba(0,0,0,.15);min-height:64px}
+.home-btn:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.home-btn-icon{font-size:22px;flex-shrink:0}
+.bita-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:1px}
+.bita-sub{font-size:10.5px;opacity:.78}
+.bitacora-main-btn{width:100%;background:linear-gradient(135deg,#1a1a2e,#0d2d5a);color:#fff;border:none;cursor:pointer;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;text-align:left;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.13)}
+.bitacora-main-btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.reporte-main-btn{width:100%;background:linear-gradient(135deg,#b34a00,#ff6b00);color:#fff;border:none;cursor:pointer;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;text-align:left;transition:all .15s;box-shadow:0 2px 8px rgba(255,107,0,.2)}
+.reporte-main-btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
 
 
 .valid-badge{
@@ -198,30 +204,43 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
     <div class="ops-grid" id="ops-grid">
       <!-- Generado por JS -->
     </div>
-    <button class="bitacora-main-btn" onclick="window.location.href='bitacora.html'" style="margin-top:14px">
-      <span style="font-size:26px">&#128211;</span>
-      <div style="flex:1">
-        <div class="bita-title">Bit&#225;cora de Turno</div>
-        <div class="bita-sub">Anotaciones, incidentes y registro por turno</div>
-      </div>
-      <span style="font-size:20px;opacity:.7">&#8250;</span>
-    </button>
-    <button class="reporte-main-btn" onclick="window.open('uploads/Reporte%20MDA%20Capstone.html','_blank')" style="margin-top:10px">
-      <span style="font-size:26px">&#128200;</span>
-      <div style="flex:1">
-        <div class="bita-title">Reporte de Performance</div>
-        <div class="bita-sub">KPIs, niveles de servicio y desempe&#241;o de agentes</div>
-      </div>
-      <span style="font-size:20px;opacity:.7">&#8250;</span>
-    </button>
-    <button class="reporte-main-btn" onclick="window.open('https://docs.google.com/spreadsheets/d/1qKal4xmvZww6EcJuKNcNWaIaznLPXakQ/edit?gid=1493693901#gid=1493693901','_blank')" style="margin-top:10px;background:linear-gradient(135deg,#1a6b3a,#2e8b57)">
-      <span style="font-size:26px">&#128197;</span>
-      <div style="flex:1">
-        <div class="bita-title">Calendario de Turnos</div>
-        <div class="bita-sub">Tres60 / Capstone Copper</div>
-      </div>
-      <span style="font-size:20px;opacity:.7">&#8250;</span>
-    </button>
+    <div class="home-btns-grid">
+      <button class="home-btn" onclick="window.location.href='bitacora.html'" style="background:linear-gradient(135deg,#1a1a2e,#0d2d5a)">
+        <span class="home-btn-icon">📓</span>
+        <div style="flex:1"><div class="bita-title">Bitácora de Turno</div><div class="bita-sub">Anotaciones e incidentes por turno</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+      <button class="home-btn" onclick="window.open('uploads/Reporte%20MDA%20Capstone.html','_blank')" style="background:linear-gradient(135deg,#b34a00,#e05500)">
+        <span class="home-btn-icon">📈</span>
+        <div style="flex:1"><div class="bita-title">Reporte de Performance</div><div class="bita-sub">KPIs, SLA y desempeño de agentes</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+      <button class="home-btn" onclick="window.open('https://docs.google.com/spreadsheets/d/1qKal4xmvZww6EcJuKNcNWaIaznLPXakQ/edit?gid=1493693901#gid=1493693901','_blank')" style="background:linear-gradient(135deg,#1a6b3a,#2e8b57)">
+        <span class="home-btn-icon">📅</span>
+        <div style="flex:1"><div class="bita-title">Calendario de Turnos</div><div class="bita-sub">Tres60 / Capstone Copper</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+      <button class="home-btn" onclick="window.open('https://feedback-web-mda-capstone.relizondo-0d3.workers.dev/','_blank')" style="background:linear-gradient(135deg,#6b21a8,#9333ea)">
+        <span class="home-btn-icon">⭐</span>
+        <div style="flex:1"><div class="bita-title">Encuesta de Satisfacción</div><div class="bita-sub">Evalúa la atención recibida</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+      <button class="home-btn" onclick="window.open('https://ext-audit-prod.relizondo-0d3.workers.dev/','_blank')" style="background:linear-gradient(135deg,#0e4b7a,#1565c0)">
+        <span class="home-btn-icon">🔍</span>
+        <div style="flex:1"><div class="bita-title">Auditoría Cuentas Contratistas</div><div class="bita-sub">Proceso Mensual Non-Capstone Accounts</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+      <button class="home-btn" onclick="window.open('https://auditoria-ad.relizondo-0d3.workers.dev/','_blank')" style="background:linear-gradient(135deg,#374151,#1f2937)">
+        <span class="home-btn-icon">👤</span>
+        <div style="flex:1"><div class="bita-title">Auditoría Calidad AD</div><div class="bita-sub">Información de Active Directory</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+      <button class="home-btn" onclick="window.open('https://admin-licencias.relizondo-0d3.workers.dev/','_blank')" style="background:linear-gradient(135deg,#92400e,#b45309)">
+        <span class="home-btn-icon">💿</span>
+        <div style="flex:1"><div class="bita-title">Administración de Licencias</div><div class="bita-sub">Gestión de licencias de software</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+    </div>
   </div>
 
   
@@ -311,7 +330,7 @@ window._mdaProcs = PROCS;   // alias para auth-roles.js
 window.PROCS     = PROCS;   // expuesto en window (loadCustomSOPs)
 window._procKeywords = {};   // keywords personalizadas (cargadas desde KV via auth-roles.js)
 const DOMS = [{"cod": "GIA", "name": "Gestión de Identidad y Accesos", "color": "#1a6b3a", "icon": "🔑"}, {"cod": "SAP", "name": "SAP y Aplicaciones Globales", "color": "#7b2d8b", "icon": "⚙️"}, {"cod": "APP", "name": "Productividad y Aplicaciones Corporativas", "color": "#0057a8", "icon": "💼"}, {"cod": "EQU", "name": "Equipos y Dispositivos", "color": "#c0392b", "icon": "💻"}, {"cod": "NET", "name": "Red, Conectividad e Infraestructura", "color": "#1e5a8e", "icon": "🌐"}, {"cod": "MIN", "name": "Operaciones Mina — Sistemas de Flota", "color": "#8b4513", "icon": "🏭"}, {"cod": "VHF", "name": "Radiocomunicaciones VHF", "color": "#1a5276", "icon": "📻"}, {"cod": "COL", "name": "Colaboración y Comunicación", "color": "#155a6e", "icon": "💬"}, {"cod": "CYB", "name": "Ciberseguridad", "color": "#b03a2e", "icon": "🛡️"}, {"cod": "SOT", "name": "Soporte Transversal y CCTV", "color": "#4a4a5a", "icon": "🔧"}, {"cod": "INF", "name": "Infraestructura de Servidores y Sistemas Críticos", "color": "#1a5276", "icon": "🖥️"}, {"cod": "INC", "name": "Gestión de Incidentes", "color": "#922b21", "icon": "🚨"}];
-const OPS_DEF = [{"id": "MVE", "nombre": "Mantoverde", "color": "#a04010", "bg": "linear-gradient(135deg,#b5450a,#7a2e05)", "icon": "⛏️", "desc": "Faena MVE — Región de Atacama"}, {"id": "MBL", "nombre": "Mantos Blancos", "color": "#1e5a96", "bg": "linear-gradient(135deg,#2e6da4,#1a3f6b)", "icon": "🏔️", "desc": "Faena MBL — Región de Antofagasta"}, {"id": "STG", "nombre": "Santiago", "color": "#1a3a5c", "bg": "linear-gradient(135deg,#253d5f,#0d1f35)", "icon": "🏢", "desc": "Oficinas corporativas Santiago"}, {"id": "VAN", "nombre": "Vancouver", "color": "#1a6b3a", "bg": "linear-gradient(135deg,#236b42,#0d3d20)", "icon": "🍁", "desc": "Operaciones Capstone Mining Corp"}];
+const OPS_DEF = [{"id": "MVE", "nombre": "Mantoverde", "color": "#a04010", "bg": "linear-gradient(135deg,#b5450a,#7a2e05)", "icon": "⛏️", "desc": "Faena MVE — Región de Atacama"}, {"id": "MBL", "nombre": "Mantos Blancos", "color": "#1e5a96", "bg": "linear-gradient(135deg,#2e6da4,#1a3f6b)", "icon": "🏔️", "desc": "Faena MBL — Región de Antofagasta"}, {"id": "STG", "nombre": "Santiago", "color": "#1a3a5c", "bg": "linear-gradient(135deg,#253d5f,#0d1f35)", "icon": "🏢", "desc": "Oficinas corporativas Santiago"}];
 const FEEDBACK_KEY = 'mda_capstone_feedback';
 /* ── ESTADO ── */
 var currentOp = null;
