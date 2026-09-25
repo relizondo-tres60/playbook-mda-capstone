@@ -136,11 +136,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
   .kw-edit-btn:hover{background:#e8f0fb}
   body.admin-mode .kw-edit-btn{display:inline}
   body.admin-mode .proc-keywords{display:none}
-.home-btns-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;margin-top:12px}
-.home-btns-grid .home-btn:nth-child(-n+4){grid-column:span 3}
-.home-btns-grid .home-btn:nth-child(n+5){grid-column:span 4}
-@media(max-width:780px){.home-btns-grid{grid-template-columns:repeat(2,1fr)}.home-btns-grid .home-btn:nth-child(-n+4),.home-btns-grid .home-btn:nth-child(n+5){grid-column:span 1}}
-@media(max-width:420px){.home-btns-grid{grid-template-columns:1fr}.home-btns-grid .home-btn:nth-child(-n+4),.home-btns-grid .home-btn:nth-child(n+5){grid-column:span 1}}
+.home-section-label{font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;margin:0 0 8px;padding-left:2px}
+.home-btns-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media(max-width:780px){.home-btns-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.home-btns-grid{grid-template-columns:1fr}}
 .home-btn{width:100%;color:#fff;border:none;cursor:pointer;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:13px;text-align:left;transition:all .15s;box-shadow:0 3px 10px rgba(0,0,0,.15);min-height:64px}
 .home-btn:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .home-btn-icon{font-size:22px;flex-shrink:0}
@@ -203,9 +202,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
 
     <div class="ops-label">Selecciona la faena del usuario para ver los procedimientos aplicables</div>
 
+    <div class="home-section-label">Procedimientos Operativos</div>
     <div class="ops-grid" id="ops-grid">
       <!-- Generado por JS -->
     </div>
+    <div class="home-section-label" style="margin-top:16px">Herramientas Internas de Operación</div>
     <div class="home-btns-grid">
       <button class="home-btn" onclick="window.location.href='bitacora.html'" style="background:linear-gradient(135deg,#1a1a2e,#0d2d5a)">
         <span class="home-btn-icon">📓</span>
@@ -240,6 +241,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
       <button class="home-btn" onclick="window.open('https://admin-licencias.relizondo-0d3.workers.dev/','_blank')" style="background:linear-gradient(135deg,#92400e,#b45309)">
         <span class="home-btn-icon">💿</span>
         <div style="flex:1"><div class="bita-title">Administración de Licencias</div><div class="bita-sub">Gestión de licencias de software</div></div>
+        <span style="font-size:16px;opacity:.65">&#8250;</span>
+      </button>
+
+      <button class="home-btn" onclick="window.open('https://playbook-mda.pages.dev/uploads/Reporte%20MDA%20Capstone','_blank')" style="background:linear-gradient(135deg,#0f4c75,#1b6ca8)">
+        <span class="home-btn-icon">📞</span>
+        <div style="flex:1"><div class="bita-title">Monitoreo de Atención Telefónica</div><div class="bita-sub">Seguimiento y análisis de llamadas</div></div>
         <span style="font-size:16px;opacity:.65">&#8250;</span>
       </button>
     </div>
