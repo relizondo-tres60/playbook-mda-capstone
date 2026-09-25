@@ -845,8 +845,9 @@ function renderKnowledge(c, entries) {
         'style="resize:vertical;font-size:13px;margin-bottom:8px"></textarea>' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<span style="font-size:11px;color:#888">El asistente IA usará este conocimiento al responder preguntas.</span>' +
-        '<button class="pc-btn" style="width:auto" id="kb-add-btn">+ Agregar</button>' +
+        '<button class="pc-btn" style="width:auto;opacity:.45" id="kb-add-btn" disabled>+ Agregar</button>' +
       '</div>' +
+      '<div id="kb-status-msg" style="font-size:12px;margin-top:6px;display:none"></div>' +
     '</div>' +
     '<hr style="border:none;border-top:1px solid #eef1f7;margin:0 0 12px">';
 
@@ -891,10 +892,39 @@ function renderKnowledge(c, entries) {
   });
 
   var addBtn = document.getElementById('kb-add-btn');
+  var kbTextEl = document.getElementById('kb-text');
+
+  // Habilitar/deshabilitar botón según contenido del textarea
+  function syncAddBtn() {
+    if (!addBtn || !kbTextEl) return;
+    addBtn.disabled = !kbTextEl.value.trim();
+    addBtn.style.opacity = kbTextEl.value.trim() ? '1' : '0.45';
+  }
+  if (kbTextEl) {
+    kbTextEl.addEventListener('input', syncAddBtn);
+    syncAddBtn(); // estado inicial
+  }
+
+  // Mostrar mensaje de estado inline (sin depender de showToast externo)
+  function kbStatus(msg, color) {
+    var el = document.getElementById('kb-status-msg');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = color || '#555';
+    el.style.display = msg ? 'block' : 'none';
+  }
+
   if (addBtn) addBtn.addEventListener('click', function() {
-    var text = ((document.getElementById('kb-text')||{}).value||'').trim();
-    if (!text) return;
-    addBtn.disabled = true; addBtn.textContent = 'Guardando...';
+    var text = (kbTextEl ? kbTextEl.value : '').trim();
+    if (!text) {
+      if (kbTextEl) { kbTextEl.style.border = '2px solid #e74c3c'; kbTextEl.focus(); }
+      kbStatus('Escribe el contenido antes de agregar.', '#c0392b');
+      return;
+    }
+    if (kbTextEl) kbTextEl.style.border = '';
+    addBtn.disabled = true;
+    addBtn.textContent = 'Guardando...';
+    kbStatus('Guardando...', '#0057a8');
     authFetch(A.workerUrl + '/knowledge', {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -902,12 +932,16 @@ function renderKnowledge(c, entries) {
     }).then(function(r){ return r.json(); })
       .then(function(d) {
         if (d.error) throw new Error(d.error);
-        showToast('\u2705 Entrada guardada');
-        loadKnowledge(c);
+        kbStatus('\u2705 Entrada guardada correctamente.', '#065f46');
+        if (kbTextEl) kbTextEl.value = '';
+        syncAddBtn();
+        setTimeout(function() { loadKnowledge(c); }, 800);
       })
       .catch(function(err) {
-        showToast('Error: ' + (err.message||'desconocido'));
-        addBtn.disabled = false; addBtn.textContent = '+ Agregar';
+        kbStatus('\u274c Error: ' + (err.message || 'desconocido'), '#c0392b');
+        addBtn.disabled = false;
+        addBtn.textContent = '+ Agregar';
+        syncAddBtn();
       });
   });
 
