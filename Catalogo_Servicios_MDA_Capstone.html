@@ -30,7 +30,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
 
 /* Ops selector */
 .ops-label{font-size:13px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px}
-.ops-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.ops-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
 @media(max-width:780px){.ops-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:420px){.ops-grid{grid-template-columns:1fr}}
 .op-card{border:none;cursor:pointer;border-radius:14px;padding:22px 16px;text-align:left;color:#fff;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;min-height:130px;display:flex;flex-direction:column;justify-content:flex-end}
@@ -136,9 +136,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;fo
   .kw-edit-btn:hover{background:#e8f0fb}
   body.admin-mode .kw-edit-btn{display:inline}
   body.admin-mode .proc-keywords{display:none}
-.home-btns-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-@media(max-width:780px){.home-btns-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:420px){.home-btns-grid{grid-template-columns:1fr}}
+.home-btns-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;margin-top:12px}
+.home-btns-grid .home-btn:nth-child(-n+4){grid-column:span 3}
+.home-btns-grid .home-btn:nth-child(n+5){grid-column:span 4}
+@media(max-width:780px){.home-btns-grid{grid-template-columns:repeat(2,1fr)}.home-btns-grid .home-btn:nth-child(-n+4),.home-btns-grid .home-btn:nth-child(n+5){grid-column:span 1}}
+@media(max-width:420px){.home-btns-grid{grid-template-columns:1fr}.home-btns-grid .home-btn:nth-child(-n+4),.home-btns-grid .home-btn:nth-child(n+5){grid-column:span 1}}
 .home-btn{width:100%;color:#fff;border:none;cursor:pointer;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:13px;text-align:left;transition:all .15s;box-shadow:0 3px 10px rgba(0,0,0,.15);min-height:64px}
 .home-btn:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .home-btn-icon{font-size:22px;flex-shrink:0}
