@@ -9,11 +9,11 @@
  *   DELETE          /sop/:sopId       → Eliminar SOP custom (admin)
  */
 
-const AI_MODEL='claude-haiku-4-5-20251001';
+const AI_MODEL='gpt-4o-mini';
 const AI_MAX_TOKENS = 512;
 const SESSION_TTL   = 60 * 60 * 24 * 7;
-const COST_IN       = 3.0  / 1_000_000;
-const COST_OUT      = 15.0 / 1_000_000;
+const COST_IN       = 0.15 / 1_000_000;  // gpt-4o-mini input
+const COST_OUT      = 0.60 / 1_000_000;  // gpt-4o-mini output
 
 const CORS = {
   'Access-Control-Allow-Origin' : '*',
@@ -47,16 +47,16 @@ async function requireAdmin(req,env){
   return s;
 }
 
-// ═══ DEBUG ANTHROPIC ════════════════════════════════════════════════════════
-async function debugAnthropic(req,env){
+// ═══ DEBUG OPENAI ════════════════════════════════════════════════════════════
+async function debugOpenAI(req,env){
   const a=await requireAdmin(req,env);if(a.error)return jsonR(a,a.status);
-  const apiKey=env.ANTHROPIC_API_KEY;
-  if(!apiKey)return jsonR({error:'ANTHROPIC_API_KEY no configurada'},500);
+  const apiKey=env.OPENAI_API_KEY;
+  if(!apiKey)return jsonR({error:'OPENAI_API_KEY no configurada'},500);
   const{model=AI_MODEL}=await req.json().catch(()=>({}));
 
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+  const resp=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
     body:JSON.stringify({
       model,
       max_tokens:20,
@@ -68,7 +68,7 @@ async function debugAnthropic(req,env){
     httpStatus : resp.status,
     ok         : resp.ok,
     modelUsed  : model,
-    response   : data.content?.[0]?.text||null,
+    response   : data.choices?.[0]?.message?.content||null,
     error      : data.error||null,
     usage      : data.usage||null,
   });
@@ -223,7 +223,7 @@ export default {
 
       // Ping
       if(pathname==='/ping') return jsonR({ok:true,ts:Date.now(),version:'3.0'});
-      if(pathname==='/debug/anthropic'&&method==='POST') return await debugAnthropic(request,env);
+      if(pathname==='/debug/openai'&&method==='POST') return await debugOpenAI(request,env);
 
       return jsonR({error:'Not found'},404);
 
@@ -676,8 +676,8 @@ async function bitacoraDelete(date,shift,entryId,req,env){
 
 async function bitacoraAI(req,env){
   const a=await requireAuth(req,env);if(a.error)return jsonR(a,a.status);
-  const apiKey=env.ANTHROPIC_API_KEY;
-  if(!apiKey)return jsonR({error:'ANTHROPIC_API_KEY no configurada'},500);
+  const apiKey=env.OPENAI_API_KEY;
+  if(!apiKey)return jsonR({error:'OPENAI_API_KEY no configurada'},500);
   const{text,conversation}=await req.json();
   if(!text)return jsonR({error:'text requerido'},400);
 
@@ -700,22 +700,24 @@ Responde SOLO con JSON válido, sin markdown ni texto adicional:
 
 Sé específico y directo. Máximo 3 preguntas. Si el texto es claro y completo, devuelve is_complete:true y questions:[].`;
 
-  const msgs=conversation||[{role:'user',content:`Revisa esta anotación de bitácora:
+  const userMsgs=conversation||[{role:'user',content:`Revisa esta anotación de bitácora:\n\n"${text}"`}];
+  const oaiMessages=[{role:'system',content:systemPrompt},...userMsgs];
 
-"${text}"`}];
-
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-    body:JSON.stringify({model:AI_MODEL,max_tokens:800,system:systemPrompt,messages:msgs}),
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:800,messages:oaiMessages}),
   });
-  if(!r.ok)return jsonR({error:'Error IA'},502);
+  const d=await r.json();
+  if(!r.ok)return jsonR({error:d?.error?.message||'Error IA'},502);
   try{
-    const raw=d.content[0].text.trim().replace(/^```json\n?/,'').replace(/\n?```$/,'');
+    const rawText=d.choices[0].message.content;
+    const raw=rawText.trim().replace(/^```json\n?/,'').replace(/\n?```$/,'');
     const parsed=JSON.parse(raw);
-    return jsonR({ok:true,result:parsed,rawText:d.content[0].text});
+    return jsonR({ok:true,result:parsed,rawText});
   }catch(e){
-    return jsonR({ok:true,result:{questions:[],improved_text:text,is_complete:true,feedback:'Respuesta de IA no estructurada.'},rawText:d.content[0].text});
+    const rawText=d.choices?.[0]?.message?.content||'';
+    return jsonR({ok:true,result:{questions:[],improved_text:text,is_complete:true,feedback:'Respuesta de IA no estructurada.'},rawText});
   }
 }
 
@@ -881,8 +883,8 @@ async function knowledgeDelete(id,req,env){
 
 async function knowledgeExtract(req,env){
   const a=await requireAdmin(req,env);if(a.error)return jsonR(a,a.status);
-  const apiKey=env.ANTHROPIC_API_KEY;
-  if(!apiKey)return jsonR({error:'ANTHROPIC_API_KEY no configurada'},500);
+  const apiKey=env.OPENAI_API_KEY;
+  if(!apiKey)return jsonR({error:'OPENAI_API_KEY no configurada'},500);
   const{conversation}=await req.json();
   if(!conversation)return jsonR({error:'conversation requerida'},400);
 
@@ -904,20 +906,23 @@ Solo incluye aprendizajes concretos. Si no hay aprendizajes claros, devuelve [].
 CONVERSACION:
 ${conversation.slice(0,4000)}`;
 
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
     body:JSON.stringify({model:AI_MODEL,max_tokens:1500,messages:[{role:'user',content:extractPrompt}]}),
   });
-  if(!r.ok)return jsonR({error:'Error al extraer'},502);
+  const d=await r.json();
+  if(!r.ok)return jsonR({error:d?.error?.message||'Error al extraer'},502);
 
   try{
-    const text=d.content[0].text.trim().replace(/^```json\n?/,'').replace(/\n?```$/,'');
+    const rawText=d.choices[0].message.content;
+    const text=rawText.trim().replace(/^```json\n?/,'').replace(/\n?```$/,'');
     const extracted=JSON.parse(text);
     if(!Array.isArray(extracted))return jsonR({error:'La IA no retornó un array'},422);
     return jsonR({ok:true,extracted,count:extracted.length});
   }catch(e){
-    return jsonR({error:'No se pudo parsear la respuesta de la IA',raw:d.content[0].text},422);
+    const rawText=d.choices?.[0]?.message?.content||'';
+    return jsonR({error:'No se pudo parsear la respuesta de la IA',raw:rawText},422);
   }
 }
 
@@ -932,11 +937,11 @@ async function feedbackPost(req,env){const a=await requireAuth(req,env);if(a.err
 async function feedbackDelete(id,req,env){const a=await requireAdmin(req,env);if(a.error)return jsonR(a,a.status);await kvPut(env,'feedback',(await kvGet(env,'feedback',[])).filter(f=>f.id!==id));return jsonR({ok:true});}
 async function chatHandler(req,env){
   const a=await requireAuth(req,env);if(a.error)return jsonR(a,a.status);
-  const apiKey=env.ANTHROPIC_API_KEY;
-  if(!apiKey)return jsonR({error:'ANTHROPIC_API_KEY no configurada'},500);
+  const apiKey=env.OPENAI_API_KEY;
+  if(!apiKey)return jsonR({error:'OPENAI_API_KEY no configurada'},500);
   const{system='',messages=[],sopId=''}=await req.json();
 
-  const MAX_SYS_CHARS=160000;
+  const MAX_SYS_CHARS=120000;
   let usedChars=system.length;
 
   // 0. Auto-detectar SOP mencionado en el último mensaje del usuario
@@ -1002,42 +1007,29 @@ async function chatHandler(req,env){
     }
   }
 
-  // Bloque cacheable (base + KB + keywords + catálogo) + dinámico (contenido SOP)
-  const cachedText=(system+kbText+kwIndex+sopCatalog).trim();
-  const systemBlocks=[];
-  if(cachedText){
-    systemBlocks.push({type:'text',text:cachedText,cache_control:{type:'ephemeral'}});
-  }
-  if(sopContent){
-    systemBlocks.push({type:'text',text:sopContent}); // dinámico, sin caché
-  }
+  // Construir system prompt completo y array de mensajes para OpenAI
+  const fullSystem=(system+kbText+kwIndex+sopCatalog+(sopContent?'\n'+sopContent:'')).trim();
+  const oaiMessages=[];
+  if(fullSystem) oaiMessages.push({role:'system',content:fullSystem});
+  oaiMessages.push(...messages);
 
-  async function callAnthropic(useCache){
-    const sysVal=useCache&&systemBlocks.length?systemBlocks:(cachedText||system||undefined);
-    const hdrs={'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'};
-    if(useCache) hdrs['anthropic-beta']='prompt-caching-2024-07-31';
-    return fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:hdrs,
-      body:JSON.stringify({model:AI_MODEL,max_tokens:800,system:sysVal,messages})
-    });
-  }
-
-  let r=await callAnthropic(true);
-  let d=await r.json();
-  if(!r.ok&&d?.error?.message){r=await callAnthropic(false);d=await r.json();}
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:800,messages:oaiMessages})
+  });
+  const d=await r.json();
 
   if(!r.ok)return jsonR({
     error:d?.error?.message||'Error IA',errorType:d?.error?.type,
     httpStatus:r.status,model:AI_MODEL,raw:JSON.stringify(d).slice(0,300)
   },502);
 
-  const inT=d.usage?.input_tokens||0,outT=d.usage?.output_tokens||0;
-  const cacheRead=d.usage?.cache_read_input_tokens||0;
-  const cacheWrite=d.usage?.cache_creation_input_tokens||0;
+  const inT=d.usage?.prompt_tokens||0,outT=d.usage?.completion_tokens||0;
   return jsonR({
-    response:d.content[0].text,
-    tokens:{in:inT,out:outT,cacheRead,cacheWrite},
-    cached:cacheRead>0,
+    response:d.choices[0].message.content,
+    tokens:{in:inT,out:outT},
+    cached:false,
     sopLoaded:targetSop||null
   });
 }
