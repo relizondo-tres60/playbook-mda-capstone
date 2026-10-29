@@ -6,7 +6,7 @@ compatibility_date = "2024-09-23"
 # Luego pegar el ID aquí
 [[kv_namespaces]]
 binding = "MDA_KV"
-id      = "PEGA_EL_KV_ID_AQUI"
+id      = "6e083200070d4fbbbdd3236513c34536"
 
 # Variables no sensibles (las sensibles van con: wrangler secret put NOMBRE)
 [vars]
