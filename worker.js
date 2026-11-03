@@ -103,8 +103,85 @@ export default {
       const {pathname} = new URL(request.url);
       if(method==='OPTIONS') return new Response(null,{status:204,headers:CORS});
 
+      // Páginas públicas (sin autenticación — requeridas por Google OAuth verificación)
+      if(pathname==='/about'&&method==='GET') return htmlR(`<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MDA Playbook — Mesa de Ayuda Capstone Copper</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:720px;margin:60px auto;padding:0 24px;color:#1a1a2e;line-height:1.7}
+  h1{color:#003087;font-size:1.8rem;margin-bottom:4px}
+  h2{color:#003087;font-size:1.1rem;margin-top:36px}
+  .badge{display:inline-block;background:#003087;color:#fff;padding:3px 10px;border-radius:4px;font-size:.8rem;margin-bottom:24px}
+  footer{margin-top:60px;font-size:.85rem;color:#666;border-top:1px solid #eee;padding-top:16px}
+</style>
+</head>
+<body>
+<h1>MDA Playbook</h1>
+<span class="badge">Mesa de Ayuda · Capstone Copper</span>
+<p>El <strong>MDA Playbook</strong> es una plataforma interna de gestión del conocimiento y soporte operacional, desarrollada por <strong>Tres60</strong> para el servicio de Mesa de Ayuda (MDA) en <strong>Capstone Copper — Minera Mantoverde</strong>.</p>
+<h2>¿Qué hace esta aplicación?</h2>
+<p>Centraliza procedimientos operativos (SOPs), permite consultas con asistencia de inteligencia artificial, y facilita la coordinación del equipo de soporte IT/OT en un entorno de minería a gran escala.</p>
+<h2>Funcionalidades principales</h2>
+<ul>
+  <li>Consulta de procedimientos estándar (SOPs) con búsqueda asistida por IA</li>
+  <li>Bitácora operacional con análisis automático de incidentes</li>
+  <li>Gestión de equipamiento e inventario</li>
+  <li>Módulo de listas de tareas y coordinación de turno</li>
+  <li>Panel de administración de usuarios y control de acceso</li>
+</ul>
+<h2>Acceso</h2>
+<p>Esta aplicación es de uso exclusivo para el personal autorizado del servicio MDA. El acceso se realiza mediante autenticación con cuenta Google corporativa, previa autorización del administrador del sistema.</p>
+<h2>Responsable</h2>
+<p>Tres60 — Servicios de Tecnología de la Información<br>
+Contacto: <a href="mailto:soporte@tres60.cl">soporte@tres60.cl</a></p>
+<footer>MDA Playbook v3.0 · Tres60 · Capstone Copper Chile · <a href="/privacy">Política de Privacidad</a></footer>
+</body></html>`);
+
+      if(pathname==='/privacy'&&method==='GET') return htmlR(`<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Política de Privacidad — MDA Playbook</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:720px;margin:60px auto;padding:0 24px;color:#1a1a2e;line-height:1.7}
+  h1{color:#003087;font-size:1.8rem;margin-bottom:4px}
+  h2{color:#003087;font-size:1.1rem;margin-top:36px}
+  .date{color:#666;font-size:.9rem;margin-bottom:32px}
+  footer{margin-top:60px;font-size:.85rem;color:#666;border-top:1px solid #eee;padding-top:16px}
+</style>
+</head>
+<body>
+<h1>Política de Privacidad</h1>
+<p class="date">Última actualización: Noviembre 2024</p>
+<p>Esta política de privacidad describe cómo <strong>MDA Playbook</strong>, operado por <strong>Tres60</strong>, recopila, usa y protege la información de los usuarios que acceden a esta plataforma.</p>
+<h2>1. Información que recopilamos</h2>
+<p>Al iniciar sesión con Google, recopilamos únicamente la información básica de perfil que Google comparte: nombre completo, dirección de correo electrónico e imagen de perfil. No recopilamos contraseñas ni información de pago.</p>
+<h2>2. Uso de la información</h2>
+<p>La información recopilada se utiliza exclusivamente para:</p>
+<ul>
+  <li>Autenticar al usuario y mantener su sesión activa dentro de la plataforma</li>
+  <li>Identificar al usuario en el registro de actividades operacionales (bitácora)</li>
+  <li>Controlar los permisos de acceso a los módulos de la aplicación</li>
+</ul>
+<h2>3. Almacenamiento de datos</h2>
+<p>Los datos de sesión se almacenan de forma segura en Cloudflare KV (infraestructura de Cloudflare, Inc.) con un período de expiración de 7 días. No se almacenan datos en servidores propios ni se comparten con terceros fuera de la infraestructura operacional del servicio.</p>
+<h2>4. Acceso de terceros</h2>
+<p>Esta aplicación utiliza Google OAuth 2.0 para autenticación. Los scopes solicitados son: <code>openid</code>, <code>email</code> y <code>profile</code>. No se solicita ni se accede a ningún otro dato de la cuenta Google del usuario.</p>
+<h2>5. Retención y eliminación</h2>
+<p>Las sesiones expiran automáticamente a los 7 días de inactividad. Los administradores del sistema pueden revocar el acceso de cualquier usuario en cualquier momento. Para solicitar la eliminación de sus datos, contacte al administrador del servicio.</p>
+<h2>6. Seguridad</h2>
+<p>El acceso a la plataforma está restringido a usuarios previamente autorizados por el administrador. Todas las comunicaciones utilizan cifrado TLS. Los tokens de sesión se almacenan de forma segura y no son accesibles públicamente.</p>
+<h2>7. Contacto</h2>
+<p>Para consultas sobre esta política de privacidad o el tratamiento de sus datos personales, contacte a:<br>
+<strong>Tres60 — Servicios de Tecnología de la Información</strong><br>
+Correo: <a href="mailto:soporte@tres60.cl">soporte@tres60.cl</a></p>
+<footer>MDA Playbook v3.0 · Tres60 · <a href="/about">Acerca de esta aplicación</a></footer>
+</body></html>`);
+
       // Auth
-      if(pathname==='/auth/login')                      return await authLogin(request,env);
+      if(pathname==='/auth/login'&&method==='GET')      return await authLogin(request,env);
+      if(pathname==='/auth/login-page'&&method==='GET') return authLoginPage(env);
+      if(pathname==='/auth/login-local'&&method==='POST') return await authLoginLocal(request,env);
       if(pathname==='/auth/callback')                   return await authCallback(request,env);
       if(pathname==='/auth/logout')                     return await authLogout(request,env);
       if(pathname==='/auth/me'&&method==='GET')         return await authMe(request,env);
@@ -116,8 +193,17 @@ export default {
       }
       const uMatch=pathname.match(/^\/admin\/users\/(.+)$/);
       if(uMatch){
-        if(method==='DELETE') return await usersDelete(decodeURIComponent(uMatch[1]),request,env);
-        if(method==='PATCH')  return await usersUpdate(decodeURIComponent(uMatch[1]),request,env);
+        const uEmail=decodeURIComponent(uMatch[1]);
+        if(method==='DELETE'&&!uEmail.endsWith('/password')) return await usersDelete(uEmail,request,env);
+        if(method==='PATCH')  return await usersUpdate(uEmail,request,env);
+      }
+      // Gestión de contraseña local por usuario (solo admin)
+      const pwMatch=pathname.match(/^\/admin\/users\/(.+)\/set-password$/);
+      if(pwMatch&&method==='POST') return await adminSetPassword(decodeURIComponent(pwMatch[1]),request,env);
+      const pwDel=pathname.match(/^\/admin\/users\/(.+)\/password$/);
+      if(pwDel){
+        if(method==='DELETE') return await adminDeletePassword(decodeURIComponent(pwDel[1]),request,env);
+        if(method==='GET')    return await adminHasPassword(decodeURIComponent(pwDel[1]),request,env);
       }
 
       // Visibility
@@ -234,6 +320,275 @@ export default {
   }
 };
 
+
+// ═══ PÁGINA DE LOGIN (sirve HTML con ambas opciones) ══════════════════════════
+function authLoginPage(env){
+  const workerUrl = env.WORKER_URL || '';
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iniciar sesión — MDA Playbook</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,sans-serif;
+    background:linear-gradient(135deg,#001f5b 0%,#003087 60%,#0057b8 100%);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .card{
+    background:#fff;border-radius:16px;padding:40px 36px;
+    width:100%;max-width:400px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+  }
+  .logo{text-align:center;margin-bottom:28px}
+  .logo img{height:48px;margin-bottom:10px}
+  .logo h1{color:#003087;font-size:1.35rem;font-weight:700;letter-spacing:-.3px}
+  .logo p{color:#6b7280;font-size:.82rem;margin-top:2px}
+
+  .divider{display:flex;align-items:center;gap:10px;margin:22px 0;color:#9ca3af;font-size:.78rem}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:#e5e7eb}
+
+  .btn-google{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;padding:11px 16px;border-radius:8px;
+    border:1.5px solid #dadce0;background:#fff;color:#3c4043;
+    font-size:.9rem;font-weight:500;cursor:pointer;text-decoration:none;
+    transition:background .15s,border-color .15s;
+  }
+  .btn-google:hover{background:#f8f9fa;border-color:#bbb}
+  .btn-google svg{flex-shrink:0}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:.8rem;font-weight:600;color:#374151;margin-bottom:5px}
+  .field input{
+    width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;
+    font-size:.9rem;color:#111827;transition:border-color .15s;outline:none;
+  }
+  .field input:focus{border-color:#003087;box-shadow:0 0 0 3px rgba(0,48,135,.1)}
+
+  .btn-login{
+    width:100%;padding:11px;border-radius:8px;border:none;
+    background:#003087;color:#fff;font-size:.9rem;font-weight:600;
+    cursor:pointer;margin-top:6px;transition:background .15s;
+  }
+  .btn-login:hover{background:#002070}
+  .btn-login:disabled{background:#9ca3af;cursor:not-allowed}
+
+  .msg{
+    margin-top:14px;padding:10px 12px;border-radius:8px;font-size:.82rem;
+    text-align:center;display:none;
+  }
+  .msg.error{background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5}
+  .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #86efac}
+
+  .footer{text-align:center;margin-top:24px;font-size:.75rem;color:#9ca3af}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>MDA Playbook</h1>
+    <p>Mesa de Ayuda · Capstone Copper</p>
+  </div>
+
+  <!-- Google OAuth -->
+  <a href="${workerUrl}/auth/login" class="btn-google">
+    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+    Iniciar sesión con Google
+  </a>
+
+  <div class="divider">o con usuario y contraseña</div>
+
+  <!-- Local auth form -->
+  <form id="loginForm" autocomplete="on">
+    <div class="field">
+      <label for="email">Correo electrónico</label>
+      <input type="email" id="email" name="email" placeholder="usuario@tres60.cl" required autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn-login" id="submitBtn">Iniciar sesión</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="footer">Acceso restringido · Personal autorizado Tres60 / Capstone Copper</div>
+</div>
+
+<script>
+const WORKER = '${workerUrl}';
+const PAGES  = ${JSON.stringify(env.PAGES_URL || '')};
+
+// Leer parámetro ?error= de la URL actual para mostrar mensajes previos
+(function(){
+  const p = new URLSearchParams(location.search);
+  const e = p.get('error');
+  if(e){
+    const msg = document.getElementById('msg');
+    const msgs = {
+      not_authorized:'Tu cuenta no está autorizada en esta aplicación.',
+      token_failed:'Error al autenticar con Google. Intenta nuevamente.',
+      no_code:'No se recibió el código de autorización.',
+      server_error:'Error interno del servidor.',
+    };
+    msg.textContent = msgs[e] || 'Error de autenticación: '+e;
+    msg.className = 'msg error';
+    msg.style.display = 'block';
+  }
+})();
+
+document.getElementById('loginForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const btn  = document.getElementById('submitBtn');
+  const msg  = document.getElementById('msg');
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  btn.disabled  = true;
+  btn.textContent = 'Verificando...';
+  msg.style.display = 'none';
+
+  try{
+    const r = await fetch(WORKER+'/auth/login-local',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password}),
+    });
+    const data = await r.json();
+
+    if(r.ok && data.session){
+      msg.textContent = '¡Acceso concedido! Redirigiendo...';
+      msg.className   = 'msg ok';
+      msg.style.display = 'block';
+      // Redirigir al frontend Pages con el token (mismo mecanismo que Google OAuth)
+      const dest = PAGES ? PAGES+'/login.html?session='+data.session : '/?session='+data.session;
+      setTimeout(()=>{ location.href = dest; }, 800);
+    } else {
+      const errMap = {
+        not_authorized:'Tu cuenta no está autorizada en esta aplicación.',
+        'Credenciales incorrectas':'Correo o contraseña incorrectos.',
+      };
+      msg.textContent = errMap[data.error] || data.error || 'Error al iniciar sesión.';
+      msg.className   = 'msg error';
+      msg.style.display = 'block';
+      btn.disabled  = false;
+      btn.textContent = 'Iniciar sesión';
+    }
+  } catch(err){
+    msg.textContent = 'Error de conexión. Verifica tu red e intenta nuevamente.';
+    msg.className   = 'msg error';
+    msg.style.display = 'block';
+    btn.disabled  = false;
+    btn.textContent = 'Iniciar sesión';
+  }
+});
+</script>
+</body>
+</html>`;
+  return htmlR(html);
+}
+
+// ═══ LOCAL AUTH (usuario + contraseña) ═══════════════════════════════════════
+async function pbkdf2Hash(password, salt){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {name:'PBKDF2', salt:enc.encode(salt), iterations:100000, hash:'SHA-256'},
+    keyMaterial, 256
+  );
+  return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function localAuthSetPassword(email, password, env){
+  const salt = crypto.randomUUID().replace(/-/g,'');
+  const hash = await pbkdf2Hash(password, salt);
+  await kvPut(env, `local_auth_${email}`, {hash, salt, updatedAt: new Date().toISOString()});
+}
+
+async function localAuthVerify(email, password, env){
+  const stored = await kvGet(env, `local_auth_${email}`, null);
+  if(!stored) return false;
+  const hash = await pbkdf2Hash(password, stored.salt);
+  return hash === stored.hash;
+}
+
+// POST /auth/login-local  {email, password}
+async function authLoginLocal(request, env){
+  const pagesUrl = env.PAGES_URL || '/';
+  let body;
+  try{ body = await request.json(); }
+  catch{ return jsonR({error:'JSON inválido'},400); }
+
+  const {email, password} = body;
+  if(!email||!password) return jsonR({error:'email y password requeridos'},400);
+
+  // Verificar que el usuario existe en la allowlist
+  const users = await kvGet(env,'user_list',{});
+  const user  = users[email];
+  if(!user) return jsonR({error:'not_authorized'},403);
+
+  // Verificar contraseña
+  const ok = await localAuthVerify(email, password, env);
+  if(!ok) return jsonR({error:'Credenciales incorrectas'},401);
+
+  // Actualizar lastLogin
+  users[email].lastLogin = new Date().toISOString();
+  await kvPut(env,'user_list',users);
+
+  // Crear sesión (mismo mecanismo que Google OAuth)
+  const sessionId = crypto.randomUUID();
+  await kvPut(env, `session_${sessionId}`, {
+    email,
+    name:    user.name,
+    picture: user.picture || '',
+    role:    user.role,
+  }, {expirationTtl: SESSION_TTL});
+
+  return jsonR({session: sessionId, name: user.name, role: user.role});
+}
+
+// POST /admin/users/:email/set-password  {password}   (solo admin)
+async function adminSetPassword(email, request, env){
+  const a = await requireAdmin(request, env);
+  if(a.error) return jsonR(a, a.status);
+
+  // Verificar que el usuario existe
+  const users = await kvGet(env,'user_list',{});
+  if(!users[email]) return jsonR({error:'Usuario no encontrado'},404);
+
+  let body;
+  try{ body = await request.json(); }
+  catch{ return jsonR({error:'JSON inválido'},400); }
+
+  const {password} = body;
+  if(!password||password.length<6) return jsonR({error:'La contraseña debe tener al menos 6 caracteres'},400);
+
+  await localAuthSetPassword(email, password, env);
+  return jsonR({ok:true, message:'Contraseña establecida correctamente'});
+}
+
+// DELETE /admin/users/:email/password   (elimina auth local, solo admin)
+async function adminDeletePassword(email, request, env){
+  const a = await requireAdmin(request, env);
+  if(a.error) return jsonR(a, a.status);
+  await env.MDA_KV.delete(`local_auth_${email}`);
+  return jsonR({ok:true, message:'Contraseña local eliminada'});
+}
+
+// GET /admin/users/:email/has-password  (solo admin, para saber si tiene pass)
+async function adminHasPassword(email, request, env){
+  const a = await requireAdmin(request, env);
+  if(a.error) return jsonR(a, a.status);
+  const stored = await kvGet(env, `local_auth_${email}`, null);
+  return jsonR({email, hasLocalPassword: !!stored, updatedAt: stored?.updatedAt || null});
+}
 
 // ═══ GOOGLE OAUTH ════════════════════════════════════════════════════════════
 function authLogin(request,env){
